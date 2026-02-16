@@ -1,20 +1,14 @@
+// services/productService.ts
 import api from "./api";
-import type { Product } from "../types/product";
-import type { PaginatedResponse } from "../types/pagination";
 
-export interface GetProductsParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  category?: string;
-}
+const API_URL = "http://localhost:3000/api/v1/products";
 
-export const getProducts = async (
-  params?: GetProductsParams
-): Promise<PaginatedResponse<Product>> => {
-  const response = await api.get("/products", {
-    params,
-  });
+export const getProducts = async (params?: any) => {
+  const res = await api.get(API_URL, { params });
+  return res.data;
+};
 
-  return response.data;
+export const getProductById = async (id: string) => {
+  const res = await api.get(`${API_URL}/${id}`);
+  return res.data;
 };

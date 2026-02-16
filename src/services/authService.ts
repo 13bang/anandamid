@@ -16,7 +16,7 @@ export const login = async (
 
   const result = response.data;
 
-  localStorage.setItem("access_token", result.access_token);
+  localStorage.setItem("token", result.access_token);
 
   return result;
 };
