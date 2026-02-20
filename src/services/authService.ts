@@ -7,6 +7,11 @@ export interface LoginDto {
 
 export interface LoginResponse {
   access_token: string;
+  expires_in: number;
+  user: {
+    id: number;
+    username: string;
+  };
 }
 
 export const login = async (
@@ -18,5 +23,11 @@ export const login = async (
 
   localStorage.setItem("token", result.access_token);
 
+  localStorage.setItem("user", JSON.stringify(result.user));
+
   return result;
+};
+
+export const logout = () => {
+  localStorage.clear(); 
 };

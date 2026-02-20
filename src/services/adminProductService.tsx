@@ -37,3 +37,8 @@ export const deleteAdminProduct = async (id: string) => {
     headers: getAuthHeader(),
   });
 };
+
+export const getAdminProductById = async (id: string) => {
+  const res = await api.get(`/admin/products/${id}`);
+  return res.data;
+};

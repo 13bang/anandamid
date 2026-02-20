@@ -1,16 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "./pages/LoginPage";
+import LoginPage from "./pages/admin_panel/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminLayout from "./components/AdminLayout";
-import Dashboard from "./pages/Dashboard";
-import CategoryPage from "./pages/CategoryPage";
-import ProductPage from "./pages/ProductPage";
+import AdminLayout from "./components/admin/AdminLayout";
+import Dashboard from "./pages/admin_panel/Dashboard";
+import CategoryPage from "./pages/admin_panel/CategoryPage";
+import ProductPage from "./pages/admin_panel/ProductPage";
+import LandingPage from "./pages/landing_page/LandingPage";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<div>Landing Page</div>} />
+        <Route path="/" element={<LandingPage />} />
 
         <Route path="/ayamgoreng/login" element={<LoginPage />} />
 
