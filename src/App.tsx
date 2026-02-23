@@ -6,6 +6,10 @@ import Dashboard from "./pages/admin_panel/Dashboard";
 import CategoryPage from "./pages/admin_panel/CategoryPage";
 import ProductPage from "./pages/admin_panel/ProductPage";
 import LandingPage from "./pages/landing_page/LandingPage";
+import ProductUpdatePage from "./pages/admin_panel/ProductUpdatePage";
+import ProductUploadPage from "./pages/admin_panel/ProductUploadPage";
+import PricelistPage from "./pages/admin_panel/PricelistPage";
+import BannerPage from "./pages/admin_panel/BannerPage";
 
 function App() {
   return (
@@ -24,6 +28,10 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="category" element={<CategoryPage />} />
             <Route path="product" element={<ProductPage />} />
+            <Route path="update-massal" element={<ProductUpdatePage />} />
+            <Route path="upload-massal" element={<ProductUploadPage />} />
+            <Route path="pricelist" element={<PricelistPage />} />
+            <Route path="banner" element={<BannerPage />} />
           </Route>
 
         </Route>

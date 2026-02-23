@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getProducts } from "../../services/productService";
 import { useNavigate } from "react-router-dom";
+import { getCategories } from "../../services/adminCategoryService";
+import { getBanners } from "../../services/bannerService";
 
 export default function LandingPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -10,6 +12,9 @@ export default function LandingPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   const navigate = useNavigate();
+
+  const [categories, setCategories] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
 
   const getPaginationNumbers = () => {
   const maxVisible = 5; // jumlah nomor yang ditampilkan
@@ -39,7 +44,27 @@ export default function LandingPage() {
 
   useEffect(() => {
     fetchProducts(currentPage);
+    fetchCategories();
+    fetchBanners();
   }, [currentPage]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await getCategories();
+      setCategories(res);
+    } catch (err) {
+      console.error("Gagal fetch kategori", err);
+    }
+  };
+
+  const fetchBanners = async () => {
+    try {
+      const res = await getBanners();
+      setBanners(res);
+    } catch (err) {
+      console.error("Gagal fetch banner", err);
+    }
+  };
 
   const fetchProducts = async (page = 1) => {
   try {
@@ -51,7 +76,7 @@ export default function LandingPage() {
     });
 
     setProducts(res.data || []);
-    setTotalPages(res.last_page || 1); // ✅ FIX DISINI
+    setTotalPages(res.last_page || 1); 
   } catch (err) {
     console.error("Gagal fetch products", err);
   } finally {
@@ -60,141 +85,89 @@ export default function LandingPage() {
 };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
-      {/* HERO */}
-      <section className="px-6 py-20 text-center bg-white">
-        <h1 className="mb-4 text-4xl font-bold">
-          Alat Elektronik
-        </h1>
-        <p className="max-w-xl mx-auto text-gray-600">
-          Alat Elektronik terlengkap di DIY
-        </p>
+    <div className="min-h-screen bg-gray-100">
+
+      {/* ================= BANNER ================= */}
+      <section className="px-6 pt-6 mx-auto max-w-7xl">
+        <div className="overflow-hidden bg-white shadow rounded-xl">
+          {banners.length > 0 && (
+            <img
+              src={`http://localhost:3000${banners[0].image_url}`}
+              alt="banner"
+              className="object-cover w-full h-[350px]"
+            />
+          )}
+        </div>
       </section>
 
-      {/* PRODUCT GRID */}
-      <section className="px-6 py-12 mx-auto max-w-7xl">
-        
-        {loading ? (
-          <p className="text-center">Loading products...</p>
-        ) : products.length === 0 ? (
-          <p className="text-center text-gray-500">
-            Tidak ada produk tersedia
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((product) => (
+
+      {/* ================= CATEGORY ================= */}
+      <section className="px-6 py-6 mx-auto max-w-7xl">
+        <div className="p-5 bg-white shadow rounded-xl">
+          <h2 className="mb-4 text-lg font-semibold">Kategori</h2>
+
+          <div className="flex gap-4 overflow-x-auto">
+            {categories.map((cat) => (
               <div
-                key={product.id}
-                onClick={() => navigate(`/product/${product.id}`)}
-                className="overflow-hidden transition bg-white shadow-md cursor-pointer rounded-2xl hover:shadow-xl"
+                key={cat.id}
+                className="flex flex-col items-center min-w-[90px] cursor-pointer group"
               >
-                
-                {/* IMAGE */}
-                <div className="bg-gray-100 aspect-square">
-                  <img
-                    src={product.thumbnail_url}
-                    alt={product.name}
-                    className="object-cover w-full h-full"
-                  />
+                <div className="flex items-center justify-center w-16 h-16 transition bg-gray-100 rounded-full group-hover:bg-black group-hover:text-white">
+                  {cat.name.charAt(0)}
                 </div>
-
-                {/* INFO */}
-                <div className="p-4">
-                  <h3 className="mb-2 text-sm font-semibold line-clamp-2">
-                    {product.name}
-                  </h3>
-
-                    <div>
-                    {product.price_discount ? (
-                        <>
-                        <p className="text-sm text-gray-400 line-through">
-                            Rp {Number(product.price_normal).toLocaleString()}
-                        </p>
-                        <p className="text-lg font-bold text-red-600">
-                            Rp {(Number(product.price_normal) - Number(product.price_discount)).toLocaleString()}
-                        </p>
-                        </>
-                    ) : (
-                        <p className="text-lg font-bold text-red-600">
-                        Rp {Number(product.price_normal).toLocaleString()}
-                        </p>
-                    )}
-                    </div>
-                </div>
+                <span className="mt-2 text-xs text-center">
+                  {cat.name}
+                </span>
               </div>
             ))}
-            
           </div>
-        )}
+        </div>
       </section>
 
-        {/* PAGINATION */}
-        <div className="flex items-center justify-center mt-10 space-x-2">
 
-        {/* PREV BUTTON */}
-        <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
-        >
-            ←
-        </button>
+      {/* ================= PRODUCT ================= */}
+      <section className="px-6 pb-10 mx-auto max-w-7xl">
 
-        {/* FIRST PAGE + DOTS */}
-        {currentPage > 3 && (
-            <>
-            <button
-                onClick={() => setCurrentPage(1)}
-                className="px-3 py-2 bg-gray-200 rounded-lg"
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              onClick={() => navigate(`/product/${product.id}`)}
+              className="overflow-hidden transition bg-white shadow cursor-pointer rounded-xl hover:shadow-xl"
             >
-                1
-            </button>
-            <span>...</span>
-            </>
-        )}
+              <div className="bg-gray-100 aspect-square">
+                <img
+                  src={product.thumbnail_url}
+                  alt={product.name}
+                  className="object-cover w-full h-full"
+                />
+              </div>
 
-        {/* MIDDLE PAGES */}
-        {getPaginationNumbers().map((pageNumber) => (
-            <button
-            key={pageNumber}
-            onClick={() => setCurrentPage(pageNumber)}
-            className={`px-3 py-2 rounded-lg ${
-                currentPage === pageNumber
-                ? "bg-black text-white"
-                : "bg-gray-200"
-            }`}
-            >
-            {pageNumber}
-            </button>
-        ))}
+              <div className="p-3">
+                <h3 className="mb-1 text-xs font-medium line-clamp-2">
+                  {product.name}
+                </h3>
 
-        {/* LAST PAGE + DOTS */}
-        {currentPage < totalPages - 2 && (
-            <>
-            <span>...</span>
-            <button
-                onClick={() => setCurrentPage(totalPages)}
-                className="px-3 py-2 bg-gray-200 rounded-lg"
-            >
-                {totalPages}
-            </button>
-            </>
-        )}
-
-        {/* NEXT BUTTON */}
-        <button
-            onClick={() =>
-            setCurrentPage((prev) =>
-                Math.min(prev + 1, totalPages)
-            )
-            }
-            disabled={currentPage === totalPages}
-            className="px-3 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
-        >
-            →
-        </button>
+                {product.price_discount ? (
+                  <>
+                    <p className="text-xs text-gray-400 line-through">
+                      Rp {Number(product.price_normal).toLocaleString()}
+                    </p>
+                    <p className="text-sm font-bold text-red-600">
+                      Rp {(Number(product.price_normal) - Number(product.price_discount)).toLocaleString()}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm font-bold text-red-600">
+                    Rp {Number(product.price_normal).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
+
+      </section>
 
     </div>
   );

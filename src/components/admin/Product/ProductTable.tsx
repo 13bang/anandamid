@@ -2,12 +2,17 @@ import { useState } from "react";
 import ProductRow from "./ProductRow";
 import api from "../../../services/api";
 
+import { AlertCircle } from "lucide-react";
+
 interface ProductTableProps {
   products: any[];
   total: number;
   page: number;
   lastPage: number;
   limit: number;
+  duplicateCount: number;
+  showDuplicateOnly: boolean;
+  onToggleDuplicateFilter: () => void;
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
   onToggle: (id: string, field: "is_active" | "is_popular", currentValue: boolean) => void;
@@ -23,6 +28,9 @@ export default function ProductTable({
   page,
   lastPage,
   limit,
+  duplicateCount,
+  showDuplicateOnly,
+  onToggleDuplicateFilter,
   onPageChange,
   onLimitChange,
   onToggle,
@@ -126,16 +134,51 @@ export default function ProductTable({
         <table className="min-w-full text-xs table-auto">
           <thead className="bg-white">
 
-            {/* Search Row */}
+            {/* Search & Duplicate Row */}
             <tr className="border-b">
               <th colSpan={10} className="px-4 py-3 bg-white">
-                <div className="flex justify-end">
+                <div className="flex items-center justify-between">
+                  
+                  {/* DUPLICATE ALERT */}
+                  {duplicateCount > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={onToggleDuplicateFilter}
+                        className={`group flex items-center gap-0 hover:gap-2 px-2 py-2 text-xs rounded-full transition-all duration-300 ${
+                          showDuplicateOnly
+                            ? "bg-red-600 text-white"
+                            : "bg-red-100 text-red-700 hover:bg-red-200"
+                        }`}
+                      >
+                        <AlertCircle size={18} />
+                        
+                        {/* Teks hanya muncul saat hover */}
+                        <span className="max-w-0 overflow-hidden whitespace-nowrap transition-all duration-300 group-hover:max-w-[200px]">
+                          {duplicateCount} Duplicate Produk
+                        </span>
+                      </button>
+
+                      {showDuplicateOnly && (
+                        <button
+                          onClick={onToggleDuplicateFilter}
+                          className="px-2 py-1 text-xs text-gray-600 border rounded-md hover:bg-gray-100"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div />
+                  )}
+
+                  {/* SEARCH */}
                   <input
                     type="text"
                     placeholder="Cari..."
                     className="w-64 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onChange={(e) => onSearch(e.target.value)}
                   />
+                  
                 </div>
               </th>
             </tr>
@@ -197,7 +240,7 @@ export default function ProductTable({
                       onChange={(e) => onLimitChange(Number(e.target.value))}
                       className="px-2 py-1 border border-gray-300 rounded-md"
                     >
-                      {[10, 20, 30, 40, 50].map((num) => (
+                      {[10, 30, 50, 100].map((num) => (
                         <option key={num} value={num}>
                           {num}
                         </option>

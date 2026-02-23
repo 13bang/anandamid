@@ -19,6 +19,19 @@ export default function ProductRow({
 }: ProductRowProps) {
   const finalPrice = product.price_normal - (product.price_discount ?? 0);
 
+  const getDuplicateColor = (group: string) => {
+  if (!group) return "bg-red-500";
+
+  let hash = 0;
+  for (let i = 0; i < group.length; i++) {
+    hash = group.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const hue = Math.abs(hash) % 360;
+
+  return `bg-[hsl(${hue},70%,50%)]`;
+};
+
   return (
     <tr className="transition bg-white border-b border-gray-100 hover:bg-gray-50">
       <td className="px-3 py-2 text-center">
@@ -38,7 +51,28 @@ export default function ProductRow({
           className="object-cover w-8 h-8 rounded cursor-pointer hover:opacity-80"
         />
       </td>
-      <td className="px-3 py-2 font-medium">{product.name}</td>
+      <td className="px-3 py-2 font-medium">
+        {product.name}
+        {product.is_duplicate && (() => {
+          let hash = 0;
+          const group = product.duplicate_group || "";
+
+          for (let i = 0; i < group.length; i++) {
+            hash = group.charCodeAt(i) + ((hash << 5) - hash);
+          }
+
+          const hue = Math.abs(hash) % 360;
+
+          return (
+            <span
+              style={{ backgroundColor: `hsl(${hue},70%,50%)` }}
+              className="ml-2 text-[10px] px-2 py-1 text-white rounded-md"
+            >
+              DUP!
+            </span>
+          );
+        })()}
+      </td>
       <td className="px-3 py-2 text-center">{product.stock}</td>
       <td className="px-2 py-2 whitespace-nowrap">
         Rp {Number(product.price_normal).toLocaleString()}

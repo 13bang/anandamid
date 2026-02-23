@@ -31,9 +31,13 @@
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [search, setSearch] = useState("");
 
+    const [showDuplicateOnly, setShowDuplicateOnly] = useState(false);
+    const [duplicateTotal, setDuplicateTotal] = useState(0);
+    const duplicateCount = duplicateTotal;
+
     useEffect(() => {
-      fetchProducts(page, search);
-    }, [page, limit, search]);
+      fetchProducts(page, search, showDuplicateOnly);
+    }, [page, limit, search, showDuplicateOnly]);
 
     useEffect(() => {
       fetchCategories();
@@ -60,19 +64,25 @@
         setCategories([]);
       }
     };
-
-
-    const fetchProducts = async (currentPage: number, searchQuery = "") => {
+    
+    const fetchProducts = async (
+      currentPage: number,
+      searchQuery = "",
+      onlyDuplicate = showDuplicateOnly
+    ) => {
       try {
         const result = await getAdminProducts({
           page: currentPage,
           limit,
           search: searchQuery,
+          only_duplicate: onlyDuplicate,
         });
 
         setProducts(result.data);
         setTotal(result.total);
         setLastPage(result.last_page);
+        setDuplicateTotal(result.duplicateTotal);
+
       } catch (err) {
         console.error("Gagal fetch product", err);
       }
@@ -121,6 +131,12 @@
             page={page}
             lastPage={lastPage}
             limit={limit}
+            duplicateCount={duplicateCount}
+            showDuplicateOnly={showDuplicateOnly}
+            onToggleDuplicateFilter={() => {
+              setPage(1);
+              setShowDuplicateOnly(prev => !prev);
+            }}
             onPageChange={setPage}
             onLimitChange={(newLimit) => {
               setLimit(newLimit);
@@ -143,7 +159,7 @@
               setSearch(query);
               setPage(1);
             }}
-            onRefetch={() => fetchProducts(page, search)} 
+            onRefetch={() => fetchProducts(page, search, showDuplicateOnly)} 
           />
           
           {isModalOpen && (
@@ -195,7 +211,7 @@
                 }
 
                   setIsModalOpen(false);
-                  fetchProducts(page, search);
+                  fetchProducts(page, search, showDuplicateOnly);
 
                 } catch (err) {
                   console.error("Gagal simpan product", err);
@@ -242,7 +258,6 @@
               className="relative"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Tombol Close */}
               <button
                 onClick={() => setSelectedImage(null)}
                 className="absolute text-2xl text-black top-2 right-2"
@@ -250,7 +265,6 @@
                 ✕
               </button>
 
-              {/* Gambar Besar */}
               <img
                 src={selectedImage}
                 alt="Preview"

@@ -6,6 +6,10 @@ import {
   Layers,
   PanelRightClose,
   PanelRightOpen,
+  FileInput,
+  FilePen,
+  CirclePercent,
+  Image,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -19,6 +23,10 @@ export default function Sidebar() {
     { name: "Dashboard", path: "/ayamgoreng/dashboard", icon: House },
     { name: "Kategori", path: "/ayamgoreng/category", icon: Layers },
     { name: "Product", path: "/ayamgoreng/product", icon: Package },
+    { name: "Update Massal", path: "/ayamgoreng/update-massal", icon: FilePen },
+    { name: "Upload Massal", path: "/ayamgoreng/upload-massal", icon: FileInput },
+    { name: "Pricelist", path: "/ayamgoreng/pricelist", icon: CirclePercent },
+    { name: "Banner", path: "/ayamgoreng/banner", icon: Image }
   ];
 
   const handleLogout = () => {
