@@ -1,11 +1,44 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getProducts } from "../../services/productService";
 import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../services/adminCategoryService";
 import { getBanners } from "../../services/bannerService";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function LandingPage() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    scrollRef.current?.scrollBy({
+      left: -200,
+      behavior: "smooth",
+    });
+  };
+
+  const scrollRight = () => {
+    scrollRef.current?.scrollBy({
+      left: 200,
+      behavior: "smooth",
+    });
+  };
+
+  const [popularProducts, setPopularProducts] = useState<any[]>([]);
+  const [recommendProducts, setRecommendProducts] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+
+  const fetchPopularProducts = async () => {
+  try {
+    const res = await getProducts({
+      is_popular: true,
+      limit: 10,
+    });
+
+    setPopularProducts(res.data || []);
+  } catch (err) {
+    console.error("Gagal fetch popular products", err);
+  }
+};
+
   const [loading, setLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,6 +77,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     fetchProducts(currentPage);
+    fetchPopularProducts();
     fetchCategories();
     fetchBanners();
   }, [currentPage]);
@@ -124,16 +158,88 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ================= POPULAR PRODUCT ================= */}
+      <section className="relative px-6 pb-6 mx-auto max-w-7xl">
+
+        <button
+          onClick={scrollLeft}
+          className="absolute left-0 z-20 p-3 -translate-y-1/2 bg-white shadow rounded-full top-1/2 hover:bg-gray-100"
+        >
+          <ChevronLeft size={20} />
+        </button>
+
+        <button
+          onClick={scrollRight}
+          className="absolute right-0 z-20 p-3 -translate-y-1/2 bg-white shadow rounded-full top-1/2 hover:bg-gray-100"
+        >
+          <ChevronRight size={20} />
+        </button>
+
+        {/* WHITE BACKGROUND */}
+        <div className="p-6 bg-white shadow rounded-xl">
+
+          <h2 className="mb-6 text-lg font-semibold">Produk Populer</h2>
+
+          <div
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+          >
+            {popularProducts.map((product) => (
+              <div
+                key={product.id}
+                onClick={() => navigate(`/product/${product.id}`)}
+                className="flex flex-col flex-shrink-0 w-[calc((100%-5rem)/6)] bg-white rounded-xl shadow hover:shadow-xl transition cursor-pointer"
+              >
+                <div className="bg-gray-100 aspect-square rounded-t-xl overflow-hidden">
+                  <img
+                    src={product.thumbnail_url}
+                    alt={product.name}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+
+                <div className="flex flex-col flex-1 p-3">
+                  <h3 className="mb-2 text-xs font-medium line-clamp-2 min-h-[32px]">
+                    {product.name}
+                  </h3>
+
+                  <div className="mt-auto">
+                    {product.price_discount ? (
+                      <>
+                        <p className="text-xs text-gray-400 line-through">
+                          Rp {Number(product.price_normal).toLocaleString()}
+                        </p>
+                        <p className="text-sm font-bold text-red-600">
+                          Rp {(Number(product.price_normal) - Number(product.price_discount)).toLocaleString()}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm font-bold text-red-600">
+                        Rp {Number(product.price_normal).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
 
       {/* ================= PRODUCT ================= */}
       <section className="px-6 pb-10 mx-auto max-w-7xl">
+
+        <h2 className="mb-4 text-lg font-semibold text-center border-b-4 border-b-blue-500 pb-2">
+          Rekomendasi
+        </h2>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {products.map((product) => (
             <div
               key={product.id}
               onClick={() => navigate(`/product/${product.id}`)}
-              className="overflow-hidden transition bg-white shadow cursor-pointer rounded-xl hover:shadow-xl"
+              className="flex flex-col overflow-hidden transition bg-white shadow cursor-pointer rounded-xl hover:shadow-xl"
             >
               <div className="bg-gray-100 aspect-square">
                 <img
@@ -143,25 +249,27 @@ export default function LandingPage() {
                 />
               </div>
 
-              <div className="p-3">
-                <h3 className="mb-1 text-xs font-medium line-clamp-2">
+              <div className="flex flex-col flex-1 p-3">
+                <h3 className="mb-2 text-xs font-medium line-clamp-2">
                   {product.name}
                 </h3>
 
-                {product.price_discount ? (
-                  <>
-                    <p className="text-xs text-gray-400 line-through">
+                <div className="mt-auto">
+                  {product.price_discount ? (
+                    <>
+                      <p className="text-xs text-gray-400 line-through">
+                        Rp {Number(product.price_normal).toLocaleString()}
+                      </p>
+                      <p className="text-sm font-bold text-red-600">
+                        Rp {(Number(product.price_normal) - Number(product.price_discount)).toLocaleString()}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm font-bold text-red-600">
                       Rp {Number(product.price_normal).toLocaleString()}
                     </p>
-                    <p className="text-sm font-bold text-red-600">
-                      Rp {(Number(product.price_normal) - Number(product.price_discount)).toLocaleString()}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-sm font-bold text-red-600">
-                    Rp {Number(product.price_normal).toLocaleString()}
-                  </p>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ))}
