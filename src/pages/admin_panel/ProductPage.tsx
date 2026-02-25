@@ -18,7 +18,7 @@
   import ProductTable from "../../components/admin/Product/ProductTable";
   import ProductWizard from "../../components/admin/Product/ProductWizard";
 
-  export default function ProductPage() {
+  export default function AdminProductPage() {
     const [products, setProducts] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);

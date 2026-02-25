@@ -5,6 +5,7 @@ import {
   deleteBanner,
   updateBanner,
   updateBannerTitle,
+  updateBannerSlot,
   type Banner,
 } from "../../services/bannerService";
 import { Upload, Trash2, RefreshCw, Pencil } from "lucide-react";
@@ -15,11 +16,14 @@ export default function BannerPage() {
   const [data, setData] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
+  const [tempSlot, setTempSlot] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [tempTitle, setTempTitle] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [tempTitle, setTempTitle] = useState("");
 
   const fetchData = async () => {
     try {
@@ -32,25 +36,41 @@ export default function BannerPage() {
     }
   };
 
+  const handleSaveSlot = async (id: string) => {
+    try {
+      await updateBannerSlot(id, tempSlot);
+      setEditingSlotId(null);
+      await fetchData();
+    } catch {
+      alert("Gagal update slot");
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+  console.log("SELECTED SLOT:", JSON.stringify(selectedSlot));
 
-    try {
-      setUploading(true);
-      await uploadBanner(selectedFile);
-      setSelectedFile(null);
-      await fetchData();
-      alert("Upload berhasil");
-    } catch {
-      alert("Upload gagal");
-    } finally {
-      setUploading(false);
-    }
-  };
+  if (!selectedFile || !selectedSlot.trim()) {
+    alert("File dan slot harus diisi");
+    return;
+  }
+
+  try {
+    setUploading(true);
+    await uploadBanner(selectedFile, selectedSlot.trim());
+    setSelectedFile(null);
+    setSelectedSlot("");
+    await fetchData();
+    alert("Upload berhasil");
+  } catch {
+    alert("Upload gagal");
+  } finally {
+    setUploading(false);
+  }
+};
 
     const handleSaveTitle = async (id: string) => {
         try {
@@ -130,6 +150,33 @@ export default function BannerPage() {
                     )}
                     </div>
 
+                    <div className="px-4 pb-3">
+  {editingSlotId === banner.id ? (
+    <input
+      value={tempSlot}
+      onChange={(e) => setTempSlot(e.target.value)}
+      onBlur={() => handleSaveSlot(banner.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          handleSaveSlot(banner.id);
+        }
+      }}
+      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+      autoFocus
+    />
+  ) : (
+    <p
+      onClick={() => {
+        setEditingSlotId(banner.id);
+        setTempSlot(banner.slot || "");
+      }}
+      className="text-xs text-gray-500 cursor-pointer hover:text-black"
+    >
+      Slot: {banner.slot || "Belum ada slot"}
+    </p>
+  )}
+</div>
+
                     {/* IMAGE */}
                     <img
                     src={`${BASE_FILE_URL}${banner.image_url}`}
@@ -178,7 +225,7 @@ export default function BannerPage() {
         </div>
 
         {/* RIGHT SIDE - UPLOAD PANEL */}
-        <div className="w-[340px] border border-gray-200 p-6 rounded-2xl shadow-sm sticky top-10 bg-white">
+       <div className="w-[340px] border border-gray-200 p-6 rounded-2xl shadow-sm sticky top-10 bg-white">
           <h3 className="mb-5 text-lg font-semibold">
             Upload Banner
           </h3>
@@ -201,7 +248,15 @@ export default function BannerPage() {
                 )
               }
             />
+
           </label>
+            <input
+              type="text"
+              placeholder="Masukkan nama slot (contoh: hero, bottom_left)"
+              value={selectedSlot}
+              onChange={(e) => setSelectedSlot(e.target.value)}
+              className="w-full mt-4 h-10 px-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
+            />
 
           <button
             onClick={handleUpload}

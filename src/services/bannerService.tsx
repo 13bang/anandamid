@@ -3,6 +3,7 @@ const BASE_URL = "http://localhost:3000/api/v1/banner-image";
 export interface Banner {
   id: string;
   title?: string;
+  slot?: string;
   image_url: string;
   created_at: string;
   updated_at: string;
@@ -11,12 +12,17 @@ export interface Banner {
 export const getBanners = async (): Promise<Banner[]> => {
   const res = await fetch(BASE_URL);
   if (!res.ok) throw new Error("Gagal fetch banner");
+  console.log(res);
   return res.json();
 };
 
-export const uploadBanner = async (file: File): Promise<Banner> => {
+export const uploadBanner = async (
+  file: File,
+  slot: string
+): Promise<Banner> => {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("slot", slot);
 
   const res = await fetch(`${BASE_URL}/upload`, {
     method: "POST",
@@ -70,5 +76,18 @@ export const updateBannerTitle = async (
     throw new Error("Gagal update title");
   }
 
+  return res.json();
+};
+
+export const updateBannerSlot = async (id: string, slot: string) => {
+  const res = await fetch(`http://localhost:3000/api/v1/banner-image/${id}/slot`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ slot }),
+  });
+
+  if (!res.ok) throw new Error("Gagal update slot");
   return res.json();
 };
