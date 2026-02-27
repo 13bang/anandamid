@@ -12,3 +12,15 @@ export const getProductById = async (id: string) => {
   const res = await api.get(`${API_URL}/${id}`);
   return res.data;
 };
+
+export const getProductsByCategory = async (categoryName: string) => {
+  const response = await api.get("/products", {
+    params: {
+      category: categoryName,
+      is_active: true,  
+      limit: 30,         
+    },
+  });
+
+  return response.data.data; 
+};

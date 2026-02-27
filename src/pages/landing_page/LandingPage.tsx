@@ -4,20 +4,34 @@ import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../services/adminCategoryService";
 import { getBanners } from "../../services/bannerService";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import ProductCard from "../../components/ProductCard";
 
 export default function LandingPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [activeSearch, setActiveSearch] = useState<string | null>(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search");
+
+  useEffect(() => {
+    if (searchQuery !== null) {
+      setActiveSearch(searchQuery);
+      setSearchParams({}, { replace: true }); 
+    }
+  }, [searchQuery]);
+
   const scrollLeft = () => {
     scrollRef.current?.scrollBy({
-      left: -200,
+      left: -250,
       behavior: "smooth",
     });
   };
 
   const scrollRight = () => {
     scrollRef.current?.scrollBy({
-      left: 200,
+      left: 250,
       behavior: "smooth",
     });
   };
@@ -66,9 +80,15 @@ export default function LandingPage() {
     fetchBanners();
   }, []);
 
-  useEffect(() => {
-    fetchProducts(currentPage);
-  }, [currentPage]);
+  // reset ketika search berubah
+useEffect(() => {
+  setCurrentPage(1);
+  setProducts([]);
+}, [activeSearch]);
+
+useEffect(() => {
+  fetchProducts(currentPage);
+}, [currentPage, activeSearch]);
 
   const fetchCategories = async () => {
     try {
@@ -89,30 +109,34 @@ export default function LandingPage() {
   };
 
   const fetchProducts = async (page = 1) => {
-    try {
-      setLoading(true);
-      const res = await getProducts({
-        page,
-        limit: 12,
-      });
+  try {
+    setLoading(true);
 
-      const newProducts = res.data || [];
+    const params: any = {
+      page,
+      limit: 12,
+    };
 
-      // Jika page 1, set data baru (reset)
-      // Jika page > 1, gabungkan data lama dengan data baru
-      if (page === 1) {
-        setProducts(newProducts);
-      } else {
-        setProducts((prev) => [...prev, ...newProducts]);
-      }
-
-      setTotalPages(res.last_page || 1);
-    } catch (err) {
-      console.error("Gagal fetch products", err);
-    } finally {
-      setLoading(false);
+    if (activeSearch) {
+      params.search = activeSearch;
     }
-  };
+
+    const res = await getProducts(params);
+    const newProducts = res.data || [];
+
+    if (page === 1) {
+      setProducts(newProducts);
+    } else {
+      setProducts((prev) => [...prev, ...newProducts]);
+    }
+
+    setTotalPages(res.last_page || 1);
+  } catch (err) {
+    console.error("Gagal fetch products", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-white">
@@ -132,11 +156,11 @@ export default function LandingPage() {
     </section>
 
       {/* ================= CATEGORY ================= */}
-      <section className="relative z-20 px-6 mx-auto -mt-2 sm:-mt-6 md:-mt-10 lg:-mt-12 max-w-7xl">
+      <section className="relative z-20 px-8 mx-auto -mt-2 sm:-mt-6 md:-mt-10 lg:-mt-12 w-full">
         <div className="p-5 bg-white shadow-xl rounded-md">
           <h2 className="mb-4 text-lg font-semibold">Kategori</h2>
 
-          <div className="flex gap-4 overflow-x-auto">
+          <div className="flex overflow-x-auto">
             {categories.map((cat) => (
               <div
                 key={cat.id}
@@ -155,11 +179,11 @@ export default function LandingPage() {
       </section>
 
       {/* ================= BOTTOM PROMO BANNERS ================= */}
-      <section className="px-6 pb-6 pt-6 mx-auto max-w-7xl">
+      <section className="w-full px-8 pb-10 pt-10">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
 
           {bannerLeft && (
-            <div className="aspect-[4/2] overflow-hidden rounded-md">
+            <div className="aspect-[4/2] overflow-hidden">
               <img
                 src={`http://localhost:3000${bannerLeft.image_url}`}
                 className="object-cover w-full h-full"
@@ -168,7 +192,7 @@ export default function LandingPage() {
           )}
 
           {bannerCenter && (
-            <div className="aspect-[4/2] overflow-hidden rounded-md">
+            <div className="aspect-[4/2] overflow-hidden">
               <img
                 src={`http://localhost:3000${bannerCenter.image_url}`}
                 className="object-cover w-full h-full"
@@ -177,7 +201,7 @@ export default function LandingPage() {
           )}
 
           {bannerRight && (
-            <div className="aspect-[4/2] overflow-hidden rounded-md">
+            <div className="aspect-[4/2] overflow-hidden">
               <img
                 src={`http://localhost:3000${bannerRight.image_url}`}
                 className="object-cover w-full h-full"
@@ -189,25 +213,31 @@ export default function LandingPage() {
       </section>
 
       {/* ================= POPULAR PRODUCT ================= */}
-      <section className="relative px-6 pb-6 mx-auto max-w-7xl">
+      <section className="w-full px-8 pb-10">
 
-        <button
-          onClick={scrollLeft}
-          className="absolute left-0 z-20 p-3 -translate-y-1/2 bg-white shadow rounded-full top-1/2 hover:scale-100"
-        >
-          <ChevronLeft size={20} />
-        </button>
-
-        <button
-          onClick={scrollRight}
-          className="absolute right-0 z-20 p-3 -translate-y-1/2 bg-white shadow rounded-full top-1/2 hover:bg-gray-100"
-        >
-          <ChevronRight size={20} />
-        </button>
-
-        <div className="p-6 bg-white shadow rounded-md">
-
+        <div className="relative p-6 bg-white rounded-md shadow-[0_0_15px_rgba(0,0,0,0.1)]">
+          
           <h2 className="mb-6 text-lg font-semibold">Produk Populer</h2>
+
+          {/* BUTTON LEFT */}
+          <button
+            onClick={scrollLeft}
+            className="absolute -left-5 top-1/2 -translate-y-1/2 
+            z-20 p-3 bg-white shadow-md rounded-full 
+            hover:bg-gray-100 transition"
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          {/* BUTTON RIGHT */}
+          <button
+            onClick={scrollRight}
+            className="absolute -right-5 top-1/2 -translate-y-1/2 
+            z-20 p-3 bg-white shadow-md rounded-full 
+            hover:bg-gray-100 transition"
+          >
+            <ChevronRight size={20} />
+          </button>
 
           <div
             ref={scrollRef}
@@ -216,39 +246,9 @@ export default function LandingPage() {
             {popularProducts.map((product) => (
               <div
                 key={product.id}
-                onClick={() => navigate(`/product/${product.id}`)}
-                className="flex flex-col flex-shrink-0 w-[calc((100%-5rem)/6)] transition cursor-pointer"
+                className="flex-shrink-0 w-[calc((100%-5rem)/6)]"
               >
-                <div className="bg-gray-100 aspect-square rounded-t-md overflow-hidden">
-                  <img
-                    src={product.thumbnail_url}
-                    alt={product.name}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-
-                <div className="flex flex-col flex-1 p-3">
-                  <h3 className="mb-2 text-xs font-medium line-clamp-2 min-h-[32px]">
-                    {product.name}
-                  </h3>
-
-                  <div className="mt-auto">
-                    {product.price_discount ? (
-                      <>
-                        <p className="text-xs text-gray-400 line-through">
-                          Rp {Number(product.price_normal).toLocaleString()}
-                        </p>
-                        <p className="text-sm font-bold text-red-600">
-                          Rp {(Number(product.price_normal) - Number(product.price_discount)).toLocaleString()}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-sm font-bold text-red-600">
-                        Rp {Number(product.price_normal).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <ProductCard product={product} />
               </div>
             ))}
           </div>
@@ -257,7 +257,7 @@ export default function LandingPage() {
       </section>
 
       {/* ================= PRODUCT ================= */}
-      <section className="px-6 pb-10 mx-auto max-w-7xl">
+      <section className="w-full px-8 pb-10">
 
         <h2 className="mb-4 text-lg font-semibold text-center border-b-4 border-b-blue-500 pb-2">
           Rekomendasi
@@ -265,42 +265,7 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {products.map((product) => (
-            <div
-              key={product.id}
-              onClick={() => navigate(`/product/${product.id}`)}
-              className="flex flex-col overflow-hidden transition bg-white shadow cursor-pointer rounded-md hover:shadow-xl"
-            >
-              <div className="bg-gray-100 aspect-square">
-                <img
-                  src={product.thumbnail_url}
-                  alt={product.name}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-
-              <div className="flex flex-col flex-1 p-3">
-                <h3 className="mb-2 text-xs font-medium line-clamp-2">
-                  {product.name}
-                </h3>
-
-                <div className="mt-auto">
-                  {product.price_discount ? (
-                    <>
-                      <p className="text-xs text-gray-400 line-through">
-                        Rp {Number(product.price_normal).toLocaleString()}
-                      </p>
-                      <p className="text-sm font-bold text-red-600">
-                        Rp {(Number(product.price_normal) - Number(product.price_discount)).toLocaleString()}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-sm font-bold text-red-600">
-                      Rp {Number(product.price_normal).toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
 

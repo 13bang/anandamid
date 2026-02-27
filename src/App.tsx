@@ -11,8 +11,9 @@ import ProductUploadPage from "./pages/admin_panel/ProductUploadPage";
 import PricelistPage from "./pages/admin_panel/PricelistPage";
 import BannerPage from "./pages/admin_panel/BannerPage";
 import PublicLayout from "./components/PublicLayout";
-import ProductPage from "./pages/landing_page/ProductPage";
+import ProductKatalogPage from "./pages/landing_page/ProductKatalogPage";
 import ProductDetailPage from "./pages/landing_page/ProductDetailPage";
+import Footer from "./components/Footer";
 
 function App() {
   return (
@@ -20,8 +21,8 @@ function App() {
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/product" element={<ProductPage />} />
-          <Route path="/product/:id" element={<ProductDetailPage />} />
+          <Route path="/product-katalog" element={<ProductKatalogPage />} />
+          <Route path="/product-katalog/:id" element={<ProductDetailPage />} />
         </Route>
 
         <Route path="/ayamgoreng/login" element={<LoginPage />} />

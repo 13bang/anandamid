@@ -10,18 +10,25 @@ export default function ProductUpdatePage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  const [errorModal, setErrorModal] = useState<{
+    message: string;
+    errors?: string[];
+  } | null>(null);
+
   const handleUpdate = async () => {
     if (!file) return alert("Pilih file dulu");
+
+    let interval: any;
 
     try {
       setLoading(true);
       setProgress(0);
 
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         setProgress((prev) => (prev >= 90 ? prev : prev + 10));
       }, 200);
 
-      const res = await updateMassProduct(file);
+      await updateMassProduct(file);
 
       clearInterval(interval);
       setProgress(100);
@@ -37,7 +44,16 @@ export default function ProductUpdatePage() {
       }, 1300);
 
     } catch (err: any) {
-      alert(err.response?.data?.message || "Update gagal");
+      clearInterval(interval);
+      setProgress(0);
+
+      const message = err.response?.data?.message || "Terjadi kesalahan";
+      const errors = err.response?.data?.errors;
+
+      setErrorModal({
+        message,
+        errors,
+      });
     } finally {
       setLoading(false);
     }
@@ -153,6 +169,49 @@ export default function ProductUpdatePage() {
             )}
 
           </div>
+
+            {errorModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                
+                <div className="relative w-full max-w-xl p-6 bg-white shadow-2xl rounded-2xl">
+
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setErrorModal(null)}
+                    className="absolute text-gray-400 top-4 right-4 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+
+                  <h2 className="mb-4 text-xl font-semibold text-red-600">
+                    {errorModal.message}
+                  </h2>
+
+                  {/* Error List */}
+                  {errorModal.errors && (
+                    <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
+                      {errorModal.errors.map((err, index) => (
+                        <div
+                          key={index}
+                          className="p-2 text-sm bg-red-50 text-red-700 rounded-lg border border-red-200"
+                        >
+                          {err}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => setErrorModal(null)}
+                    className="w-full py-2 mt-6 text-white bg-red-600 rounded-lg hover:bg-red-700"
+                  >
+                    Tutup
+                  </button>
+
+                </div>
+              </div>
+            )}
+
         </div>
       </div>
     </div>

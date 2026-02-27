@@ -27,4 +27,7 @@ export interface Product {
 
   category: Category;
   images: ProductImage[];
+  thumbnail_url: string;
+
+  specifications: string[];
 }
