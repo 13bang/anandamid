@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { getProducts } from "../../services/productService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getCategories } from "../../services/adminCategoryService";
 import { getBanners } from "../../services/bannerService";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
 import ProductCard from "../../components/ProductCard";
+import LoadMoreButton from "../../components/LoadMoreButton";
 
 export default function LandingPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -18,9 +18,56 @@ export default function LandingPage() {
   useEffect(() => {
     if (searchQuery !== null) {
       setActiveSearch(searchQuery);
-      setSearchParams({}, { replace: true }); 
+      setSearchParams({}, { replace: true });
     }
-  }, [searchQuery]);
+  }, [searchQuery, setSearchParams]);
+
+  const [categories, setCategories] = useState<any[]>([]);
+
+  const landingCategoryNames = [
+    "Laptop",
+    "Komputer Desktop",
+    "PC AIO",
+    "Prosesor",
+    "Motherboard",
+    "RAM",
+    "SSD",
+    "Hard Disk",
+    "Monitor",
+    "Graphic Card",
+    "Keyboard & Mouse",
+    "Printer & Scanner",
+    "Modem & Router",
+    "UPS & Stabilizer",
+  ];
+
+  const filteredCategories = landingCategoryNames
+    .map((name) => categories.find((cat) => cat.name === name))
+    .filter(Boolean);
+
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategory = (direction: "left" | "right") => {
+    if (!categoryScrollRef.current) return;
+
+    const container = categoryScrollRef.current;
+
+    // Ambil flex wrapper
+    const flexWrapper = container.firstElementChild as HTMLElement;
+    if (!flexWrapper) return;
+
+    // Ambil card pertama
+    const firstCard = flexWrapper.children[0] as HTMLElement;
+    if (!firstCard) return;
+
+    const gap = 8; // gap-2 = 0.5rem = 8px
+    const cardWidth = firstCard.offsetWidth + gap;
+
+    container.scrollBy({
+      left: direction === "left" ? -cardWidth : cardWidth,
+      behavior: "smooth",
+    });
+  };
 
   const scrollLeft = () => {
     scrollRef.current?.scrollBy({
@@ -41,38 +88,41 @@ export default function LandingPage() {
   const [products, setProducts] = useState<any[]>([]);
 
   const fetchPopularProducts = async () => {
-  try {
-    const res = await getProducts({
-      is_popular: true,
-      limit: 10,
-    });
+    try {
+      const res = await getProducts({
+        is_popular: true,
+        limit: 10,
+      });
 
-    setPopularProducts(res.data || []);
-  } catch (err) {
-    console.error("Gagal fetch popular products", err);
-  }
-};
+      setPopularProducts(res.data || []);
+    } catch (err) {
+      console.error("Gagal fetch popular products", err);
+    }
+  };
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Default jadikan false dulu
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const navigate = useNavigate();
 
-  const [categories, setCategories] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
 
-  const heroBanner = banners.find(b => b.slot === "hero");
-  const bannerLeft = banners.find(b => b.slot === "banner-after-kategori-left");
-  const bannerCenter = banners.find(b => b.slot === "banner-after-kategori-center");
-  const bannerRight = banners.find(b => b.slot === "banner-after-kategori-right");
+  const heroBanner = banners.find((b) => b.slot === "hero");
+  const bannerLeft = banners.find((b) => b.slot === "banner-after-kategori-left");
+  const bannerCenter = banners.find((b) => b.slot === "banner-after-kategori-center");
+  const bannerRight = banners.find((b) => b.slot === "banner-after-kategori-right");
 
-  // const getFinalPrice = (product: any) => {
-  //   const normal = Number(product.price_normal || 0);
-  //   const discount = Number(product.price_discount || 0);
-  //   return normal - discount;
-  // };
+  const getImageUrl = (url?: string) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `http://localhost:3000${url}`;
+  };
+
+  const handleLoadMore = useCallback(() => {
+    setCurrentPage((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     fetchPopularProducts();
@@ -81,14 +131,14 @@ export default function LandingPage() {
   }, []);
 
   // reset ketika search berubah
-useEffect(() => {
-  setCurrentPage(1);
-  setProducts([]);
-}, [activeSearch]);
+  useEffect(() => {
+    setCurrentPage(1);
+    setProducts([]);
+  }, [activeSearch]);
 
-useEffect(() => {
-  fetchProducts(currentPage);
-}, [currentPage, activeSearch]);
+  useEffect(() => {
+    fetchProducts(currentPage);
+  }, [currentPage, activeSearch]);
 
   const fetchCategories = async () => {
     try {
@@ -109,71 +159,115 @@ useEffect(() => {
   };
 
   const fetchProducts = async (page = 1) => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const params: any = {
-      page,
-      limit: 12,
-    };
+      const params: any = {
+        page,
+        limit: 12,
+      };
 
-    if (activeSearch) {
-      params.search = activeSearch;
+      if (activeSearch) {
+        params.search = activeSearch;
+      }
+
+      const res = await getProducts(params);
+      const newProducts = res.data || [];
+
+      if (page === 1) {
+        setProducts(newProducts);
+      } else {
+        setProducts((prev) => [...prev, ...newProducts]);
+      }
+
+      setTotalPages(res.last_page || 1);
+    } catch (err) {
+      console.error("Gagal fetch products", err);
+    } finally {
+      setLoading(false);
     }
-
-    const res = await getProducts(params);
-    const newProducts = res.data || [];
-
-    if (page === 1) {
-      setProducts(newProducts);
-    } else {
-      setProducts((prev) => [...prev, ...newProducts]);
-    }
-
-    setTotalPages(res.last_page || 1);
-  } catch (err) {
-    console.error("Gagal fetch products", err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-white">
-
-    {/* ================= HERO BANNER ================= */}
-    <section className="w-full bg-primary py-8">
-      <div className="px-10 mx-auto max-w-[1600px]">
+      {/* ================= HERO BANNER ================= */}
+      <section className="w-full">
         {heroBanner && (
-          <div className="overflow-hidden rounded-md">
+          <div className="w-full">
             <img
-              src={`http://localhost:3000${heroBanner.image_url}`}
-              className="object-cover w-full"
+              src={getImageUrl(heroBanner.image_url)}
+              className="w-full h-auto object-cover"
+              alt="Hero Banner"
             />
           </div>
         )}
-      </div>
-    </section>
+      </section>
 
       {/* ================= CATEGORY ================= */}
       <section className="relative z-20 px-8 mx-auto -mt-2 sm:-mt-6 md:-mt-10 lg:-mt-12 w-full">
-        <div className="p-5 bg-white shadow-xl rounded-md">
-          <h2 className="mb-4 text-lg font-semibold">Kategori</h2>
+        <div className="relative p-6 bg-white shadow-xl rounded-md">
+          <h2
+            className="mb-6 text-4xl font-semibold font-stretchpro text-center
+                      bg-gradient-to-r from-blue-400 to-green-400
+                      text-transparent bg-clip-text inline-block">
+            Kaategori
+          </h2>
 
-          <div className="flex overflow-x-auto">
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                className="flex flex-col items-center min-w-[90px] cursor-pointer group"
-              >
-                <div className="flex items-center justify-center w-16 h-16 transition bg-gray-100 rounded-lg group-hover:bg-black group-hover:text-white">
-                  {cat.name.charAt(0)}
-                </div>
-                  <span className="mt-2 text-xs text-center">
+          {/* BUTTON LEFT */}
+          <button
+            onClick={() => scrollCategory("left")}
+            className="absolute -left-5 top-1/2 -translate-y-1/2 
+                      z-20 p-3 bg-white shadow-md rounded-full 
+                      hover:bg-gray-100 transition"
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          {/* BUTTON RIGHT */}
+          <button
+            onClick={() => scrollCategory("right")}
+            className="absolute -right-5 top-1/2 -translate-y-1/2 
+                      z-20 p-3 bg-white shadow-md rounded-full 
+                      hover:bg-gray-100 transition"
+          >
+            <ChevronRight size={20} />
+          </button>
+
+          <div
+            ref={categoryScrollRef}
+            className="overflow-x-auto scrollbar-hide scroll-smooth"
+          >
+            <div className="flex gap-2">
+              {filteredCategories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="flex flex-col items-center flex-shrink-0 
+                            w-[calc((100%-3.5rem)/9)] cursor-pointer group"
+                >
+                  <div
+                    className="w-24 h-24 rounded-xl overflow-hidden"
+                  >
+                    {cat.image_url ? (
+                      <img
+                        src={getImageUrl(cat.image_url)}
+                        alt={cat.name}
+                        className="w-full h-full object-cover 
+                                  transition-transform duration-300 
+                                  group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center w-full h-full text-lg font-semibold text-gray-500">
+                        {cat.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+
+                  <span className="mt-3 text-sm text-center font-medium">
                     {cat.name}
                   </span>
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -181,12 +275,12 @@ useEffect(() => {
       {/* ================= BOTTOM PROMO BANNERS ================= */}
       <section className="w-full px-8 pb-10 pt-10">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-
           {bannerLeft && (
             <div className="aspect-[4/2] overflow-hidden">
               <img
-                src={`http://localhost:3000${bannerLeft.image_url}`}
+                src={getImageUrl(bannerLeft.image_url)}
                 className="object-cover w-full h-full"
+                alt="Banner Left"
               />
             </div>
           )}
@@ -194,8 +288,9 @@ useEffect(() => {
           {bannerCenter && (
             <div className="aspect-[4/2] overflow-hidden">
               <img
-                src={`http://localhost:3000${bannerCenter.image_url}`}
+                src={getImageUrl(bannerCenter.image_url)}
                 className="object-cover w-full h-full"
+                alt="Banner Center"
               />
             </div>
           )}
@@ -203,22 +298,23 @@ useEffect(() => {
           {bannerRight && (
             <div className="aspect-[4/2] overflow-hidden">
               <img
-                src={`http://localhost:3000${bannerRight.image_url}`}
+                src={getImageUrl(bannerRight.image_url)}
                 className="object-cover w-full h-full"
+                alt="Banner Right"
               />
             </div>
           )}
-
         </div>
       </section>
 
       {/* ================= POPULAR PRODUCT ================= */}
       <section className="w-full px-8 pb-10">
-
         <div className="relative p-6 bg-white rounded-md shadow-[0_0_15px_rgba(0,0,0,0.1)]">
-          
-          <h2 className="mb-6 text-lg font-semibold">Produk Populer</h2>
-
+          <h2 
+            className="mb-6 text-4xl font-semibold font-stretchpro text-center
+                                  bg-gradient-to-r from-blue-400 to-green-400
+                                  text-transparent bg-clip-text inline-block">PProduk Populer
+          </h2>
           {/* BUTTON LEFT */}
           <button
             onClick={scrollLeft}
@@ -252,15 +348,16 @@ useEffect(() => {
               </div>
             ))}
           </div>
-
         </div>
       </section>
 
       {/* ================= PRODUCT ================= */}
       <section className="w-full px-8 pb-10">
-
-        <h2 className="mb-4 text-lg font-semibold text-center border-b-4 border-b-blue-500 pb-2">
-          Rekomendasi
+        <h2 
+          className="mb-6 text-4xl font-semibold font-stretchpro text-center
+                                bg-gradient-to-r from-blue-400 to-green-400
+                                text-transparent bg-clip-text inline-block w-full border-b-2 border-gray-300">
+          Rekomenddasi
         </h2>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -269,28 +366,13 @@ useEffect(() => {
           ))}
         </div>
 
-        {/* BUTTON MUAT LEBIH BANYAK */}
-        {currentPage < totalPages && (
-          <div className="flex justify-center mt-10">
-            <button
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-              disabled={loading}
-              className="px-10 py-3 text-sm font-semibold text-blue-600 transition border-2 border-blue-600 rounded-md hover:bg-blue-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-t-transparent border-blue-600 rounded-md animate-spin"></div>
-                  Memuat...
-                </div>
-              ) : (
-                "Muat Lebih Banyak"
-              )}
-            </button>
-          </div>
-        )}
-
+        {/* ================= TARGET INFINITE SCROLL ================= */}
+        <LoadMoreButton
+          loading={loading}
+          hasMore={currentPage < totalPages}
+          onLoadMore={handleLoadMore}
+        />
       </section>
-
     </div>
   );
 }

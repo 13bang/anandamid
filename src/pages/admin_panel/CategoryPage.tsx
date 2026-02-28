@@ -25,15 +25,22 @@ export default function CategoryPage() {
   const [nameError, setNameError] = useState(false);
   const [codeError, setCodeError] = useState(false);
 
+  const [formImage, setFormImage] = useState("");
+  const getImageUrl = (url: string) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `http://localhost:3000${url}`;
+  };
+
   const openEditModal = (cat: any) => {
     setEditingCategory(cat);
     setFormName(cat.name);
     setFormCode(cat.code);
+    setFormImage(cat.image_url || "");
     setNameError(false);
     setCodeError(false);
     setIsEditOpen(true);
   };
-
   useEffect(() => {
     if (!editingCategory) return;
 
@@ -74,6 +81,7 @@ export default function CategoryPage() {
     await updateCategory(editingCategory.id, {
       name: formName,
       code: formCode,
+      image_url: formImage,
     });
 
     setIsEditOpen(false);
@@ -139,7 +147,7 @@ export default function CategoryPage() {
             {/* SEARCH ROW */}
             <tr>
               <th
-                colSpan={4}
+                colSpan={5}
                 className="px-4 py-3 bg-white border-b border-gray-200"
               >
                 <div className="flex justify-end">
@@ -172,7 +180,8 @@ export default function CategoryPage() {
 
             {/* HEADER KOLOM */}
             <tr>
-              <th className="px-3 py-2 text-left w-[40%]">Name</th>
+              <th className="px-3 py-2 text-left w-[80px]">Image</th>
+              <th className="px-3 py-2 text-left w-[35%]">Name</th>
               <th className="px-3 py-2 text-left">Code</th>
               <th className="px-3 py-2 text-center">Total Products</th>
               <th className="px-3 py-2 text-center">Action</th>
@@ -183,11 +192,24 @@ export default function CategoryPage() {
           <tbody>
             {getPaginatedData().map((cat) => (
               <tr key={cat.id} className="bg-white border-t">
+
+                {/* IMAGE */}
+                <td className="px-3 py-2">
+                  {cat.image_url ? (
+                  <img
+                    src={getImageUrl(cat.image_url)}
+                    className="w-10 h-10 object-contain rounded bg-gray-100 p-1"
+                  />
+                  ) : (
+                    <div className="flex items-center justify-center w-10 h-10 text-xs text-gray-400 bg-gray-100 rounded">
+                      N/A
+                    </div>
+                  )}
+                </td>
+
                 <td className="px-3 py-2 font-medium">{cat.name}</td>
                 <td className="px-3 py-2">{cat.code}</td>
-                <td className="px-3 py-2 text-center">
-                  {cat.total_products}
-                </td>
+                <td className="px-3 py-2 text-center">{cat.total_products}</td>
 
                 <td className="px-3 py-2">
                   <div className="flex justify-center gap-4">
@@ -225,7 +247,7 @@ export default function CategoryPage() {
             <tfoot>
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-4 py-4 bg-white border-t border-gray-200"
                 >
                   <div className="flex items-center justify-between text-sm">
@@ -365,6 +387,27 @@ export default function CategoryPage() {
                 <p className="mt-1 text-xs text-red-500">
                   Code category sudah digunakan
                 </p>
+              )}
+            </div>
+
+            {/* IMAGE URL */}
+            <div className="mb-6">
+              <label className="block mb-1 text-sm font-medium">
+                Logo Category (URL)
+              </label>
+              <input
+                value={formImage}
+                onChange={(e) => setFormImage(e.target.value)}
+                className="w-full px-3 py-2 text-sm border rounded-md outline-none focus:ring-1 focus:ring-blue-500"
+              />
+
+              {formImage && (
+                <div className="mt-3">
+                <img
+                  src={getImageUrl(formImage)}
+                  className="w-16 h-16 object-contain rounded bg-gray-100 p-2"
+                />
+                </div>
               )}
             </div>
 

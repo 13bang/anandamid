@@ -2,12 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Butterpop';
+  src: url('/fonts/Butterpop.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'StretchPro';
+  src: url('/fonts/StretchPro.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:hover {
   -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
   -webkit-text-fill-color: white !important;
   transition: background-color 9999s ease-in-out 0s;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
 }
 
 .scrollbar-hide::-webkit-scrollbar {

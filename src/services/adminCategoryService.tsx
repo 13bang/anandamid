@@ -2,22 +2,25 @@ import axios from "axios";
 
 const API_URL = "http://localhost:3000/api/v1/categories";
 
+interface CategoryPayload {
+  name: string;
+  code: string;
+  image_url?: string;
+}
+
 export const getCategories = async () => {
   const res = await axios.get(API_URL);
   return res.data;
 };
 
-export const createCategory = async (data: {
-  name: string;
-  code: string;
-}) => {
+export const createCategory = async (data: CategoryPayload) => {
   const res = await axios.post(API_URL, data);
   return res.data;
 };
 
 export const updateCategory = async (
   id: string,
-  data: { name?: string; code?: string }
+  data: Partial<CategoryPayload>
 ) => {
   const res = await axios.patch(`${API_URL}/${id}`, data);
   return res.data;

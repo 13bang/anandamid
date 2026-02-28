@@ -5,6 +5,7 @@ import { FaWhatsapp, FaSearchPlus } from "react-icons/fa";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
+import Breadcrumb from "../../components/Breadcrumb";
 
 interface ProductImage {
   id: string;
@@ -80,6 +81,8 @@ export default function ProductDetailPage() {
     setCurrentIndex(newIndex);
   };
 
+  const [showFullSpec, setShowFullSpec] = useState(false);
+
   useEffect(() => {
     if (id) fetchProduct();
   }, [id]);
@@ -136,287 +139,324 @@ export default function ProductDetailPage() {
   )}`;
 
   return (
-    <div className="w-full px-8 py-10 mx-auto">
-
-      {/* ================= TOP SECTION ================= */}
-      <div className="grid grid-cols-12 gap-10">
-
-        {/* IMAGE */}
-        <div className="col-span-5">
-          <div
-            className="relative overflow-hidden border rounded-lg aspect-square group cursor-zoom-in"
-            onMouseEnter={() => setIsZooming(true)}
-            onMouseLeave={() => setIsZooming(false)}
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = ((e.clientX - rect.left) / rect.width) * 100;
-              const y = ((e.clientY - rect.top) / rect.height) * 100;
-              setZoomPosition({ x, y });
-            }}
-          >
-            <img
-              src={product.images[activeImage]?.image_url}
-              alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-200 ease-out"
-              style={{
-                transform: isZooming ? "scale(2)" : "scale(1)",
-                transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-              }}
+    <>
+      {/* ================= BREADCRUMB ================= */}
+      <div className="w-full bg-blue-100">
+          <div className="px-8 h-12 flex items-center">
+            <Breadcrumb
+              items={[
+                { label: "Home", path: "/" },
+                { label: "Product Katalog", path: "/product-katalog" },
+                {
+                  label: product.category.name,
+                  path: `/product-katalog?category=${product.category.id}`,
+                },
+                {
+                  label: product.name,
+                },
+              ]}
             />
-
-            {/* SEARCH ICON */}
-            <button
-              onClick={() => setShowModal(true)}
-              className="absolute bottom-3 right-3 bg-white/90 hover:bg-white 
-                        p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 
-                        transition"
-            >
-              <FaSearchPlus size={18} />
-            </button>
-          </div>
-
-          {/* THUMBNAILS */}
-          <div className="flex mt-4 space-x-3 overflow-x-auto">
-            {product.images.map((img, index) => (
-              <img
-                key={img.id}
-                src={img.image_url}
-                onClick={() => setActiveImage(index)}
-                className={`w-20 h-20 object-cover border rounded cursor-pointer ${
-                  activeImage === index
-                    ? "border-black"
-                    : "border-gray-200"
-                }`}
-              />
-            ))}
           </div>
         </div>
 
-        {showModal && (
-          <div
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
-            onClick={() => setShowModal(false)}
-          >
-            <div
-              className="relative bg-white rounded-xl p-4 shadow-2xl 
-                        w-full max-w-xl max-h-[85vh] flex items-center justify-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img
-                src={product.images[activeImage]?.image_url}
-                alt={product.name}
-                className="max-h-[75vh] w-auto object-contain rounded-lg"
-              />
+        {/* ================= CONTENT WRAPPER ================= */}
+        <div className="w-full px-8 py-10 mx-auto">
 
-              {/* tombol close */}
-              <button
-                onClick={() => setShowModal(false)}
-                className="absolute top-3 right-3 bg-black/70 text-white 
-                          w-8 h-8 rounded-full flex items-center justify-center 
-                          hover:bg-black transition"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
+          {/* ================= TOP SECTION ================= */}
+          <div className="grid grid-cols-12 gap-10 items-start">
 
-        {/* INFO */}
-        <div className="col-span-7 space-y-6">
-
-          <div>
-            <p className="mb-2 text-sm text-gray-500 font-semibold">
-              {product.category.name}
-            </p>
-
-            <h1 className="text-3xl font-bold">
-              {product.name}
-            </h1>
-          </div>
-
-          {/* PRICE */}
-          <div>
-            {discountPrice > 0 ? (
-              <>
-                <p className="text-sm text-gray-400 line-through">
-                  Rp {normalPrice.toLocaleString()}
-                </p>
-
-                <p className="text-3xl font-bold text-black">
-                  Rp {finalPrice.toLocaleString()}
-                </p>
-              </>
-            ) : (
-              <p className="text-3xl font-bold text-black">
-                Rp {normalPrice.toLocaleString()}
-              </p>
-            )}
-          </div>
-
-          {/* META */}
-          <div className="space-y-2 text-sm text-gray-600">
-            <div>
-              SKU: <span className="font-medium">{product.sku_seller}</span>
-            </div>
-
-            <div>
-              Stock: <span className="font-medium">{product.stock}</span>
-            </div>
-
-            <div>
-              Warranty: <span className="font-medium">{warrantyDisplay}</span>
-            </div>
-          </div>
-
-          {/* ================= ORDER SECTION ================= */}
-          <div className="pt-4">
-
-            <div className="flex items-center gap-4">
-
-              {/* QTY */}
-              <div className="flex items-center border rounded h-[44px]">
-                <button
-                  onClick={() => setQuantity((prev) => (prev > 1 ? prev - 1 : 1))}
-                  className="px-4 text-lg"
-                >
-                  -
-                </button>
-
-                <span className="px-6 font-medium">{quantity}</span>
-
-                <button
-                  onClick={() => setQuantity((prev) => prev + 1)}
-                  className="px-4 text-lg"
-                >
-                  +
-                </button>
-              </div>
-
-              {/* WHATSAPP BUTTON */}
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-[44px] flex items-center gap-2 px-6 font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 transition"
-              >
-                <FaWhatsapp size={18} />
-                Pesan via WhatsApp
-              </a>
-
-            </div>
-
-          </div>
-
-          {/* ================= TAB SECTION ================= */}
-          <div className="pt-6">
-
-            {/* TAB HEADER */}
-            <div className="flex border-b">
-              <button
-                onClick={() => setActiveTab("description")}
-                className={`px-8 py-3 text-sm font-medium ${
-                  activeTab === "description"
-                    ? "border-b-2 border-black text-black"
-                    : "text-gray-500"
-                }`}
-              >
-                Description
-              </button>
-
-              <button
-                onClick={() => setActiveTab("review")}
-                className={`px-8 py-3 text-sm font-medium ${
-                  activeTab === "review"
-                    ? "border-b-2 border-black text-black"
-                    : "text-gray-500"
-                }`}
-              >
-                Review
-              </button>
-            </div>
-
-            {/* TAB CONTENT */}
-            <div className="py-6">
-
-              {activeTab === "description" && (
-                <div>
-                  <h3 className="mb-4 text-base font-semibold">
-                    Specifications
-                  </h3>
-
-                  <ol className="space-y-2 text-sm text-gray-700 list-decimal list-inside">
-                    {product.specifications?.map((spec, index) => (
-                      <li key={index}>{spec}</li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-
-              {activeTab === "review" && (
-                <div className="text-sm text-gray-500">
-                  <p>Belum ada review.</p>
-                </div>
-              )}
-
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* ================= RELATED PRODUCT ================= */}
-      <section className="w-full px-8 pb-16 mt-16">
-
-        <div className="relative p-6 bg-white rounded-md shadow-[0_0_15px_rgba(0,0,0,0.08)]">
-          
-          <h2 className="mb-6 text-lg font-semibold">
-            Related Products
-          </h2>
-
-          {/* BUTTON LEFT */}
-          <button
-            onClick={scrollLeft}
-            className="absolute -left-5 top-1/2 -translate-y-1/2 
-            z-20 p-3 bg-white shadow-md rounded-full 
-            hover:bg-gray-100 transition"
-          >
-            <ChevronLeft size={20} />
-          </button>
-
-          {/* BUTTON RIGHT */}
-          <button
-            onClick={scrollRight}
-            className="absolute -right-5 top-1/2 -translate-y-1/2 
-            z-20 p-3 bg-white shadow-md rounded-full 
-            hover:bg-gray-100 transition"
-          >
-            <ChevronRight size={20} />
-          </button>
-
-          <div
-            ref={scrollRef}
-            className="
-              flex gap-4
-              overflow-x-auto
-              scroll-smooth
-              scrollbar-hide
-              cursor-grab
-              active:cursor-grabbing
-            "
-          >
-            {relatedProducts.map((item) => (
+            {/* IMAGE */}
+            <div className="col-span-4 sticky top-24 self-start">
               <div
-                key={item.id}
-                className="flex-shrink-0 w-[210px]"
+                className="relative overflow-hidden border rounded-lg aspect-square group cursor-zoom-in"
+                onMouseEnter={() => setIsZooming(true)}
+                onMouseLeave={() => setIsZooming(false)}
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = ((e.clientX - rect.left) / rect.width) * 100;
+                  const y = ((e.clientY - rect.top) / rect.height) * 100;
+                  setZoomPosition({ x, y });
+                }}
               >
-                <ProductCard product={item} />
+                <img
+                  src={product.images[activeImage]?.image_url}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-200 ease-out"
+                  style={{
+                    transform: isZooming ? "scale(2)" : "scale(1)",
+                    transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                  }}
+                />
+
+                {/* SEARCH ICON */}
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="absolute bottom-3 right-3 bg-white/90 hover:bg-white 
+                            p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 
+                            transition"
+                >
+                  <FaSearchPlus size={18} />
+                </button>
               </div>
-            ))}
+
+              {/* THUMBNAILS */}
+              <div className="flex mt-4 space-x-3 overflow-x-auto">
+                {product.images.map((img, index) => (
+                  <img
+                    key={img.id}
+                    src={img.image_url}
+                    onClick={() => setActiveImage(index)}
+                    className={`w-20 h-20 object-cover border rounded cursor-pointer ${
+                      activeImage === index
+                        ? "border-black"
+                        : "border-gray-200"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {showModal && (
+              <div
+                className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+                onClick={() => setShowModal(false)}
+              >
+                <div
+                  className="relative bg-white rounded-xl p-4 shadow-2xl 
+                            w-full max-w-xl max-h-[85vh] flex items-center justify-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <img
+                    src={product.images[activeImage]?.image_url}
+                    alt={product.name}
+                    className="max-h-[75vh] w-auto object-contain rounded-lg"
+                  />
+
+                  {/* tombol close */}
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="absolute top-3 right-3 bg-black/70 text-white 
+                              w-8 h-8 rounded-full flex items-center justify-center 
+                              hover:bg-black transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* INFO */}
+            <div className="col-span-8 space-y-6 relative z-20">
+
+              <div>
+                <p className="mb-2 text-sm text-gray-500 font-semibold">
+                  {product.category.name}
+                </p>
+
+                <h1 className="text-3xl font-bold">
+                  {product.name}
+                </h1>
+              </div>
+
+              {/* PRICE */}
+              <div>
+                {discountPrice > 0 ? (
+                  <>
+                    <p className="text-sm text-gray-400 line-through">
+                      Rp {normalPrice.toLocaleString()}
+                    </p>
+
+                    <p className="text-3xl font-bold text-black">
+                      Rp {finalPrice.toLocaleString()}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-3xl font-bold text-black">
+                    Rp {normalPrice.toLocaleString()}
+                  </p>
+                )}
+              </div>
+
+              {/* META */}
+              <div className="space-y-2 text-sm text-gray-600">
+                <div>
+                  SKU: <span className="font-medium">{product.sku_seller}</span>
+                </div>
+
+                <div>
+                  Stock: <span className="font-medium">{product.stock}</span>
+                </div>
+
+                <div>
+                  Warranty: <span className="font-medium">{warrantyDisplay}</span>
+                </div>
+              </div>
+
+              {/* ================= ORDER SECTION ================= */}
+              <div className="pt-4">
+
+                <div className="flex items-center gap-4">
+
+                  {/* QTY */}
+                  <div className="flex items-center border rounded h-[44px]">
+                    <button
+                      onClick={() => setQuantity((prev) => (prev > 1 ? prev - 1 : 1))}
+                      className="px-4 text-lg"
+                    >
+                      -
+                    </button>
+
+                    <span className="px-6 font-medium">{quantity}</span>
+
+                    <button
+                      onClick={() => setQuantity((prev) => prev + 1)}
+                      className="px-4 text-lg"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* WHATSAPP BUTTON */}
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-[44px] flex items-center gap-2 px-6 font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 transition"
+                  >
+                    <FaWhatsapp size={18} />
+                    Pesan via WhatsApp
+                  </a>
+
+                </div>
+
+              </div>
+
+              {/* ================= TAB SECTION ================= */}
+              <div className="pt-6">
+
+                {/* TAB HEADER */}
+                <div className="flex border-b">
+                  <button
+                    onClick={() => setActiveTab("description")}
+                    className={`px-8 py-3 text-sm font-medium ${
+                      activeTab === "description"
+                        ? "border-b-2 border-black text-black"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    Description
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("review")}
+                    className={`px-8 py-3 text-sm font-medium ${
+                      activeTab === "review"
+                        ? "border-b-2 border-black text-black"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    Review
+                  </button>
+                </div>
+
+                {/* TAB CONTENT */}
+                <div className="py-6">
+
+                  {activeTab === "description" && (
+                    <div>
+                      <h3 className="mb-4 text-base font-semibold">
+                        Specifications
+                      </h3>
+
+                      <div className="space-y-2 text-sm text-gray-700 pb-2">
+                        {(showFullSpec
+                          ? product.specifications
+                          : product.specifications?.slice(0, 10)
+                        )?.map((spec, index) => (
+                          <div key={index}>
+                            {spec.trim()}
+                          </div>
+                        ))}
+                      </div>
+
+                      {product.specifications &&
+                        product.specifications.length > 10 && (
+                          <button
+                            onClick={() => setShowFullSpec(!showFullSpec)}
+                            className="mt-4 text-sm font-medium text-blue-600 hover:underline"
+                          >
+                            {showFullSpec ? "Tampilkan Lebih Sedikit" : "Selengkapnya"}
+                          </button>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "review" && (
+                    <div className="text-sm text-gray-500">
+                      <p>Belum ada review.</p>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+
+            </div>
           </div>
 
-        </div>
-      </section>
+          {/* ================= RELATED PRODUCT ================= */}
+          <section className="w-full px-8 pb-16 mt-16">
 
-    </div>
+            <div className="relative p-6 bg-white rounded-md shadow-[0_0_15px_rgba(0,0,0,0.08)]">
+              
+              <h2 className="mb-6 text-lg font-semibold">
+                Related Products
+              </h2>
+
+              {/* BUTTON LEFT */}
+              <button
+                onClick={scrollLeft}
+                className="absolute -left-5 top-1/2 -translate-y-1/2 
+                z-20 p-3 bg-white shadow-md rounded-full 
+                hover:bg-gray-100 transition"
+              >
+                <ChevronLeft size={20} />
+              </button>
+
+              {/* BUTTON RIGHT */}
+              <button
+                onClick={scrollRight}
+                className="absolute -right-5 top-1/2 -translate-y-1/2 
+                z-20 p-3 bg-white shadow-md rounded-full 
+                hover:bg-gray-100 transition"
+              >
+                <ChevronRight size={20} />
+              </button>
+
+              <div
+                ref={scrollRef}
+                className="
+                  flex gap-4
+                  overflow-x-auto
+                  scroll-smooth
+                  scrollbar-hide
+                  cursor-grab
+                  active:cursor-grabbing
+                "
+              >
+                {relatedProducts.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex-shrink-0 w-[210px]"
+                  >
+                    <ProductCard product={item} />
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </section>
+
+      </div>
+    </>
   );
 }
