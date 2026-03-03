@@ -22,7 +22,11 @@ export default function InfiniteScrollTrigger({
           onLoadMore();
         }
       },
-      { threshold: 0.1 }
+      {
+        root: null,
+        rootMargin: "200px",
+        threshold: 0
+      }
     );
 
     const current = observerRef.current;

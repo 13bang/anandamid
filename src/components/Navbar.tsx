@@ -1,17 +1,30 @@
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
-import { Search, MessageCircle, CircleQuestionMark, Home } from "lucide-react";
+import { Search, MessageCircle, CircleQuestionMark, Menu as MenuIcon, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Product } from "../types/product";
 import { getProducts } from "../services/productService";
+import { getCategories } from "../services/adminCategoryService";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [open, setOpen] = useState(false);
+
   const location = useLocation();
   const [search, setSearch] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
 
   const [results, setResults] = useState<Product[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getCategories();
+      setCategories(data);
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const delay = setTimeout(async () => {
@@ -50,6 +63,12 @@ export default function Navbar() {
     const currentPath = location.pathname;
     navigate(`${currentPath}?search=${encodeURIComponent(search)}`);
   };
+
+  interface Category {
+  id: string;
+  name: string;
+}
+
 
   return (
     <>
@@ -209,23 +228,56 @@ export default function Navbar() {
           sticky top-0 z-50 w-full bg-primary2
           transition-all duration-300
           ${isScrolled ? "shadow-lg py-3" : "py-4"}
+          relative
         `}
       >
         <div className="w-full mx-auto px-8">
           <div className="flex gap-12 text-sm font-medium text-white">
 
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                `flex items-center pb-1 transition ${
-                  isActive
-                    ? "border-b-2 border-white"
-                    : "hover:text-gray-200 hover:border-b-2"
-                }`
-              }
+            <div
+              className="relative"
+              onMouseEnter={() => setOpen(true)}
+              onMouseLeave={() => setOpen(false)}
             >
-              <Home size={18} strokeWidth={2} />
-            </NavLink>
+
+              <div className="flex items-center gap-2 cursor-pointer hover:text-gray-200 transition">
+                <MenuIcon size={18} strokeWidth={2} />
+                <span>Menu</span>
+                <ChevronDown size={16} strokeWidth={2} />
+              </div>
+
+              {/* Invisible hover bridge */}
+              <div className="absolute left-0 top-full h-3 w-full"></div>
+
+              {open && (
+                <div
+                  className="
+                    absolute left-0 top-full
+                    mt-3
+                    w-72
+                    bg-white text-black
+                    shadow-lg
+                    py-2
+                    z-50
+                    max-h-64
+                    overflow-y-auto
+                  "
+                >
+                  {categories.map((cat) => (
+                    <div
+                      key={cat.id}
+                      onClick={() => {
+                        navigate(`/product-katalog?category=${cat.name}`);
+                        setOpen(false);
+                      }}
+                      className="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer whitespace-nowrap"
+                    >
+                      {cat.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <NavLink
               to="/product-katalog"

@@ -34,31 +34,34 @@ export default function CategoryPage() {
 
   const openEditModal = (cat: any) => {
     setEditingCategory(cat);
-    setFormName(cat.name);
-    setFormCode(cat.code);
-    setFormImage(cat.image_url || "");
+    setFormName(cat.name ?? "");
+    setFormCode(cat.code ?? "");
+    setFormImage(cat.image_url ?? "");
     setNameError(false);
     setCodeError(false);
     setIsEditOpen(true);
   };
   useEffect(() => {
-    if (!editingCategory) return;
+  if (!editingCategory) return;
 
-    const duplicateName = categories.some(
-      (c) =>
-        c.name.toLowerCase() === formName.toLowerCase() &&
-        c.id !== editingCategory.id
-    );
+  const safeName = (formName ?? "").toLowerCase();
+  const safeCode = (formCode ?? "").toLowerCase();
 
-    const duplicateCode = categories.some(
-      (c) =>
-        c.code.toLowerCase() === formCode.toLowerCase() &&
-        c.id !== editingCategory.id
-    );
+  const duplicateName = categories.some(
+    (c) =>
+      (c.name ?? "").toLowerCase() === safeName &&
+      c.id !== editingCategory.id
+  );
 
-    setNameError(duplicateName);
-    setCodeError(duplicateCode);
-  }, [formName, formCode]);
+  const duplicateCode = categories.some(
+    (c) =>
+      (c.code ?? "").toLowerCase() === safeCode &&
+      c.id !== editingCategory.id
+  );
+
+  setNameError(duplicateName);
+  setCodeError(duplicateCode);
+}, [formName, formCode, categories, editingCategory]);
 
   useEffect(() => {
     fetchCategories();
@@ -97,9 +100,11 @@ export default function CategoryPage() {
   };
 
   const handleSearch = (value: string) => {
+    const keyword = value.toLowerCase();
+
     const filteredData = categories.filter((cat) =>
-      cat.name.toLowerCase().includes(value.toLowerCase()) ||
-      cat.code.toLowerCase().includes(value.toLowerCase())
+      (cat.name ?? "").toLowerCase().includes(keyword) ||
+      (cat.code ?? "").toLowerCase().includes(keyword)
     );
 
     setFiltered(filteredData);

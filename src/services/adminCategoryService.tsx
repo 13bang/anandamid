@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/v1/categories";
+
+
+const API_URL = "http://192.168.1.176:3030/api/v1/categories";
 
 interface CategoryPayload {
   name: string;

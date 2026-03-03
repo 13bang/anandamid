@@ -14,10 +14,12 @@ import PublicLayout from "./components/PublicLayout";
 import ProductKatalogPage from "./pages/landing_page/ProductKatalogPage";
 import ProductDetailPage from "./pages/landing_page/ProductDetailPage";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop/>
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<LandingPage />} />

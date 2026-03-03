@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { getProducts } from "../../services/productService";
 import { getCategories } from "../../services/adminCategoryService";
 import { Search } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
+import InfiniteScrollTrigger from "../../components/InfiniteScrollTrigger";
 
 import Breadcrumb from "../../components/Breadcrumb";
 
@@ -18,14 +19,13 @@ interface Category {
 export default function ProductKatalogPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     const [searchCategory, setSearchCategory] = useState("");
     const [selectedBrand, setSelectedBrand] = useState<string[]>([]);
     const [searchBrand, setSearchBrand] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
     const [searchParams, setSearchParams] = useSearchParams();
     const searchQuery = searchParams.get("search");
 
@@ -42,36 +42,30 @@ export default function ProductKatalogPage() {
 
     const isPriceFiltered = minPrice !== MIN || maxPrice !== MAX;
 
-    const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         fetchCategories();
     }, []);
 
-    // useEffect(() => {
-    //     fetchProducts();
-    // }, [selectedCategory, selectedBrand, currentPage]);
+    const categoryParam = searchParams.get("category");
+
+    useEffect(() => {
+        if (searchParams.get("category")) {
+            setSearchParams({}, { replace: true });
+        }
+    }, []);
 
     useEffect(() => {
         fetchProducts();
-    }, [
-        selectedCategory,
-        selectedBrand,
-        currentPage,
-        activeSearch,
-        sort,
-        minPrice,
-        maxPrice
-    ]);
-
-    // useEffect(() => {
-    //     fetchProducts();
-    // }, [selectedCategory, selectedBrand, currentPage, searchQuery]);
+    }, [page, categoryParam, selectedBrand, activeSearch, sort, minPrice, maxPrice]);
 
     useEffect(() => {
         if (searchQuery !== null) {
             setActiveSearch(searchQuery);
-            setCurrentPage(1);
+            setProducts([]);
+            setPage(1);
+            setHasMore(true);
             setSearchParams({}, { replace: true });
         }
     }, [searchQuery]);
@@ -84,44 +78,64 @@ export default function ProductKatalogPage() {
     const fetchProducts = async () => {
         setLoading(true);
 
+        console.log("==== FETCH START ====");
+        console.log("PAGE:", page);
+        console.log("CATEGORY:", categoryParam);
+        console.log("BRAND:", selectedBrand);
+        console.log("SEARCH:", activeSearch);
+        console.log("SORT:", sort);
+        console.log("MIN:", minPrice);
+        console.log("MAX:", maxPrice);
+
         const params: any = {
-            page: currentPage,
+            page,
             limit: 20,
         };
 
-        if (selectedCategory) {
-            params.category = selectedCategory;
-        }
+        if (categoryParam) params.category = categoryParam;
+        if (selectedBrand.length > 0) params.brand = selectedBrand.join(",");
+        if (activeSearch) params.search = activeSearch;
+        if (sort) params.sort = sort;
+        if (minPrice !== MIN) params.min_price = minPrice;
+        if (maxPrice !== MAX) params.max_price = maxPrice;
 
-        if (selectedBrand.length > 0) {
-            params.brand = selectedBrand.join(",");
-        }
-
-        if (activeSearch) {
-            params.search = activeSearch;
-        }
-
-        if (sort) {
-            params.sort = sort;
-        }
-
-        if (minPrice !== MIN) {
-        params.min_price = minPrice;
-        }
-
-        if (maxPrice !== MAX) {
-        params.max_price = maxPrice;
-        }
+        console.log("PARAMS SENT:", params);
 
         const res = await getProducts(params);
 
-        setProducts(res.data);
-        setTotalPages(res.last_page);
-        setTotalPages(res.last_page);
+        console.log("RESPONSE page:", res.page);
+        console.log("RESPONSE last_page:", res.last_page);
+        console.log("RESPONSE IDs:", res.data.map((p: any) => p.id));
+
+        const newProducts = res.data;
+        const currentPage = res.page;
+        const lastPage = res.last_page;
+
+        setHasMore(currentPage < lastPage);
+
+        if (page === 1) {
+            setProducts(newProducts);
+        } else {
+            setProducts(prev => [...prev, ...newProducts]);
+        }
+
         setLoading(false);
     };
 
-  return (
+    const handleLoadMore = () => {
+        console.log("LOAD MORE TRIGGERED");
+        console.log("loading:", loading);
+        console.log("hasMore:", hasMore);
+
+        if (!loading && hasMore) {
+            setPage((prev) => {
+                console.log("SET PAGE TO:", prev + 1);
+                return prev + 1;
+            });
+        }
+    };
+
+    return (
     
     <div>
         {/* ================= BREADCRUMB BAR ================= */}
@@ -181,13 +195,12 @@ export default function ProductKatalogPage() {
                         <ul className="space-y-3 max-h-60 overflow-y-auto pr-2 text-sm text-black">
                         <li
                             onClick={() => {
-                            setSelectedCategory(null);
-                            setCurrentPage(1);
+                                setSearchParams({});
                             }}
                             className={`cursor-pointer ${
-                            !selectedCategory
-                                ? "text-primary font-semibold"
-                                : "text-black"
+                                !categoryParam
+                                    ? "text-primary font-semibold"
+                                    : "text-black"
                             }`}
                         >
                             All
@@ -201,11 +214,10 @@ export default function ProductKatalogPage() {
                             <li
                                 key={cat.id}
                                 onClick={() => {
-                                setSelectedCategory(cat.name);
-                                setCurrentPage(1);
+                                    setSearchParams({ category: cat.name });
                                 }}
                                 className={`cursor-pointer hover:text-primary transition ${
-                                selectedCategory === cat.name
+                                categoryParam === cat.name
                                     ? "text-primary font-semibold"
                                     : "text-black"
                                 }`}
@@ -225,7 +237,9 @@ export default function ProductKatalogPage() {
                             <button
                                 onClick={() => {
                                 setSelectedBrand([]);
-                                setCurrentPage(1);
+                                setProducts([]);
+                                setPage(1);
+                                setHasMore(true);
                                 }}
                                 className="text-xs text-red-500 hover:underline"
                             >
@@ -289,7 +303,9 @@ export default function ProductKatalogPage() {
                                                 ? prev.filter((b) => b !== brand)
                                                 : [...prev, brand]
                                             );
-                                            setCurrentPage(1);
+                                            setProducts([]);
+                                            setPage(1);
+                                            setHasMore(true);
                                         }}
                                         className="flex items-center gap-3 cursor-pointer group"
                                         >
@@ -334,7 +350,9 @@ export default function ProductKatalogPage() {
                                 onClick={() => {
                                 setMinPrice(MIN);
                                 setMaxPrice(MAX);
-                                setCurrentPage(1);
+                                setProducts([]);
+                                setPage(1);
+                                setHasMore(true);
                                 }}
                                 className="text-xs text-red-500 hover:underline"
                             >
@@ -372,7 +390,9 @@ export default function ProductKatalogPage() {
                                 onChange={(e) => {
                                 const value = Math.min(Number(e.target.value), maxPrice - STEP);
                                 setMinPrice(value);
-                                setCurrentPage(1);
+                                setProducts([]);
+                                setPage(1);
+                                setHasMore(true);
                                 }}
                                 className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-none
                                 [&::-webkit-slider-runnable-track]:appearance-none
@@ -396,7 +416,9 @@ export default function ProductKatalogPage() {
                                 onChange={(e) => {
                                 const value = Math.max(Number(e.target.value), minPrice + STEP);
                                 setMaxPrice(value);
-                                setCurrentPage(1);
+                                setProducts([]);
+                                setPage(1);
+                                setHasMore(true);
                                 }}
                                 className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-none
                                 [&::-webkit-slider-runnable-track]:appearance-none
@@ -429,7 +451,9 @@ export default function ProductKatalogPage() {
                                 const value = Number(e.target.value);
                                 if (value < maxPrice) {
                                     setMinPrice(value);
-                                    setCurrentPage(1);
+                                    setProducts([]);
+                                    setPage(1);
+                                    setHasMore(true);
                                 }
                                 }}
                                 className="w-full border-b border-gray-300 bg-transparent
@@ -447,7 +471,9 @@ export default function ProductKatalogPage() {
                                 const value = Number(e.target.value);
                                 if (value > minPrice) {
                                     setMaxPrice(value);
-                                    setCurrentPage(1);
+                                    setProducts([]);
+                                    setPage(1);
+                                    setHasMore(true);
                                 }
                                 }}
                                 className="w-full border-b border-gray-300 bg-transparent
@@ -464,7 +490,7 @@ export default function ProductKatalogPage() {
 
                     {/* TITLE */}
                     <h1 className="mb-6 text-3xl font-bold">
-                        {selectedCategory ? selectedCategory : "Semua Product"}
+                        {categoryParam ?? "Semua Product"}
                     </h1>
 
                         {/* ACTIVE FILTER TAGS */}
@@ -510,7 +536,7 @@ export default function ProductKatalogPage() {
                             )}
                         </div>
 
-                    {loading ? (
+                    {loading && page === 1 ? (
                         <p>Loading...</p>
                         ) : products.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -529,93 +555,12 @@ export default function ProductKatalogPage() {
                         </div>
                     )}
 
-                    {/* ================= PAGINATION ================= */}
-                    {totalPages > 1 && (
-                        <div className="flex justify-center mt-10">
-                            <div className="flex items-center space-x-2">
-
-                            {/* Previous */}
-                            <button
-                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1 text-sm border rounded disabled:opacity-50"
-                            >
-                                Previous
-                            </button>
-
-                            {/* Dynamic Page Numbers */}
-                            {(() => {
-                                const pages = [];
-                                const maxVisible = 5;
-
-                                let start = Math.max(currentPage - 2, 1);
-                                let end = start + maxVisible - 1;
-
-                                if (end > totalPages) {
-                                end = totalPages;
-                                start = Math.max(end - maxVisible + 1, 1);
-                                }
-
-                                for (let i = start; i <= end; i++) {
-                                pages.push(i);
-                                }
-
-                                return (
-                                <>
-                                    {start > 1 && (
-                                    <>
-                                        <button
-                                        onClick={() => setCurrentPage(1)}
-                                        className="px-3 py-1 text-sm border rounded"
-                                        >
-                                        1
-                                        </button>
-                                        {start > 2 && <span className="px-2">...</span>}
-                                    </>
-                                    )}
-
-                                    {pages.map((page) => (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`px-3 py-1 text-sm border rounded transition ${
-                                        currentPage === page
-                                            ? "bg-primary text-white border-primary"
-                                            : "hover:bg-gray-100"
-                                        }`}
-                                    >
-                                        {page}
-                                    </button>
-                                    ))}
-
-                                    {end < totalPages && (
-                                    <>
-                                        {end < totalPages - 1 && <span className="px-2">...</span>}
-                                        <button
-                                        onClick={() => setCurrentPage(totalPages)}
-                                        className="px-3 py-1 text-sm border rounded"
-                                        >
-                                        {totalPages}
-                                        </button>
-                                    </>
-                                    )}
-                                </>
-                                );
-                            })()}
-
-                            {/* Next */}
-                            <button
-                                onClick={() =>
-                                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                                }
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1 text-sm border rounded disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                            </div>
-                        </div>
-                    )}
+                    {/* ================= INFINITE SCROLL ================= */}
+                    <InfiniteScrollTrigger
+                        loading={loading}
+                        hasMore={hasMore}
+                        onLoadMore={handleLoadMore}
+                    />
                 </div>
 
             </div>

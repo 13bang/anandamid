@@ -7,11 +7,11 @@ import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
 import Breadcrumb from "../../components/Breadcrumb";
 
-interface ProductImage {
-  id: string;
-  image_url: string;
-  sort_order: number;
-}
+// interface ProductImage {
+//   id: string;
+//   image_url: string;
+//   sort_order: number;
+// }
 
 // interface ProductDetail {
 //   id: string;
@@ -51,6 +51,8 @@ export default function ProductDetailPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const specRef = useRef<HTMLDivElement>(null);
 
   const CARD_TOTAL_WIDTH = 226;
 
@@ -147,10 +149,6 @@ export default function ProductDetailPage() {
               items={[
                 { label: "Home", path: "/" },
                 { label: "Product Katalog", path: "/product-katalog" },
-                {
-                  label: product.category.name,
-                  path: `/product-katalog?category=${product.category.id}`,
-                },
                 {
                   label: product.name,
                 },
@@ -249,7 +247,7 @@ export default function ProductDetailPage() {
             <div className="col-span-8 space-y-6 relative z-20">
 
               <div>
-                <p className="mb-2 text-sm text-gray-500 font-semibold">
+                <p className="mb-2 text-sm text-gray-600 font-semibold">
                   {product.category.name}
                 </p>
 
@@ -278,7 +276,7 @@ export default function ProductDetailPage() {
               </div>
 
               {/* META */}
-              <div className="space-y-2 text-sm text-gray-600">
+              <div className="space-y-2 text-sm text-600">
                 <div>
                   SKU: <span className="font-medium">{product.sku_seller}</span>
                 </div>
@@ -363,7 +361,7 @@ export default function ProductDetailPage() {
                 <div className="py-6">
 
                   {activeTab === "description" && (
-                    <div>
+                    <div ref={specRef}>
                       <h3 className="mb-4 text-base font-semibold">
                         Specifications
                       </h3>
@@ -382,7 +380,16 @@ export default function ProductDetailPage() {
                       {product.specifications &&
                         product.specifications.length > 10 && (
                           <button
-                            onClick={() => setShowFullSpec(!showFullSpec)}
+                            onClick={() => {
+                              setShowFullSpec((prev) => !prev);
+
+                              setTimeout(() => {
+                                specRef.current?.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "start",
+                                });
+                              }, 100);
+                            }}
                             className="mt-4 text-sm font-medium text-blue-600 hover:underline"
                           >
                             {showFullSpec ? "Tampilkan Lebih Sedikit" : "Selengkapnya"}

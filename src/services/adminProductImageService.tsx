@@ -1,6 +1,6 @@
 import api from "./api";
 
-const API_URL = "http://localhost:3000/api/v1/product-images";
+const API_URL = "http://192.168.1.176:3030/api/v1/product-images";
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");

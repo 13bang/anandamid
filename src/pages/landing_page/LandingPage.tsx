@@ -6,6 +6,7 @@ import { getBanners } from "../../services/bannerService";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import LoadMoreButton from "../../components/LoadMoreButton";
+import CategoryProductSection from "../../components/CategoryProductSection";
 
 export default function LandingPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -70,15 +71,33 @@ export default function LandingPage() {
   };
 
   const scrollLeft = () => {
-    scrollRef.current?.scrollBy({
-      left: -250,
+    if (!scrollRef.current) return;
+
+    const container = scrollRef.current;
+    const firstCard = container.children[0] as HTMLElement;
+    if (!firstCard) return;
+
+    const gap = 16; // karena kamu pakai gap-4 (1rem = 16px)
+    const cardWidth = firstCard.offsetWidth + gap;
+
+    container.scrollBy({
+      left: -cardWidth,
       behavior: "smooth",
     });
   };
 
   const scrollRight = () => {
-    scrollRef.current?.scrollBy({
-      left: 250,
+    if (!scrollRef.current) return;
+
+    const container = scrollRef.current;
+    const firstCard = container.children[0] as HTMLElement;
+    if (!firstCard) return;
+
+    const gap = 16; // gap-4
+    const cardWidth = firstCard.offsetWidth + gap;
+
+    container.scrollBy({
+      left: cardWidth,
       behavior: "smooth",
     });
   };
@@ -100,7 +119,7 @@ export default function LandingPage() {
     }
   };
 
-  const [loading, setLoading] = useState(false); // Default jadikan false dulu
+  const [loading, setLoading] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -117,7 +136,7 @@ export default function LandingPage() {
   const getImageUrl = (url?: string) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    return `http://localhost:3000${url}`;
+    return `http://192.168.1.176:3030${url}`;
   };
 
   const handleLoadMore = useCallback(() => {
@@ -188,6 +207,60 @@ export default function LandingPage() {
     }
   };
 
+  const [groupedProducts, setGroupedProducts] = useState<{
+    [key: string]: any[];
+  }>({});
+
+  const fetchProductsByCategory = async (categoryName: string) => {
+    try {
+      const res = await getProducts({
+        category: categoryName,
+        limit: 10,
+      });
+
+      return res.data || [];
+    } catch (err) {
+      console.error(`Gagal fetch ${categoryName}`, err);
+      return [];
+    }
+  };
+
+  const CATEGORY_GROUPS = [
+    {
+      title: "Kompputer & Laaptop",
+      categories: ["Laptop", "Komputer Desktop"],
+      titleClass:
+        "mb-6 text-4xl font-semibold font-stretchpro text-center bg-gradient-to-r from-blue-500 to-green-400 text-transparent bg-clip-text inline-block",
+    },
+    {
+      title: "Koomponen PC",
+      categories: ["Prosesor", "Motherboard", "RAM"],
+      titleClass:
+        "mb-6 text-4xl font-semibold font-stretchpro text-center bg-gradient-to-r from-blue-500 to-green-400 text-transparent bg-clip-text inline-block",
+    },
+  ];
+
+  useEffect(() => {
+    const fetchGrouped = async () => {
+      const result: { [key: string]: any[] } = {};
+
+      for (const group of CATEGORY_GROUPS) {
+        let combinedProducts: any[] = [];
+
+        for (const category of group.categories) {
+          const products = await fetchProductsByCategory(category);
+          combinedProducts = [...combinedProducts, ...products];
+        }
+
+        result[group.title] = combinedProducts;
+      }
+
+      setGroupedProducts(result);
+    };
+
+    fetchGrouped();
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       {/* ================= HERO BANNER ================= */}
@@ -208,7 +281,7 @@ export default function LandingPage() {
         <div className="relative p-6 bg-white shadow-xl rounded-md">
           <h2
             className="mb-6 text-4xl font-semibold font-stretchpro text-center
-                      bg-gradient-to-r from-blue-400 to-green-400
+                      bg-gradient-to-r from-blue-500 to-green-400
                       text-transparent bg-clip-text inline-block">
             Kaategori
           </h2>
@@ -312,7 +385,7 @@ export default function LandingPage() {
         <div className="relative p-6 bg-white rounded-md shadow-[0_0_15px_rgba(0,0,0,0.1)]">
           <h2 
             className="mb-6 text-4xl font-semibold font-stretchpro text-center
-                                  bg-gradient-to-r from-blue-400 to-green-400
+                                  bg-gradient-to-r from-blue-500 to-green-400
                                   text-transparent bg-clip-text inline-block">PProduk Populer
           </h2>
           {/* BUTTON LEFT */}
@@ -337,12 +410,12 @@ export default function LandingPage() {
 
           <div
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+            className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory"
           >
             {popularProducts.map((product) => (
               <div
                 key={product.id}
-                className="flex-shrink-0 w-[calc((100%-5rem)/6)]"
+                className="flex-shrink-0 w-[calc((100%-5rem)/6)] snap-start"
               >
                 <ProductCard product={product} />
               </div>
@@ -351,11 +424,20 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {CATEGORY_GROUPS.map((group) => (
+        <CategoryProductSection
+          key={group.title}
+          title={group.title}
+          titleClass={group.titleClass}
+          products={groupedProducts[group.title] || []}
+        />
+      ))}
+
       {/* ================= PRODUCT ================= */}
       <section className="w-full px-8 pb-10">
         <h2 
           className="mb-6 text-4xl font-semibold font-stretchpro text-center
-                                bg-gradient-to-r from-blue-400 to-green-400
+                                bg-gradient-to-r from-blue-500 to-green-400
                                 text-transparent bg-clip-text inline-block w-full border-b-2 border-gray-300">
           Rekomenddasi
         </h2>
