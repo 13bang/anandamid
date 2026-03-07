@@ -1,6 +1,6 @@
 import api from "./api";
 
-const API_URL = "http://192.168.1.176:3030/api/v1/product-images";
+const API_URL = "http://localhost:3030/api/v1/product-images";
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
@@ -20,6 +20,24 @@ export const createProductImages = async (data: {
   return res.data;
 };
 
+export const updateProductImages = async (
+  id: string,
+  formData: FormData
+) => {
+  const res = await api.patch(
+    `${API_URL}/${id}`,
+    formData,
+    {
+      headers: {
+        ...getAuthHeader(),
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return res.data;
+};
+
 export const deleteProductImage = async (id: string) => {
   const res = await api.delete(`${API_URL}/${id}`, {
     headers: getAuthHeader(),
@@ -28,3 +46,19 @@ export const deleteProductImage = async (id: string) => {
   return res.data;
 };
 
+export const uploadProductImage = async (
+  formData: FormData
+) => {
+  const res = await api.post(
+    API_URL,
+    formData,
+    {
+      headers: {
+        ...getAuthHeader(),
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return res.data;
+};

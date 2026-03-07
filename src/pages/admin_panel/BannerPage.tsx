@@ -10,7 +10,7 @@ import {
 } from "../../services/bannerService";
 import { Upload, Trash2, RefreshCw, Pencil } from "lucide-react";
 
-const BASE_FILE_URL = "http://localhost:3000";
+const BASE_FILE_URL = "http://localhost:3030";
 
 export default function BannerPage() {
   const [data, setData] = useState<Banner[]>([]);

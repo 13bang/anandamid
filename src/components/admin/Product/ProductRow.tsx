@@ -1,4 +1,5 @@
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { getThumbnailUrl } from "../../imageHelper";
 
 interface ProductRowProps {
   product: any;
@@ -42,14 +43,20 @@ export default function ProductRow({
         />
       </td>
       <td className="px-3 py-2">
-        <img
-          src={product.thumbnail_url || "/images/product-placeholder.png"}
-          alt={product.name}
-          onClick={() =>
-            onImageClick(product.thumbnail_url || "/images/product-placeholder.png")
-          }
-          className="object-cover w-8 h-8 rounded cursor-pointer hover:opacity-80"
-        />
+        {product.thumbnail_url ? (
+          <img
+            src={getThumbnailUrl(product.thumbnail_url)}
+            alt={product.name}
+            onClick={() =>
+              onImageClick(getThumbnailUrl(product.thumbnail_url!))
+            }
+            className="object-cover w-8 h-8 rounded cursor-pointer hover:opacity-80"
+          />
+        ) : (
+          <div className="flex items-center justify-center w-8 h-8 text-xs text-gray-400 bg-gray-100 rounded">
+            —
+          </div>
+        )}
       </td>
       <td className="px-3 py-2 font-medium">
         {product.name}

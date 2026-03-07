@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { getProducts } from "../../services/productService";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { getCategories } from "../../services/adminCategoryService";
+import { getCategories, getParentCategories } from "../../services/adminCategoryService";
 import { getBanners } from "../../services/bannerService";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import LoadMoreButton from "../../components/LoadMoreButton";
 import CategoryProductSection from "../../components/CategoryProductSection";
+import GlassParticlesBackground from "../../components/GlassParticleBackground";
 
 export default function LandingPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -27,7 +28,7 @@ export default function LandingPage() {
 
   const landingCategoryNames = [
     "Laptop",
-    "Komputer Desktop",
+    "Desktop PC",
     "PC AIO",
     "Prosesor",
     "Motherboard",
@@ -35,7 +36,7 @@ export default function LandingPage() {
     "SSD",
     "Hard Disk",
     "Monitor",
-    "Graphic Card",
+    "VGA / Graphic Card",
     "Keyboard & Mouse",
     "Printer & Scanner",
     "Modem & Router",
@@ -129,14 +130,18 @@ export default function LandingPage() {
   const [banners, setBanners] = useState<any[]>([]);
 
   const heroBanner = banners.find((b) => b.slot === "hero");
-  const bannerLeft = banners.find((b) => b.slot === "banner-after-kategori-left");
-  const bannerCenter = banners.find((b) => b.slot === "banner-after-kategori-center");
-  const bannerRight = banners.find((b) => b.slot === "banner-after-kategori-right");
+  // const bannerLeft = banners.find((b) => b.slot === "banner-after-kategori-left");
+  // const bannerCenter = banners.find((b) => b.slot === "banner-after-kategori-center");
+  // const bannerRight = banners.find((b) => b.slot === "banner-after-kategori-right");
+  const bannerAfterKategori = banners.find((b) => b.slot === "banner-after-kategori");
+  const bannerAfterPopularLeft = banners.find((b) => b.slot === "banner-after-popular-left");
+  const bannerAfterPopularCenter = banners.find((b) => b.slot === "banner-after-popular-center");
+  const bannerAfterPopularRight = banners.find((b) => b.slot === "banner-after-popular-right");
 
   const getImageUrl = (url?: string) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    return `http://192.168.1.176:3030${url}`;
+    return `http://localhost:3030${url}`;
   };
 
   const handleLoadMore = useCallback(() => {
@@ -147,6 +152,7 @@ export default function LandingPage() {
     fetchPopularProducts();
     fetchCategories();
     fetchBanners();
+    fetchParentCategories();
   }, []);
 
   // reset ketika search berubah
@@ -207,62 +213,63 @@ export default function LandingPage() {
     }
   };
 
-  const [groupedProducts, setGroupedProducts] = useState<{
-    [key: string]: any[];
-  }>({});
+  const [parentCategories, setParentCategories] = useState<any[]>([]);
 
-  const fetchProductsByCategory = async (categoryName: string) => {
+  const fetchParentCategories = async () => {
+    try {
+      const data = await getParentCategories();
+      setParentCategories(data || []);
+    } catch (err) {
+      console.error("Gagal fetch parent categories", err);
+    }
+  };
+
+  const fetchProductsByParent = async (parentSlug: string) => {
     try {
       const res = await getProducts({
-        category: categoryName,
+        parent: parentSlug,
         limit: 10,
       });
 
       return res.data || [];
     } catch (err) {
-      console.error(`Gagal fetch ${categoryName}`, err);
+      console.error("Gagal fetch parent products", err);
       return [];
     }
   };
 
-  const CATEGORY_GROUPS = [
-    {
-      title: "Kompputer & Laaptop",
-      categories: ["Laptop", "Komputer Desktop"],
-      titleClass:
-        "mb-6 text-4xl font-semibold font-stretchpro text-center bg-gradient-to-r from-blue-500 to-green-400 text-transparent bg-clip-text inline-block",
-    },
-    {
-      title: "Koomponen PC",
-      categories: ["Prosesor", "Motherboard", "RAM"],
-      titleClass:
-        "mb-6 text-4xl font-semibold font-stretchpro text-center bg-gradient-to-r from-blue-500 to-green-400 text-transparent bg-clip-text inline-block",
-    },
-  ];
+  const [parentProducts, setParentProducts] = useState<{
+    [key: string]: any[];
+  }>({});
 
   useEffect(() => {
-    const fetchGrouped = async () => {
-      const result: { [key: string]: any[] } = {};
+    const fetchAllParentProducts = async () => {
+      const result: any = {};
 
-      for (const group of CATEGORY_GROUPS) {
-        let combinedProducts: any[] = [];
-
-        for (const category of group.categories) {
-          const products = await fetchProductsByCategory(category);
-          combinedProducts = [...combinedProducts, ...products];
-        }
-
-        result[group.title] = combinedProducts;
+      for (const parent of parentCategories) {
+        const products = await fetchProductsByParent(parent.code);
+        result[parent.id] = products;
       }
 
-      setGroupedProducts(result);
+      setParentProducts(result);
     };
 
-    fetchGrouped();
-  }, []);
+    if (parentCategories.length > 0) {
+      fetchAllParentProducts();
+    }
+  }, [parentCategories]);
+
+  const SELECTED_PARENTS: Record<string, string> = {
+    "Komputer & Laptop": "Kompputer & Laptop",
+    "Komponen PC": "Kommponen PC",
+    "Storage": "Storagge",
+  };
+
+  console.log("PARENT CATEGORIES:", parentCategories);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
+      <GlassParticlesBackground />
       {/* ================= HERO BANNER ================= */}
       <section className="w-full">
         {heroBanner && (
@@ -278,11 +285,11 @@ export default function LandingPage() {
 
       {/* ================= CATEGORY ================= */}
       <section className="relative z-20 px-8 mx-auto -mt-2 sm:-mt-6 md:-mt-10 lg:-mt-12 w-full">
-        <div className="relative p-6 bg-white shadow-xl rounded-md">
+        <div className="relative p-6 bg-white shadow-xl rounded-3xl">
           <h2
             className="mb-6 text-4xl font-semibold font-stretchpro text-center
-                      bg-gradient-to-r from-blue-500 to-green-400
-                      text-transparent bg-clip-text inline-block">
+            bg-gradient-to-r from-gray-800 to-blue-700
+            text-transparent bg-clip-text inline-block">
             Kaategori
           </h2>
 
@@ -345,35 +352,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ================= BOTTOM PROMO BANNERS ================= */}
+      {/* ================= BOTTOM PROMO BANNER ================= */}
       <section className="w-full px-8 pb-10 pt-10">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {bannerLeft && (
-            <div className="aspect-[4/2] overflow-hidden">
+        <div className="flex justify-center">
+          {(bannerAfterKategori) && (
+            <div className="w-full max-w-[1600px] aspect-[8/3] overflow-hidden rounded-3xl shadow-lg">
               <img
-                src={getImageUrl(bannerLeft.image_url)}
-                className="object-cover w-full h-full"
-                alt="Banner Left"
-              />
-            </div>
-          )}
-
-          {bannerCenter && (
-            <div className="aspect-[4/2] overflow-hidden">
-              <img
-                src={getImageUrl(bannerCenter.image_url)}
-                className="object-cover w-full h-full"
-                alt="Banner Center"
-              />
-            </div>
-          )}
-
-          {bannerRight && (
-            <div className="aspect-[4/2] overflow-hidden">
-              <img
-                src={getImageUrl(bannerRight.image_url)}
-                className="object-cover w-full h-full"
-                alt="Banner Right"
+                src={getImageUrl(bannerAfterKategori?.image_url)}
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                alt="Promo Banner"
               />
             </div>
           )}
@@ -382,11 +369,19 @@ export default function LandingPage() {
 
       {/* ================= POPULAR PRODUCT ================= */}
       <section className="w-full px-8 pb-10">
-        <div className="relative p-6 bg-white rounded-md shadow-[0_0_15px_rgba(0,0,0,0.1)]">
+        <div
+          className="
+          relative p-6 rounded-3xl
+          bg-primary5/40
+          backdrop-blur-sm
+          border border-white/90
+          shadow-[0_0_25px_rgba(0,0,0,0.15)]
+        "
+        >
           <h2 
             className="mb-6 text-4xl font-semibold font-stretchpro text-center
-                                  bg-gradient-to-r from-blue-500 to-green-400
-                                  text-transparent bg-clip-text inline-block">PProduk Populer
+            bg-gray-800
+            text-transparent bg-clip-text inline-block">PProduk Populer
           </h2>
           {/* BUTTON LEFT */}
           <button
@@ -415,7 +410,7 @@ export default function LandingPage() {
             {popularProducts.map((product) => (
               <div
                 key={product.id}
-                className="flex-shrink-0 w-[calc((100%-5rem)/6)] snap-start"
+                className="flex-shrink-0 w-[calc((100%-5rem)/6)] snap-start py-4"
               >
                 <ProductCard product={product} />
               </div>
@@ -424,21 +419,68 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {CATEGORY_GROUPS.map((group) => (
-        <CategoryProductSection
-          key={group.title}
-          title={group.title}
-          titleClass={group.titleClass}
-          products={groupedProducts[group.title] || []}
-        />
+      {/* ================= BANNER AFTER POPULAR ================= */}
+      <section className="w-full px-8 pb-14 pt-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
+          {bannerAfterPopularLeft && (
+            <div className="overflow-hidden shadow-md rounded-3xl group">
+              <div className="aspect-[4/5] overflow-hidden">
+                <img
+                  src={getImageUrl(bannerAfterPopularLeft.image_url)}
+                  className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                  alt="Banner After Popular Left"
+                />
+              </div>
+            </div>
+          )}
+
+          {bannerAfterPopularCenter && (
+            <div className="overflow-hidden shadow-md rounded-3xl group">
+              <div className="aspect-[4/5] overflow-hidden">
+                <img
+                  src={getImageUrl(bannerAfterPopularCenter.image_url)}
+                  className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                  alt="Banner After Popular Center"
+                />
+              </div>
+            </div>
+          )}
+
+          {bannerAfterPopularRight && (
+            <div className="overflow-hidden shadow-md rounded-3xl group">
+              <div className="aspect-[4/5] overflow-hidden">
+                <img
+                  src={getImageUrl(bannerAfterPopularRight.image_url)}
+                  className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                  alt="Banner After Popular Right"
+                />
+              </div>
+            </div>
+          )}
+
+        </div>
+      </section>
+
+      {/* ================= PARENT CATEGORY ================= */}
+      {parentCategories
+        .filter((parent) => SELECTED_PARENTS[parent.name])
+        .map((parent) => (
+          <CategoryProductSection
+            key={parent.id}
+            title={SELECTED_PARENTS[parent.name]}
+            products={parentProducts[parent.id] || []}
+          />
       ))}
 
       {/* ================= PRODUCT ================= */}
       <section className="w-full px-8 pb-10">
-        <h2 
-          className="mb-6 text-4xl font-semibold font-stretchpro text-center
-                                bg-gradient-to-r from-blue-500 to-green-400
-                                text-transparent bg-clip-text inline-block w-full border-b-2 border-gray-300">
+
+        <h2
+          className="mb-6 text-4xl font-semibold font-stretchpro
+                    bg-gray-800
+                    text-transparent bg-clip-text
+                    text-center">
           Rekomenddasi
         </h2>
 
@@ -454,6 +496,7 @@ export default function LandingPage() {
           hasMore={currentPage < totalPages}
           onLoadMore={handleLoadMore}
         />
+
       </section>
     </div>
   );

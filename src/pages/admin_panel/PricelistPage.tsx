@@ -10,7 +10,7 @@ import type {
 import { Upload, Laptop, Cpu } from "lucide-react";
 
 const BASE_FILE_URL =
-  "http://localhost:3000/uploads/pricelists";
+  "http://localhost:3030/uploads/pricelists";
 
 export default function PricelistPage() {
   const [data, setData] = useState<Pricelist[]>([]);

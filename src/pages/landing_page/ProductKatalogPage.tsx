@@ -14,6 +14,7 @@ const brandList = ["Acer","Acasis","Accurate","ADATA","AMD","Anker","APC","Arcti
 interface Category {
   id: string;
   name: string;
+  parent_id: string | null;
 }
 
 export default function ProductKatalogPage() {
@@ -51,7 +52,9 @@ export default function ProductKatalogPage() {
     const categoryParam = searchParams.get("category");
 
     useEffect(() => {
-        if (searchParams.get("category")) {
+        const isRefresh = location.key === "default";
+
+        if (isRefresh && searchParams.get("category")) {
             setSearchParams({}, { replace: true });
         }
     }, []);
@@ -69,6 +72,12 @@ export default function ProductKatalogPage() {
             setSearchParams({}, { replace: true });
         }
     }, [searchQuery]);
+
+    useEffect(() => {
+        setProducts([]);
+        setPage(1);
+        setHasMore(true);
+    }, [categoryParam]);
 
     const fetchCategories = async () => {
         const data = await getCategories();
@@ -207,8 +216,9 @@ export default function ProductKatalogPage() {
                         </li>
 
                         {categories
+                            .filter((cat) => cat.parent_id !== null)
                             .filter((cat) =>
-                            cat.name.toLowerCase().includes(searchCategory.toLowerCase())
+                                cat.name.toLowerCase().includes(searchCategory.toLowerCase())
                             )
                             .map((cat) => (
                             <li

@@ -13,18 +13,26 @@ import BannerPage from "./pages/admin_panel/BannerPage";
 import PublicLayout from "./components/PublicLayout";
 import ProductKatalogPage from "./pages/landing_page/ProductKatalogPage";
 import ProductDetailPage from "./pages/landing_page/ProductDetailPage";
-import Footer from "./components/Footer";
+// import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
+import ScrollToTopButton from "./components/CornerActions";
+import CompanyProfile from "./pages/landing_page/company_profile/ProfilLandingPage";
+import PageLoader from "./components/PageLoader";
+import RouteWatcher from "./components/AosChecker";
 
 function App() {
   return (
     <BrowserRouter>
+      <RouteWatcher/>
+      <PageLoader/>
       <ScrollToTop/>
+      <ScrollToTopButton/>
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/product-katalog" element={<ProductKatalogPage />} />
           <Route path="/product-katalog/:id" element={<ProductDetailPage />} />
+          <Route path="/company-profile" element={<CompanyProfile />} />
         </Route>
 
         <Route path="/ayamgoreng/login" element={<LoginPage />} />

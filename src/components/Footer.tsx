@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Youtube } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
@@ -60,10 +61,25 @@ export default function Footer() {
             <h3 className="text-white font-semibold mb-4">
               Perusahaan Kami
             </h3>
+
             <ul className="space-y-2 text-sm">
-              <li className="hover:text-white cursor-pointer">Tentang Kami</li>
-              <li className="hover:text-white cursor-pointer">Layanan</li>
-              <li className="hover:text-white cursor-pointer">Portofolio</li>
+              <li>
+                <Link to="/company-profile" className="hover:text-white">
+                  Tentang Kami
+                </Link>
+              </li>
+
+              <li>
+                <Link to="" className="hover:text-white">
+                  Kebijakan Privasi
+                </Link>
+              </li>
+
+              <li>
+                <Link to="" className="hover:text-white">
+                  Syarat & Ketentuan
+                </Link>
+              </li>
             </ul>
           </div>
 

@@ -1,7 +1,7 @@
 // services/productService.ts
 import api from "./api";
 
-const API_URL = "http://192.168.1.176:3030/api/v1/products";
+const API_URL = "http://localhost:3030/api/v1/products";
 
 export const getProducts = async (params?: any) => {
   const res = await api.get(API_URL, { params });

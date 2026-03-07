@@ -1,36 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { getProductById, getProductsByCategory } from "../../services/productService";
-import { FaWhatsapp, FaSearchPlus } from "react-icons/fa";
+import { FaWhatsapp, FaSearchPlus, FaBan } from "react-icons/fa";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
 import Breadcrumb from "../../components/Breadcrumb";
-
-// interface ProductImage {
-//   id: string;
-//   image_url: string;
-//   sort_order: number;
-// }
-
-// interface ProductDetail {
-//   id: string;
-//   name: string;
-//   description: string;
-//   description_raw: string;
-//   notes: string[];
-//   specifications: string[];
-//   price_normal: string;
-//   price_discount: string;
-//   final_price: number;
-//   stock: number;
-//   sku_seller: string;
-//   warranty: string;
-//   category: {
-//     name: string;
-//   };
-//   images: ProductImage[];
-// }
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -124,6 +99,8 @@ export default function ProductDetailPage() {
   const finalPrice =
     discountPrice > 0 ? normalPrice - discountPrice : normalPrice;
 
+  const isOutOfStock = Number(product.stock) === 0;
+
   const productLink = window.location.href;
 
   const whatsappMessage = `Hai, saya ingin memesan produk berikut:
@@ -158,7 +135,7 @@ export default function ProductDetailPage() {
         </div>
 
         {/* ================= CONTENT WRAPPER ================= */}
-        <div className="w-full px-8 py-10 mx-auto">
+        <div className="w-full px-8 py-10 mx-auto bg-white">
 
           {/* ================= TOP SECTION ================= */}
           <div className="grid grid-cols-12 gap-10 items-start">
@@ -177,7 +154,11 @@ export default function ProductDetailPage() {
                 }}
               >
                 <img
-                  src={product.images[activeImage]?.image_url}
+                  src={
+                    product.images[activeImage]?.image_url?.startsWith("http")
+                      ? product.images[activeImage]?.image_url
+                      : `${import.meta.env.VITE_API_BASE}${product.images[activeImage]?.image_url}`
+                  }
                   alt={product.name}
                   className="w-full h-full object-cover transition-transform duration-200 ease-out"
                   style={{
@@ -202,7 +183,11 @@ export default function ProductDetailPage() {
                 {product.images.map((img, index) => (
                   <img
                     key={img.id}
-                    src={img.image_url}
+                    src={
+                      img.image_url?.startsWith("http")
+                        ? img.image_url
+                        : `${import.meta.env.VITE_API_BASE}${img.image_url}`
+                    }
                     onClick={() => setActiveImage(index)}
                     className={`w-20 h-20 object-cover border rounded cursor-pointer ${
                       activeImage === index
@@ -225,7 +210,11 @@ export default function ProductDetailPage() {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <img
-                    src={product.images[activeImage]?.image_url}
+                    src={
+                      product.images[activeImage]?.image_url?.startsWith("http")
+                        ? product.images[activeImage]?.image_url
+                        : `${import.meta.env.VITE_API_BASE}${product.images[activeImage]?.image_url}`
+                    }
                     alt={product.name}
                     className="max-h-[75vh] w-auto object-contain rounded-lg"
                   />
@@ -296,7 +285,7 @@ export default function ProductDetailPage() {
                 <div className="flex items-center gap-4">
 
                   {/* QTY */}
-                  <div className="flex items-center border rounded h-[44px]">
+                  <div className={`bg-gray-100 flex items-center border rounded h-[44px] ${isOutOfStock ? "opacity-50 pointer-events-none" : ""}`}>
                     <button
                       onClick={() => setQuantity((prev) => (prev > 1 ? prev - 1 : 1))}
                       className="px-4 text-lg"
@@ -315,15 +304,25 @@ export default function ProductDetailPage() {
                   </div>
 
                   {/* WHATSAPP BUTTON */}
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-[44px] flex items-center gap-2 px-6 font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 transition"
-                  >
-                    <FaWhatsapp size={18} />
-                    Pesan via WhatsApp
-                  </a>
+                  {isOutOfStock ? (
+                    <button
+                      disabled
+                      className="h-[44px] flex items-center gap-2 px-6 font-semibold text-white bg-red-600 rounded-md cursor-not-allowed"
+                    >
+                      <FaBan size={18} />
+                      Habis
+                    </button>
+                  ) : (
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-[44px] flex items-center gap-2 px-6 font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 transition"
+                    >
+                      <FaWhatsapp size={18} />
+                      Pesan via WhatsApp
+                    </a>
+                  )}
 
                 </div>
 
@@ -413,7 +412,7 @@ export default function ProductDetailPage() {
           {/* ================= RELATED PRODUCT ================= */}
           <section className="w-full px-8 pb-16 mt-16">
 
-            <div className="relative p-6 bg-white rounded-md shadow-[0_0_15px_rgba(0,0,0,0.08)]">
+            <div className="relative p-6 bg-gray-100 rounded-3xl">
               
               <h2 className="mb-6 text-lg font-semibold">
                 Related Products

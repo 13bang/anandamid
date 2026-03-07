@@ -1,4 +1,4 @@
-const BASE_URL = "http://192.168.1.176:3030/api/v1/banner-image";
+const BASE_URL = "http://localhost:3030/api/v1/banner-image";
 
 export interface Banner {
   id: string;
@@ -62,7 +62,7 @@ export const updateBannerTitle = async (
   title: string
 ) => {
   const res = await fetch(
-    `http://192.168.1.176:3030/api/v1/banner-image/${id}/title`,
+    `http://localhost:3030/api/v1/banner-image/${id}/title`,
     {
       method: "PATCH",
       headers: {
@@ -80,7 +80,7 @@ export const updateBannerTitle = async (
 };
 
 export const updateBannerSlot = async (id: string, slot: string) => {
-  const res = await fetch(`http://192.168.1.176:3030/api/v1/banner-image/${id}/slot`, {
+  const res = await fetch(`http://localhost:3030/api/v1/banner-image/${id}/slot`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",

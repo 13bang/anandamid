@@ -8,7 +8,8 @@
 
   import { 
     createProductImages,
-    deleteProductImage, 
+    updateProductImages,
+    uploadProductImage,
   } from "../../services/adminProductImageService";
 
   import {
@@ -170,19 +171,24 @@
               onClose={() => setIsModalOpen(false)}
               onSubmit={async (data) => {
                 try {
-                  const { image_urls, ...productData } = data;
+                  const { images, ...productData } = data;
 
                   // =========================
                   // CREATE MODE
                   // =========================
                   if (!selectedProduct) {
-                    const product = await createAdminProduct(productData);
+                    const res = await createAdminProduct(productData);
+                    const productId = res.product?.id || res.id;
 
-                    if (image_urls?.length > 0) {
-                      await createProductImages({
-                        product_id: product.id,
-                        image_urls,
-                      });
+                    // upload images
+                    for (const img of images || []) {
+                      if (img.file) {
+                        const formData = new FormData();
+                        formData.append("file", img.file);
+                        formData.append("product_id", productId);
+
+                        await uploadProductImage(formData);
+                      }
                     }
 
                     setSuccessMessage("Product berhasil ditambahkan");
@@ -192,23 +198,29 @@
                   // EDIT MODE
                   // =========================
                   else {
-                  await updateAdminProduct(selectedProduct.id, productData);
+                    await updateAdminProduct(selectedProduct.id, productData);
 
-                  if (selectedProduct.images?.length > 0) {
-                    for (const img of selectedProduct.images) {
-                      await deleteProductImage(img.id);
+                    for (const img of images || []) {
+                      // replace existing image
+                      if (img.file && img.id) {
+                        const formData = new FormData();
+                        formData.append("file", img.file);
+
+                        await updateProductImages(img.id, formData);
+                      }
+
+                      // new image
+                      if (img.file && !img.id) {
+                        const formData = new FormData();
+                        formData.append("file", img.file);
+                        formData.append("product_id", selectedProduct.id);
+
+                        await uploadProductImage(formData);
+                      }
                     }
-                  }
 
-                  if (image_urls?.length > 0) {
-                    await createProductImages({
-                      product_id: selectedProduct.id,
-                      image_urls,
-                    });
+                    setSuccessMessage("Product berhasil diperbarui");
                   }
-
-                  setSuccessMessage("Product berhasil diperbarui");
-                }
 
                   setIsModalOpen(false);
                   fetchProducts(page, search, showDuplicateOnly);

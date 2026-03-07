@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "aos": "^2.3.4",
     "axios": "^1.13.5",
+    "framer-motion": "^12.35.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.574.0",
     "react": "^19.2.0",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@types/aos": "^3.0.7",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

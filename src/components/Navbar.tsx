@@ -40,7 +40,7 @@ export default function Navbar() {
         limit: 5,
       });
 
-      setResults(res.data); // <-- ambil dari .data
+      setResults(res.data); 
       setShowDropdown(true);
     }, 300);
 
@@ -67,6 +67,7 @@ export default function Navbar() {
   interface Category {
   id: string;
   name: string;
+  parent_id: string | null;
 }
 
 
@@ -227,7 +228,8 @@ export default function Navbar() {
         className={`
           sticky top-0 z-50 w-full bg-primary2
           transition-all duration-300
-          ${isScrolled ? "shadow-lg py-3" : "py-4"}
+          ${isScrolled ? "shadow-lg" : ""}
+          py-3
           relative
         `}
       >
@@ -263,7 +265,9 @@ export default function Navbar() {
                     overflow-y-auto
                   "
                 >
-                  {categories.map((cat) => (
+                  {categories
+                    .filter((cat) => cat.parent_id !== null)
+                    .map((cat) => (
                     <div
                       key={cat.id}
                       onClick={() => {

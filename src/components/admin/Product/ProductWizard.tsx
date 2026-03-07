@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getOriginalUrl } from "../../imageHelper";
 
 interface ProductWizardProps {
   mode: "create" | "edit";
@@ -34,8 +35,12 @@ export default function ProductWizard({
     is_active: initialData?.is_active ?? true,
     is_popular: initialData?.is_popular ?? false,
 
-    image_urls:
-        initialData?.images?.map((img: any) => img.image_url) || [],
+    images:
+        initialData?.images?.map((img: any) => ({
+            id: img.id,
+            image_url: img.image_url,
+            file: null,
+        })) || [],
     });
         
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -324,95 +329,131 @@ export default function ProductWizard({
 
             {/* Gambar Produk */}
             <div>
-            <label className="block mb-1 text-xs font-medium">
+                <label className="block mb-2 text-xs font-medium">
                 Gambar Produk
-            </label>
+                </label>
 
-            {form.image_urls.length > 0 ? (
-            <div className="flex flex-col items-center gap-2">
-                <img
-                src={form.image_urls[currentImageIndex] || "https://via.placeholder.com/150"}
-                alt={`Gambar ${currentImageIndex + 1}`}
-                className="object-cover w-40 h-40 border rounded-lg"
-                />
+                {form.images.length > 0 ? (
+                <div className="flex flex-col items-center gap-3">
 
-                <div className="flex items-center gap-3 text-sm">
-                <button
-                    type="button"
-                    onClick={() =>
-                    setCurrentImageIndex((prev) =>
-                        prev === 0 ? form.image_urls.length - 1 : prev - 1
-                    )
+                    {/* PREVIEW */}
+                    <img
+                    src={
+                        form.images[currentImageIndex]?.file
+                        ? URL.createObjectURL(form.images[currentImageIndex].file!)
+                        : form.images[currentImageIndex]?.image_url
+                        ? getOriginalUrl(form.images[currentImageIndex].image_url!)
+                        : "https://via.placeholder.com/150"
                     }
-                    className="px-2 py-1 border rounded"
-                >
-                    ←
-                </button>
+                    className="object-cover w-40 h-40 border rounded-lg"
+                    />
 
-                <span>
-                    {currentImageIndex + 1} / {form.image_urls.length}
-                </span>
+                    {/* NAVIGATION */}
+                    <div className="flex items-center gap-3 text-sm">
+                    <button
+                        type="button"
+                        onClick={() =>
+                        setCurrentImageIndex((prev) =>
+                            prev === 0 ? form.images.length - 1 : prev - 1
+                        )
+                        }
+                        className="px-2 py-1 border rounded"
+                    >
+                        ←
+                    </button>
 
-                <button
+                    <span>
+                        {currentImageIndex + 1} / {form.images.length}
+                    </span>
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                        setCurrentImageIndex((prev) =>
+                            prev === form.images.length - 1 ? 0 : prev + 1
+                        )
+                        }
+                        className="px-2 py-1 border rounded"
+                    >
+                        →
+                    </button>
+                    </div>
+
+                    {/* LINK LAMA (READONLY) */}
+                    {form.images[currentImageIndex]?.image_url && (
+                    <div className="w-full text-xs text-gray-500 break-all">
+                        {form.images[currentImageIndex].image_url}
+                    </div>
+                    )}
+
+                    {/* FILE UPLOAD */}
+                    <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                        if (!e.target.files?.[0]) return;
+
+                        const updated = [...form.images];
+                        updated[currentImageIndex].file = e.target.files[0];
+
+                        handleChange("images", updated);
+                    }}
+                    className="text-xs"
+                    />
+
+                    {/* ACTION BUTTONS */}
+                    <div className="flex gap-2 mt-2">
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                        const updated = [...form.images];
+                        updated.splice(currentImageIndex, 1);
+                        handleChange("images", updated);
+                        setCurrentImageIndex(0);
+                        }}
+                        className="px-3 py-1 text-xs text-white bg-red-500 rounded"
+                    >
+                        Hapus
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                        const updated = [
+                            ...form.images,
+                            { image_url: "", file: null },
+                        ];
+                        handleChange("images", updated);
+                        setCurrentImageIndex(updated.length - 1);
+                        }}
+                        className="px-3 py-1 text-xs text-white bg-blue-600 rounded"
+                    >
+                        + Tambah Gambar
+                    </button>
+
+                    </div>
+                </div>
+                ) : (
+                <div className="flex flex-col items-center gap-3">
+                    <div className="flex items-center justify-center w-40 h-40 text-xs text-gray-400 border rounded-lg">
+                    Tidak ada gambar
+                    </div>
+
+                    <button
                     type="button"
-                    onClick={() =>
-                    setCurrentImageIndex((prev) =>
-                        prev === form.image_urls.length - 1 ? 0 : prev + 1
-                    )
-                    }
-                    className="px-2 py-1 border rounded"
-                >
-                    →
-                </button>
+                    onClick={() => {
+                        handleChange("images", [
+                        { image_url: "", file: null },
+                        ]);
+                        setCurrentImageIndex(0);
+                    }}
+                    className="px-3 py-1 text-sm text-white bg-blue-600 rounded-lg"
+                    >
+                    + Tambah Gambar
+                    </button>
                 </div>
-
-                <button
-                type="button"
-                onClick={() => {
-                    const updated = [...form.image_urls, ""];
-                    handleChange("image_urls", updated);
-                    setCurrentImageIndex(updated.length - 1);
-                }}
-                className="px-3 py-1 text-sm text-white bg-blue-600 rounded-lg"
-                >
-                + Tambah Gambar
-                </button>
-            </div>
-            ) : (
-            <div className="flex flex-col items-center gap-2">
-                <div className="flex items-center justify-center w-40 h-40 text-xs text-gray-400 border rounded-lg">
-                Tidak ada gambar
-                </div>
-
-                <button
-                type="button"
-                onClick={() => {
-                    handleChange("image_urls", [""]);
-                    setCurrentImageIndex(0);
-                }}
-                className="px-3 py-1 text-sm text-white bg-blue-600 rounded-lg"
-                >
-                + Tambah Gambar
-                </button>
-            </div>
-            )}
-            </div>
-
-            {/* Image URL */}
-            <div>
-            <label className="block mb-1 text-xs font-medium">
-                URL Gambar {currentImageIndex + 1}
-            </label>
-            <input
-                type="text"
-                value={form.image_urls[currentImageIndex] || ""}
-                onChange={(e) => {
-                const updated = [...form.image_urls];
-                updated[currentImageIndex] = e.target.value;
-                handleChange("image_urls", updated);
-                }}
-                className="w-full px-3 py-1.5 text-sm border rounded-lg"
-            />
+                )}
             </div>
 
             {/* Status */}

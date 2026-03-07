@@ -1,13 +1,11 @@
 import axios from "axios";
 
-
-
-const API_URL = "http://192.168.1.176:3030/api/v1/categories";
+const API_URL = "http://localhost:3030/api/v1/categories";
 
 interface CategoryPayload {
   name: string;
   code: string;
-  image_url?: string;
+  image?: File | null;
 }
 
 export const getCategories = async () => {
@@ -15,16 +13,40 @@ export const getCategories = async () => {
   return res.data;
 };
 
+export const getParentCategories = async () => {
+  const res = await axios.get(`${API_URL}/parents`);
+  return res.data;
+};
+
 export const createCategory = async (data: CategoryPayload) => {
-  const res = await axios.post(API_URL, data);
+  const formData = new FormData();
+
+  formData.append("name", data.name);
+  formData.append("code", data.code);
+
+  if (data.image) {
+    formData.append("image", data.image);
+  }
+
+  const res = await axios.post(API_URL, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
   return res.data;
 };
 
 export const updateCategory = async (
   id: string,
-  data: Partial<CategoryPayload>
+  data: FormData
 ) => {
-  const res = await axios.patch(`${API_URL}/${id}`, data);
+  const res = await axios.patch(`${API_URL}/${id}`, data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
   return res.data;
 };
 

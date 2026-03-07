@@ -25,22 +25,36 @@ export default function CategoryPage() {
   const [nameError, setNameError] = useState(false);
   const [codeError, setCodeError] = useState(false);
 
-  const [formImage, setFormImage] = useState("");
+  const [formImage, setFormImage] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const getImageUrl = (url: string) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    return `http://localhost:3000${url}`;
+    return `http://localhost:3030${url}`;
   };
 
   const openEditModal = (cat: any) => {
     setEditingCategory(cat);
     setFormName(cat.name ?? "");
     setFormCode(cat.code ?? "");
-    setFormImage(cat.image_url ?? "");
+
+    setPreviewImage(cat.image_url ? getImageUrl(cat.image_url) : null);
+    setFormImage(null);
+
     setNameError(false);
     setCodeError(false);
     setIsEditOpen(true);
   };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    setFormImage(file);
+    setPreviewImage(URL.createObjectURL(file));
+  };
+
   useEffect(() => {
   if (!editingCategory) return;
 
@@ -50,13 +64,13 @@ export default function CategoryPage() {
   const duplicateName = categories.some(
     (c) =>
       (c.name ?? "").toLowerCase() === safeName &&
-      c.id !== editingCategory.id
+      String(c.id) !== String(editingCategory.id)
   );
 
   const duplicateCode = categories.some(
     (c) =>
       (c.code ?? "").toLowerCase() === safeCode &&
-      c.id !== editingCategory.id
+      String(c.id) !== String(editingCategory.id)
   );
 
   setNameError(duplicateName);
@@ -79,16 +93,28 @@ export default function CategoryPage() {
   }, [filtered, limit]);
 
   const handleSave = async () => {
-    if (nameError || codeError) return;
+    try {
+      if (nameError || codeError) return;
 
-    await updateCategory(editingCategory.id, {
-      name: formName,
-      code: formCode,
-      image_url: formImage,
-    });
+      const formData = new FormData();
 
-    setIsEditOpen(false);
-    fetchCategories();
+      formData.append("name", formName);
+      formData.append("code", formCode);
+
+      if (formImage) {
+        formData.append("image", formImage);
+      }
+
+      console.log("UPDATE:", editingCategory.id);
+
+      await updateCategory(editingCategory.id, formData);
+
+      setIsEditOpen(false);
+      fetchCategories();
+    } catch (err) {
+      console.error("UPDATE ERROR:", err);
+      console.log("FORM DATA", formName, formCode, formImage);
+    }
   };
 
   const fetchCategories = async () => {
@@ -395,25 +421,36 @@ export default function CategoryPage() {
               )}
             </div>
 
-            {/* IMAGE URL */}
+            {/* IMAGE UPLOAD */}
             <div className="mb-6">
-              <label className="block mb-1 text-sm font-medium">
-                Logo Category (URL)
+
+              <label className="block mb-2 text-sm font-medium">
+                Logo Category
               </label>
+
               <input
-                value={formImage}
-                onChange={(e) => setFormImage(e.target.value)}
-                className="w-full px-3 py-2 text-sm border rounded-md outline-none focus:ring-1 focus:ring-blue-500"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full text-sm"
               />
 
-              {formImage && (
-                <div className="mt-3">
-                <img
-                  src={getImageUrl(formImage)}
-                  className="w-16 h-16 object-contain rounded bg-gray-100 p-2"
-                />
+              {/* PREVIEW */}
+              {previewImage && (
+                <div className="flex justify-center mt-4">
+
+                  <div className="flex items-center justify-center w-40 h-40 bg-gray-100 rounded-xl border">
+
+                    <img
+                      src={previewImage}
+                      className="max-w-[120px] max-h-[120px] object-contain"
+                    />
+
+                  </div>
+
                 </div>
               )}
+
             </div>
 
             {/* BUTTON */}
