@@ -2,6 +2,7 @@ import { useState } from "react";
 import ProductRow from "./ProductRow";
 import api from "../../../services/api";
 
+import Swal from "sweetalert2";
 import { AlertCircle } from "lucide-react";
 
 interface ProductTableProps {
@@ -80,13 +81,38 @@ export default function ProductTable({
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
 
-    const confirmDelete = confirm(
-      `Yakin mau hapus ${selectedIds.length} produk?`
-    );
-    if (!confirmDelete) return;
+    const result = await Swal.fire({
+      title: "Hapus Produk Terpilih?",
+      html: `
+        <div style="font-size:14px">
+          Anda akan menghapus <b>${selectedIds.length}</b> produk.
+          <br/><br/>
+          <span style="color:#dc2626;font-weight:500">
+            Data yang dihapus tidak bisa dikembalikan.
+          </span>
+        </div>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       setIsDeleting(true);
+
+      Swal.fire({
+        title: "Menghapus...",
+        text: "Sedang menghapus produk",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
 
       await api.delete("/admin/products/bulk", {
         data: { ids: selectedIds },
@@ -94,10 +120,144 @@ export default function ProductTable({
 
       setSelectedIds([]);
 
+      Swal.fire(
+        "Berhasil",
+        `${selectedIds.length} produk berhasil dihapus`,
+        "success"
+      );
+
       onRefetch();
 
     } catch (error) {
       console.error("Bulk delete error:", error);
+
+      Swal.fire(
+        "Error",
+        "Terjadi kesalahan saat menghapus produk",
+        "error"
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteDuplicate = async () => {
+    if (!products.length) return;
+
+    const result = await Swal.fire({
+      title: "Hapus Produk Duplikat?",
+      html: `
+        <div style="text-align:left;font-size:14px">
+          Tindakan ini akan:
+          <ul style="margin-top:8px">
+            <li>• Menghapus produk dengan tanggal <b>create / update lebih lama</b></li>
+            <li>• Jika waktunya sama, sistem akan <b>menghapus salah satu secara random</b></li>
+          </ul>
+          <br/>
+          <b>Data yang dihapus tidak bisa dikembalikan.</b>
+        </div>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setIsDeleting(true);
+
+      const groups: Record<string, any[]> = {};
+
+      products.forEach((p) => {
+        const key = p.duplicate_group || p.sku_seller;
+
+        if (!groups[key]) {
+          groups[key] = [];
+        }
+
+        groups[key].push(p);
+      });
+
+      const idsToDelete: string[] = [];
+
+      Object.values(groups).forEach((group) => {
+        if (group.length <= 1) return;
+
+        group.sort((a, b) => {
+          const aDate = new Date(a.updated_at || a.created_at).getTime();
+          const bDate = new Date(b.updated_at || b.created_at).getTime();
+
+          return bDate - aDate;
+        });
+
+        const keep = group[0];
+        const duplicates = group.slice(1);
+
+        duplicates.forEach((p) => idsToDelete.push(p.id));
+      });
+
+      if (!idsToDelete.length) {
+        Swal.fire("Info", "Tidak ada duplicate yang bisa dihapus", "info");
+        return;
+      }
+
+      await api.delete("/admin/products/bulk", {
+        data: { ids: idsToDelete },
+      });
+
+      Swal.fire(
+        "Berhasil",
+        `${idsToDelete.length} produk duplikat berhasil dihapus`,
+        "success"
+      );
+
+      onRefetch();
+    } catch (err) {
+      console.error("Delete duplicate error:", err);
+
+      console.log("DUPLICATE PRODUCTS:", products);
+
+const groups: Record<string, any[]> = {};
+
+products.forEach((p) => {
+  const key = p.duplicate_group;
+
+  if (!groups[key]) {
+    groups[key] = [];
+  }
+
+  groups[key].push(p);
+});
+
+console.log("GROUPS:", groups);
+
+const idsToDelete: string[] = [];
+
+Object.values(groups).forEach((group) => {
+  if (group.length <= 1) return;
+
+  const sorted = group.sort(
+    (a, b) =>
+      new Date(b.updated_at).getTime() -
+      new Date(a.updated_at).getTime()
+  );
+
+  const toDelete = sorted.slice(1);
+
+  toDelete.forEach((p) => idsToDelete.push(p.id));
+});
+
+console.log("IDS TO DELETE:", idsToDelete);
+
+      Swal.fire(
+        "Error",
+        "Terjadi kesalahan saat menghapus duplicate",
+        "error"
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -160,10 +320,10 @@ export default function ProductTable({
 
                       {showDuplicateOnly && (
                         <button
-                          onClick={onToggleDuplicateFilter}
-                          className="px-2 py-1 text-xs text-gray-600 border rounded-md hover:bg-gray-100"
+                          onClick={handleDeleteDuplicate}
+                          className="px-2 py-1 text-xs text-white bg-red-600 rounded-md hover:bg-red-700"
                         >
-                          Clear
+                          Hapus
                         </button>
                       )}
                     </div>
@@ -203,7 +363,6 @@ export default function ProductTable({
               <th className="px-3 py-2 text-left">Harga Final</th>
               <th className="px-3 py-2 text-center">Aktif</th>
               <th className="px-3 py-2 text-center">Populer</th>
-              <th className="px-3 py-2 text-center">Edit</th>
             </tr>
           </thead>
 

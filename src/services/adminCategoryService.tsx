@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3030/api/v1/categories";
+const API_URL = `${import.meta.env.VITE_API_BASE}/api/v1/categories`;
 
 interface CategoryPayload {
   name: string;

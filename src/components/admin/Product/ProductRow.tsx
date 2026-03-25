@@ -43,20 +43,40 @@ export default function ProductRow({
         />
       </td>
       <td className="px-3 py-2">
-        {product.thumbnail_url ? (
-          <img
-            src={getThumbnailUrl(product.thumbnail_url)}
-            alt={product.name}
-            onClick={() =>
-              onImageClick(getThumbnailUrl(product.thumbnail_url!))
-            }
-            className="object-cover w-8 h-8 rounded cursor-pointer hover:opacity-80"
-          />
-        ) : (
-          <div className="flex items-center justify-center w-8 h-8 text-xs text-gray-400 bg-gray-100 rounded">
-            —
-          </div>
-        )}
+        {(() => {
+          const thumbnail =
+            product.thumbnail_url ||
+            product.images?.[0]?.thumbnail_url ||
+            product.images?.[0]?.image_url;
+
+          return thumbnail ? (
+            <img
+              src={getThumbnailUrl(thumbnail)}
+              alt={product.name}
+              width={32}
+              height={32}
+              onClick={(e) => {
+                const img = e.target as HTMLImageElement;
+                onImageClick(img.src);
+              }}
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                const filename = thumbnail.split("/").pop();
+                const fallback = `${import.meta.env.VITE_API_BASE}/uploads/products/original/${filename}`;
+
+                console.log("IMAGE FAILED:", getThumbnailUrl(thumbnail));
+                console.log("FALLBACK USED:", fallback);
+
+                img.src = fallback;
+              }}
+              className="object-cover w-8 h-8 rounded cursor-pointer hover:opacity-80"
+            />
+          ) : (
+            <div className="flex items-center justify-center w-8 h-8 text-xs text-gray-400 bg-gray-100 rounded">
+              —
+            </div>
+          );
+        })()}
       </td>
       <td className="px-3 py-2 font-medium">
         {product.name}

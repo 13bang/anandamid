@@ -9,8 +9,9 @@ import {
   type Banner,
 } from "../../services/bannerService";
 import { Upload, Trash2, RefreshCw, Pencil } from "lucide-react";
+import Swal from "sweetalert2";
 
-const BASE_FILE_URL = "http://localhost:3030";
+const BASE_FILE_URL = `${import.meta.env.VITE_API_BASE}`;
 
 export default function BannerPage() {
   const [data, setData] = useState<Banner[]>([]);
@@ -83,9 +84,37 @@ export default function BannerPage() {
     };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Yakin mau hapus banner?")) return;
-    await deleteBanner(id);
-    await fetchData();
+    const result = await Swal.fire({
+      title: "Hapus banner?",
+      // text: "Banner yang dihapus tidak bisa dikembalikan.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteBanner(id);
+        await fetchData();
+
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil",
+          text: "Banner berhasil dihapus",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } catch {
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: "Gagal menghapus banner",
+        });
+      }
+    }
   };
 
   const handleReplace = async (id: string, file: File) => {

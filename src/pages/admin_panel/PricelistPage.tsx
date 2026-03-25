@@ -10,7 +10,7 @@ import type {
 import { Upload, Laptop, Cpu } from "lucide-react";
 
 const BASE_FILE_URL =
-  "http://localhost:3030/uploads/pricelists";
+  `${import.meta.env.VITE_API_BASE}/uploads/pricelists`;
 
 export default function PricelistPage() {
   const [data, setData] = useState<Pricelist[]>([]);
@@ -85,7 +85,7 @@ export default function PricelistPage() {
         {/* Toggle Type */}
         <div>
           <p className="mb-4 font-semibold">
-            Pilih Type
+            Pilih Tipe
           </p>
 
           <div className="flex p-1 bg-gray-100 rounded-full">

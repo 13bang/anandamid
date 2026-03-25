@@ -9,6 +9,7 @@ export default {
       fontFamily: {
         butterpop: ['Butterpop', 'cursive'],
         stretchpro: ['StretchPro', 'sans-serif'],
+        cocogoose: ['Cocogoose', 'sans-serif'],
       },
 
       colors: {

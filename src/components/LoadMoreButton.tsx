@@ -18,6 +18,7 @@ export default function LoadMoreButton({
   return (
     <div className="flex justify-center mt-10">
         <button
+            type="button"
             onClick={onLoadMore}
             disabled={loading}
             className="

@@ -5,6 +5,7 @@ import {
   updateCategory,
 } from "../../services/adminCategoryService";
 import { ArrowTopRightOnSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import Swal from "sweetalert2";
 
 export default function CategoryPage() {
   const [categories, setCategories] = useState<any[]>([]);
@@ -30,7 +31,7 @@ export default function CategoryPage() {
   const getImageUrl = (url: string) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    return `http://localhost:3030${url}`;
+    return `${import.meta.env.VITE_API_BASE}${url}`;
   };
 
   const openEditModal = (cat: any) => {
@@ -145,20 +146,48 @@ export default function CategoryPage() {
 
   const handleDelete = async (category: any) => {
     if (category.total_products > 0) {
-      alert(
-        `Tidak bisa menghapus kategori "${category.name}" karena masih memiliki ${category.total_products} produk.`
-      );
+      Swal.fire({
+        icon: "warning",
+        title: "Tidak bisa dihapus",
+        text: `Kategori "${category.name}" masih memiliki ${category.total_products} produk.`,
+        confirmButtonColor: "#3085d6",
+      });
       return;
     }
 
-    const confirmDelete = window.confirm(
-      `Apakah anda ingin menghapus kategori "${category.name}" ?`
-    );
+    const result = await Swal.fire({
+      title: "Hapus kategori?",
+      text: `Kategori "${category.name}" akan dihapus permanen.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, hapus",
+      cancelButtonText: "Batal",
+    });
 
-    if (!confirmDelete) return;
+    if (!result.isConfirmed) return;
 
-    await deleteCategory(category.id);
-    fetchCategories();
+    try {
+      await deleteCategory(category.id);
+
+      await Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: "Kategori berhasil dihapus",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      fetchCategories();
+
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Terjadi kesalahan saat menghapus kategori",
+      });
+    }
   };
 
   return (
@@ -211,11 +240,10 @@ export default function CategoryPage() {
 
             {/* HEADER KOLOM */}
             <tr>
-              <th className="px-3 py-2 text-left w-[80px]">Image</th>
-              <th className="px-3 py-2 text-left w-[35%]">Name</th>
-              <th className="px-3 py-2 text-left">Code</th>
-              <th className="px-3 py-2 text-center">Total Products</th>
-              <th className="px-3 py-2 text-center">Action</th>
+              <th className="px-3 py-2 text-left w-[80px]">Gambar</th>
+              <th className="px-3 py-2 text-left w-[35%]">Nama</th>
+              <th className="px-3 py-2 text-left">Kode</th>
+              <th className="px-3 py-2 text-center">Total Produk</th>
             </tr>
 
           </thead>

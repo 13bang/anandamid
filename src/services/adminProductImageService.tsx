@@ -1,6 +1,6 @@
 import api from "./api";
 
-const API_URL = "http://localhost:3030/api/v1/product-images";
+const API_URL = `${import.meta.env.VITE_API_BASE}/api/v1/product-images`;
 
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");

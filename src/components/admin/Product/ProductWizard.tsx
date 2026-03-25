@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getOriginalUrl } from "../../imageHelper";
+import { deleteProductImage } from "../../../services/adminProductImageService";
 
 interface ProductWizardProps {
   mode: "create" | "edit";
@@ -406,11 +407,33 @@ export default function ProductWizard({
 
                     <button
                         type="button"
-                        onClick={() => {
-                        const updated = [...form.images];
-                        updated.splice(currentImageIndex, 1);
-                        handleChange("images", updated);
-                        setCurrentImageIndex(0);
+                        onClick={async () => {
+                            const image = form.images[currentImageIndex];
+
+                            if (!confirm("Hapus gambar ini?")) return;
+
+                            try {
+
+                                if (image.id) {
+                                await deleteProductImage(image.id);
+                                }
+
+                                // hapus dari state
+                                const updated = [...form.images];
+                                updated.splice(currentImageIndex, 1);
+
+                                handleChange("images", updated);
+
+                                setCurrentImageIndex((prev) => {
+                                if (updated.length === 0) return 0;
+                                if (prev >= updated.length) return updated.length - 1;
+                                return prev;
+                                });
+
+                            } catch (err) {
+                                console.error("Delete image failed:", err);
+                                alert("Gagal menghapus gambar");
+                            }
                         }}
                         className="px-3 py-1 text-xs text-white bg-red-500 rounded"
                     >

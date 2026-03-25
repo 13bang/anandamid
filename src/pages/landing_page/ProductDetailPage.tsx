@@ -6,8 +6,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
 import Breadcrumb from "../../components/Breadcrumb";
+import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 
 export default function ProductDetailPage() {
+  const [loadingRelated, setLoadingRelated] = useState(true);
   const { id } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,33 +31,20 @@ export default function ProductDetailPage() {
 
   const specRef = useRef<HTMLDivElement>(null);
 
-  const CARD_TOTAL_WIDTH = 226;
-
-  const scrollRight = () => {
+  const scroll = (direction: "left" | "right") => {
     if (!scrollRef.current) return;
 
-    const maxIndex = relatedProducts.length - 1;
-    const newIndex = Math.min(currentIndex + 1, maxIndex);
+    const container = scrollRef.current;
+    const firstCard = container.querySelector(".product-item") as HTMLElement;
+    if (!firstCard) return;
 
-    scrollRef.current.scrollTo({
-      left: newIndex * CARD_TOTAL_WIDTH,
+    const gap = 16;
+    const cardWidth = firstCard.offsetWidth + gap;
+
+    container.scrollBy({
+      left: direction === "left" ? -cardWidth : cardWidth,
       behavior: "smooth",
     });
-
-    setCurrentIndex(newIndex);
-  };
-
-  const scrollLeft = () => {
-    if (!scrollRef.current) return;
-
-    const newIndex = Math.max(currentIndex - 1, 0);
-
-    scrollRef.current.scrollTo({
-      left: newIndex * CARD_TOTAL_WIDTH,
-      behavior: "smooth",
-    });
-
-    setCurrentIndex(newIndex);
   };
 
   const [showFullSpec, setShowFullSpec] = useState(false);
@@ -66,66 +55,169 @@ export default function ProductDetailPage() {
 
   const fetchProduct = async () => {
     setLoading(true);
-    const data = await getProductById(id!);
-    setProduct(data);
-    setLoading(false);
-  };
+    setLoadingRelated(true);
 
-  useEffect(() => {
-    if (product) fetchRelatedProducts();
-  }, [product]);
+    try {
+      const data = await getProductById(id!);
+      setProduct(data);
+
+      const related = await getProductsByCategory(data.category.name);
+
+      const filtered = related
+        .filter((p: Product) => p.id !== data.id)
+        .slice(0, 30);
+
+      setRelatedProducts(filtered);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setLoadingRelated(false);
+    }
+  };
 
   const fetchRelatedProducts = async () => {
+    setLoadingRelated(true);
+
     const data = await getProductsByCategory(product!.category.name);
 
-    const filtered = data.filter((p: Product) => p.id !== product!.id);
+    const filtered = data
+      .filter((p: Product) => p.id !== product!.id)
+      .slice(0, 30);
 
     setRelatedProducts(filtered);
+
+    setLoadingRelated(false);
   };
 
-  if (loading) return <div className="p-10">Loading...</div>;
-  if (!product) return <div className="p-10">Product not found</div>;
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
 
-  const warrantyDisplay =
-    !product.warranty ||
-    product.warranty === "NaN" ||
-    String(product.warranty).trim() === ""
-      ? "-"
-      : product.warranty;
+    const container = scrollRef.current;
+    const card = container.querySelector(".product-item");
 
-  const normalPrice = Number(product.price_normal) || 0;
-  const discountPrice = Number(product.price_discount) || 0;
+    if (!card) return;
 
-  const finalPrice =
-    discountPrice > 0 ? normalPrice - discountPrice : normalPrice;
+    const cardWidth = card.clientWidth + 24; // gap-6 = 24px
+    const index = Math.round(container.scrollLeft / cardWidth);
 
-  const isOutOfStock = Number(product.stock) === 0;
+    setCurrentIndex(index);
+  };
 
-  const productLink = window.location.href;
+  const maxDots = 5;
 
-  const whatsappMessage = `Hai, saya ingin memesan produk berikut:
+  const totalSlides = relatedProducts.length;
+  const dotCount = Math.min(maxDots, totalSlides);
 
-  Nama Produk: ${product.name}
-  Jumlah: ${quantity}
-  Harga Satuan: Rp ${finalPrice.toLocaleString()}
-  Link Produk: ${productLink}
+  const getActiveDot = () => {
+    if (totalSlides <= maxDots) return currentIndex;
 
-  Mohon informasi ketersediaan dan total pembayarannya.
-  Terima kasih.`;
+    const ratio = totalSlides / maxDots;
+    return Math.floor(currentIndex / ratio);
+  };
 
-  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-    whatsappMessage
-  )}`;
+  if (loading)
+    return (
+      <div className="max-w-7xl px-8 py-10 mx-auto">
+        <div className="grid grid-cols-12 gap-10">
+
+          {/* IMAGE */}
+          <div className="col-span-4">
+            <div className="aspect-square rounded-lg shimmer"></div>
+
+            <div className="flex gap-3 mt-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="w-20 h-20 rounded shimmer"></div>
+              ))}
+            </div>
+          </div>
+
+          {/* INFO */}
+          <div className="col-span-8 space-y-6">
+
+            <div className="space-y-3">
+              <div className="h-4 w-32 shimmer"></div>
+              <div className="h-8 w-3/4 shimmer"></div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="h-6 w-40 shimmer"></div>
+              <div className="h-10 w-56 shimmer"></div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="h-4 w-40 shimmer"></div>
+              <div className="h-4 w-32 shimmer"></div>
+              <div className="h-4 w-36 shimmer"></div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <div className="h-11 w-40 shimmer rounded"></div>
+              <div className="h-11 w-56 shimmer rounded"></div>
+            </div>
+
+            <div className="pt-6 space-y-4">
+              <div className="h-6 w-40 shimmer"></div>
+
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-4 w-full shimmer"></div>
+              ))}
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+    if (!product) return <div className="p-10">Product not found</div>;
+
+    const warrantyDisplay =
+      !product.warranty ||
+      product.warranty === "-" ||
+      String(product.warranty).trim() === ""
+        ? "-"
+        : product.warranty;
+
+    const normalPrice = Number(product.price_normal) || 0;
+    const discountPrice = Number(product.price_discount) || 0;
+
+    const finalPrice =
+      discountPrice > 0 ? normalPrice - discountPrice : normalPrice;
+
+    const isOutOfStock = Number(product.stock) === 0;
+
+    const productLink = window.location.href;
+
+    const whatsappMessage = `Hai, saya ingin memesan produk berikut:
+
+    Nama Produk: ${product.name}
+    Jumlah: ${quantity}
+    Harga Satuan: Rp ${finalPrice.toLocaleString()}
+    Link Produk: ${productLink}
+
+    Mohon informasi ketersediaan dan total pembayarannya.
+    Terima kasih.`;
+
+    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+      whatsappMessage
+    )}`;
 
   return (
     <>
-      {/* ================= BREADCRUMB ================= */}
-      <div className="w-full bg-blue-100">
-          <div className="px-8 h-12 flex items-center">
+        {/* ================= BREADCRUMB ================= */}
+        <div className="w-full">
+          <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <Breadcrumb
               items={[
                 { label: "Home", path: "/" },
-                { label: "Product Katalog", path: "/product-katalog" },
+                { label: "Produk Katalog", path: "/product-katalog" },
+                ...(product?.category?.name
+                  ? [
+                      {
+                        label: product.category.name,
+                        path: `/product-katalog?category=${product.category.name}`,
+                      },
+                    ]
+                  : []),
                 {
                   label: product.name,
                 },
@@ -135,22 +227,34 @@ export default function ProductDetailPage() {
         </div>
 
         {/* ================= CONTENT WRAPPER ================= */}
-        <div className="w-full px-8 py-10 mx-auto bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-0 py-10 bg-white">
 
           {/* ================= TOP SECTION ================= */}
-          <div className="grid grid-cols-12 gap-10 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
 
-            {/* IMAGE */}
-            <div className="col-span-4 sticky top-24 self-start">
+            {/* ================= IMAGE ================= */}
+            <div className="lg:col-span-4 lg:sticky lg:top-24 self-start">
+
               <div
-                className="relative overflow-hidden border rounded-lg aspect-square group cursor-zoom-in"
-                onMouseEnter={() => setIsZooming(true)}
-                onMouseLeave={() => setIsZooming(false)}
+                className="relative overflow-hidden border rounded-lg aspect-square group lg:cursor-zoom-in"
+                onMouseEnter={() => {
+                  if (window.innerWidth >= 1024) setIsZooming(true);
+                }}
+                onMouseLeave={() => {
+                  if (window.innerWidth >= 1024) setIsZooming(false);
+                }}
                 onMouseMove={(e) => {
+                  if (window.innerWidth < 1024) return;
+
                   const rect = e.currentTarget.getBoundingClientRect();
                   const x = ((e.clientX - rect.left) / rect.width) * 100;
                   const y = ((e.clientY - rect.top) / rect.height) * 100;
                   setZoomPosition({ x, y });
+                }}
+                onClick={() => {
+                  if (window.innerWidth < 1024) {
+                    setShowModal(true);
+                  }
                 }}
               >
                 <img
@@ -171,15 +275,15 @@ export default function ProductDetailPage() {
                 <button
                   onClick={() => setShowModal(true)}
                   className="absolute bottom-3 right-3 bg-white/90 hover:bg-white 
-                            p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 
-                            transition"
+                  p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 
+                  transition hidden lg:block"
                 >
                   <FaSearchPlus size={18} />
                 </button>
               </div>
 
               {/* THUMBNAILS */}
-              <div className="flex mt-4 space-x-3 overflow-x-auto">
+              <div className="flex mt-4 gap-3 overflow-x-auto pb-2">
                 {product.images.map((img, index) => (
                   <img
                     key={img.id}
@@ -189,7 +293,7 @@ export default function ProductDetailPage() {
                         : `${import.meta.env.VITE_API_BASE}${img.image_url}`
                     }
                     onClick={() => setActiveImage(index)}
-                    className={`w-20 h-20 object-cover border rounded cursor-pointer ${
+                    className={`w-16 h-16 lg:w-20 lg:h-20 object-cover border rounded cursor-pointer ${
                       activeImage === index
                         ? "border-black"
                         : "border-gray-200"
@@ -197,17 +301,11 @@ export default function ProductDetailPage() {
                   />
                 ))}
               </div>
-            </div>
 
-            {showModal && (
-              <div
-                className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
-                onClick={() => setShowModal(false)}
-              >
+              {showModal && (
                 <div
-                  className="relative bg-white rounded-xl p-4 shadow-2xl 
-                            w-full max-w-xl max-h-[85vh] flex items-center justify-center"
-                  onClick={(e) => e.stopPropagation()}
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+                  onClick={() => setShowModal(false)}
                 >
                   <img
                     src={
@@ -216,31 +314,22 @@ export default function ProductDetailPage() {
                         : `${import.meta.env.VITE_API_BASE}${product.images[activeImage]?.image_url}`
                     }
                     alt={product.name}
-                    className="max-h-[75vh] w-auto object-contain rounded-lg"
+                    className="max-w-[95%] max-h-[90%] object-contain rounded-lg"
                   />
-
-                  {/* tombol close */}
-                  <button
-                    onClick={() => setShowModal(false)}
-                    className="absolute top-3 right-3 bg-black/70 text-white 
-                              w-8 h-8 rounded-full flex items-center justify-center 
-                              hover:bg-black transition"
-                  >
-                    ✕
-                  </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* INFO */}
-            <div className="col-span-8 space-y-6 relative z-20">
+            {/* ================= INFO ================= */}
+            <div className="lg:col-span-8 space-y-6">
 
+              {/* TITLE */}
               <div>
                 <p className="mb-2 text-sm text-gray-600 font-semibold">
                   {product.category.name}
                 </p>
 
-                <h1 className="text-3xl font-bold">
+                <h1 className="text-lg lg:text-3xl font-semibold leading-tight">
                   {product.name}
                 </h1>
               </div>
@@ -253,19 +342,19 @@ export default function ProductDetailPage() {
                       Rp {normalPrice.toLocaleString()}
                     </p>
 
-                    <p className="text-3xl font-bold text-black">
+                    <p className="text-2xl lg:text-3xl font-bold text-primary">
                       Rp {finalPrice.toLocaleString()}
                     </p>
                   </>
                 ) : (
-                  <p className="text-3xl font-bold text-black">
+                  <p className="text-2xl lg:text-3xl font-bold text-primary">
                     Rp {normalPrice.toLocaleString()}
                   </p>
                 )}
               </div>
 
               {/* META */}
-              <div className="space-y-2 text-sm text-600">
+              <div className="space-y-2 text-sm text-gray-700">
                 <div>
                   SKU: <span className="font-medium">{product.sku_seller}</span>
                 </div>
@@ -280,12 +369,16 @@ export default function ProductDetailPage() {
               </div>
 
               {/* ================= ORDER SECTION ================= */}
-              <div className="pt-4">
+              <div className="pt-2">
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
 
                   {/* QTY */}
-                  <div className={`bg-gray-100 flex items-center border rounded h-[44px] ${isOutOfStock ? "opacity-50 pointer-events-none" : ""}`}>
+                  <div
+                    className={`bg-gray-100 flex items-center border rounded h-[44px] ${
+                      isOutOfStock ? "opacity-50 pointer-events-none" : ""
+                    }`}
+                  >
                     <button
                       onClick={() => setQuantity((prev) => (prev > 1 ? prev - 1 : 1))}
                       className="px-4 text-lg"
@@ -303,7 +396,7 @@ export default function ProductDetailPage() {
                     </button>
                   </div>
 
-                  {/* WHATSAPP BUTTON */}
+                  {/* WHATSAPP */}
                   {isOutOfStock ? (
                     <button
                       disabled
@@ -317,15 +410,15 @@ export default function ProductDetailPage() {
                       href={whatsappUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-[44px] flex items-center gap-2 px-6 font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 transition"
+                      className="flex-1 lg:flex-none h-[44px] flex items-center justify-center gap-2 
+                      px-4 lg:px-6 text-sm lg:text-base font-semibold text-white 
+                      bg-green-600 rounded-md hover:bg-green-700 transition"
                     >
-                      <FaWhatsapp size={18} />
+                      <FaWhatsapp className="text-base lg:text-lg" />
                       Pesan via WhatsApp
                     </a>
                   )}
-
                 </div>
-
               </div>
 
               {/* ================= TAB SECTION ================= */}
@@ -335,7 +428,7 @@ export default function ProductDetailPage() {
                 <div className="flex border-b">
                   <button
                     onClick={() => setActiveTab("description")}
-                    className={`px-8 py-3 text-sm font-medium ${
+                    className={`px-6 lg:px-8 py-3 text-sm font-medium ${
                       activeTab === "description"
                         ? "border-b-2 border-black text-black"
                         : "text-gray-500"
@@ -346,7 +439,7 @@ export default function ProductDetailPage() {
 
                   <button
                     onClick={() => setActiveTab("review")}
-                    className={`px-8 py-3 text-sm font-medium ${
+                    className={`px-6 lg:px-8 py-3 text-sm font-medium ${
                       activeTab === "review"
                         ? "border-b-2 border-black text-black"
                         : "text-gray-500"
@@ -361,39 +454,21 @@ export default function ProductDetailPage() {
 
                   {activeTab === "description" && (
                     <div ref={specRef}>
+
+                      {/* SPECIFICATIONS */}
                       <h3 className="mb-4 text-base font-semibold">
                         Specifications
                       </h3>
 
-                      <div className="space-y-2 text-sm text-gray-700 pb-2">
+                      <div className="space-y-2 text-sm text-gray-700">
                         {(showFullSpec
                           ? product.specifications
                           : product.specifications?.slice(0, 10)
                         )?.map((spec, index) => (
-                          <div key={index}>
-                            {spec.trim()}
-                          </div>
+                          <div key={index}>{spec.trim()}</div>
                         ))}
                       </div>
 
-                      {product.specifications &&
-                        product.specifications.length > 10 && (
-                          <button
-                            onClick={() => {
-                              setShowFullSpec((prev) => !prev);
-
-                              setTimeout(() => {
-                                specRef.current?.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "start",
-                                });
-                              }, 100);
-                            }}
-                            className="mt-4 text-sm font-medium text-blue-600 hover:underline"
-                          >
-                            {showFullSpec ? "Tampilkan Lebih Sedikit" : "Selengkapnya"}
-                          </button>
-                      )}
                     </div>
                   )}
 
@@ -409,60 +484,132 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* ================= RELATED PRODUCT ================= */}
-          <section className="w-full px-8 pb-16 mt-16">
+      </div>
 
-            <div className="relative p-6 bg-gray-100 rounded-3xl">
-              
-              <h2 className="mb-6 text-lg font-semibold">
-                Related Products
-              </h2>
+      {/* ================= RELATED PRODUCT ================= */}
+      <section className="w-full pb-16 mt-14 border border-t-2">
 
-              {/* BUTTON LEFT */}
-              <button
-                onClick={scrollLeft}
-                className="absolute -left-5 top-1/2 -translate-y-1/2 
-                z-20 p-3 bg-white shadow-md rounded-full 
-                hover:bg-gray-100 transition"
-              >
-                <ChevronLeft size={20} />
-              </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-0 py-6">
 
-              {/* BUTTON RIGHT */}
-              <button
-                onClick={scrollRight}
-                className="absolute -right-5 top-1/2 -translate-y-1/2 
-                z-20 p-3 bg-white shadow-md rounded-full 
-                hover:bg-gray-100 transition"
-              >
-                <ChevronRight size={20} />
-              </button>
+          <div className="relative">
 
-              <div
-                ref={scrollRef}
-                className="
-                  flex gap-4
-                  overflow-x-auto
-                  scroll-smooth
-                  scrollbar-hide
-                  cursor-grab
-                  active:cursor-grabbing
-                "
-              >
-                {relatedProducts.map((item) => (
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold">
+              Produk Serupa
+            </h2>
+
+            {/* BUTTON LEFT */}
+            <button onClick={() => scroll("left")}
+              className="absolute -left-3 lg:-left-5 top-1/2 -translate-y-1/2 
+              z-20 p-2 lg:p-3 bg-white shadow-md rounded-full 
+              hidden md:flex
+              hover:bg-gray-100 transition"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            {/* BUTTON RIGHT */}
+            <button onClick={() => scroll("right")}
+              className="absolute -right-3 lg:-right-5 top-1/2 -translate-y-1/2 
+              z-20 p-2 lg:p-3 bg-white shadow-md rounded-full 
+              hidden md:flex
+              hover:bg-gray-100 transition"
+            >
+              <ChevronRight size={20} />
+            </button>
+
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className="
+              flex gap-6
+              overflow-x-auto
+              scrollbar-hide
+              scroll-smooth
+              snap-x snap-mandatory
+              py-2
+              "
+            >
+              {loadingRelated ? (
+                [...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="
+                    product-item
+                    flex-shrink-0
+                    snap-start
+                    py-4
+                    w-[47%]
+                    sm:w-[180px]
+                    md:w-[210px]
+                    lg:w-[230px]
+                    xl:w-[236px]
+                    "
+                  >
+                    <ProductCardSkeleton />
+                  </div>
+                ))
+              ) : (
+                relatedProducts.map((item) => (
                   <div
                     key={item.id}
-                    className="flex-shrink-0 w-[210px]"
+                    className="
+                    product-item
+                    flex-shrink-0
+                    snap-start
+                    py-4
+                    w-[47%]
+                    sm:w-[180px]
+                    md:w-[210px]
+                    lg:w-[230px]
+                    xl:w-[236px]
+                    "
                   >
                     <ProductCard product={item} />
                   </div>
-                ))}
-              </div>
-
+                ))
+              )}
             </div>
-          </section>
 
-      </div>
+            {/* DOT INDICATOR */}
+            <div className="flex justify-center gap-2 mt-4 md:hidden">
+              {Array.from({ length: dotCount }).map((_, index) => {
+                const activeDot = getActiveDot();
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      if (!scrollRef.current) return;
+
+                      const container = scrollRef.current;
+                      const card = container.querySelector(".product-item");
+                      if (!card) return;
+
+                      const cardWidth = card.clientWidth + 24;
+
+                      const targetIndex = Math.floor(
+                        (index / dotCount) * totalSlides
+                      );
+
+                      container.scrollTo({
+                        left: targetIndex * cardWidth,
+                        behavior: "smooth",
+                      });
+                    }}
+                    className={`h-2 w-2 rounded-full transition-all ${
+                      activeDot === index
+                        ? "bg-black w-4"
+                        : "bg-gray-300"
+                    }`}
+                  />
+                );
+              })}
+            </div>
+
+          </div>
+        </div>
+
+      </section>
     </>
   );
 }

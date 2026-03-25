@@ -1,7 +1,7 @@
 // services/productService.ts
 import api from "./api";
 
-const API_URL = "http://localhost:3030/api/v1/products";
+const API_URL = `${import.meta.env.VITE_API_BASE}/api/v1/products`;
 
 export const getProducts = async (params?: any) => {
   const res = await api.get(API_URL, { params });
@@ -23,4 +23,11 @@ export const getProductsByCategory = async (categoryName: string) => {
   });
 
   return response.data.data; 
+};
+
+export const getProductRecommendations = async (id: string) => {
+  const res = await api.get(
+    `${import.meta.env.VITE_API_BASE}/api/v1/products/${id}/recommendations`
+  );
+  return res.data;
 };
