@@ -30,4 +30,5 @@ export interface Product {
   thumbnail_url: string;
 
   specifications: string[];
+  variasi: string[];
 }

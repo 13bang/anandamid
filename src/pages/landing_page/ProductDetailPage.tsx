@@ -17,6 +17,8 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState<"description" | "review">("description");
 
   const [quantity, setQuantity] = useState(1);
+  // State untuk variasi yang dipilih
+  const [selectedVariasi, setSelectedVariasi] = useState<string>("");
 
   const WHATSAPP_NUMBER = "62895375706990";
 
@@ -60,6 +62,11 @@ export default function ProductDetailPage() {
     try {
       const data = await getProductById(id!);
       setProduct(data);
+
+      // Auto-select variasi pertama jika produk punya variasi
+      if (data.variasi && data.variasi.length > 0) {
+        setSelectedVariasi(data.variasi[0]);
+      }
 
       const related = await getProductsByCategory(data.category.name);
 
@@ -187,10 +194,13 @@ export default function ProductDetailPage() {
 
     const productLink = window.location.href;
 
+    // Teks tambahan untuk variasi jika ada
+    const variasiText = selectedVariasi ? `Variasi: ${selectedVariasi}\n    ` : "";
+
     const whatsappMessage = `Hai, saya ingin memesan produk berikut:
 
     Nama Produk: ${product.name}
-    Jumlah: ${quantity}
+    ${variasiText}Jumlah: ${quantity}
     Harga Satuan: Rp ${finalPrice.toLocaleString()}
     Link Produk: ${productLink}
 
@@ -368,8 +378,30 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
+              {/* ================= VARIASI SECTION (NEW) ================= */}
+              {product.variasi && product.variasi.length > 0 && (
+                <div className="pt-4 border-t mt-4">
+                  <p className="text-sm font-semibold mb-3">Variasi:</p>
+                  <div className="flex flex-wrap gap-3">
+                    {product.variasi.map((v, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedVariasi(v)}
+                        className={`px-4 py-2 border rounded-md text-sm transition-all ${
+                          selectedVariasi === v
+                            ? "border-black text-black font-semibold bg-gray-50 ring-1 ring-black"
+                            : "border-gray-200 text-gray-600 hover:border-gray-400 hover:text-black"
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* ================= ORDER SECTION ================= */}
-              <div className="pt-2">
+              <div className="pt-4">
 
                 <div className="flex items-center gap-3">
 

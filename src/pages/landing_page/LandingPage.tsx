@@ -433,7 +433,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-blue-50">
       {/* ================= HERO BANNER ================= */}
       <section className="w-full bg-white">
 

@@ -13,15 +13,71 @@ const brands = [
 ];
 
 const BRAND_LOCAL_MAP: Record<string, string> = {
-  "ASUS": "/brands/asus.png",
-  "MSI": "/brands/msi.png",
-  "Intel": "/brands/intel.png",
-  "AMD": "/brands/amd.svg",
   "Acer": "/brands/acer.svg",
   "ADATA": "/brands/adata.svg",
-  "Dell": "/brands/dell.png",
-  "Lenovo": "/brands/lenovo.png",
-  "Samsung": "/public/brands/samsung.svg"
+  "AMD": "/brands/amd.svg",
+  "AOC": "/brands/aoc.svg",
+  "APC": "/brands/apc.svg",
+  "Arctic": "/brands/arctic.svg",
+  "ASRock": "/brands/asrock.svg",
+  "ASUS": "/brands/asus.svg",
+  "Belden": "/brands/belden.svg",
+  "Blueprint": "/brands/blueprint.svg",
+  "Brother": "/brands/brother.svg",
+  "Canon": "/brands/canon.svg",
+  "CommScope": "/brands/commscope.svg",
+  "Cooler Master": "/brands/coolermaster.svg",
+  "Corsair": "/brands/corsair.svg",
+  "DeepCool": "/brands/deepcool.svg",
+  "Dell": "/brands/dell.svg",
+  "D-Link": "/brands/dlink.svg",
+  "Epson": "/brands/epson.svg",
+  "Fantech": "/brands/fantech.svg",
+  "FSP": "/brands/fsp.svg",
+  "Gigabyte": "/brands/gigabyte.svg",
+  "G.Skill": "/brands/gskill.svg",
+  "Hikvision": "/brands/hikvision.svg",
+  "HP": "/brands/hp.svg",
+  "ICA": "/brands/ica.svg",
+  "Intel": "/brands/intel.svg",
+  "Kaspersky": "/brands/kaspersky.svg",
+  "Kingston": "/brands/kingston.svg",
+  "Kingston Fury": "/brands/kingston-fury.svg",
+  "Lenovo": "/brands/lenovo.svg",
+  "Lexar": "/brands/lexar.svg",
+  "LG": "/brands/lg.svg",
+  "Logitech": "/brands/logitech.svg",
+  "Matsunaga": "/brands/matsunaga.svg",
+  "Microsoft": "/brands/microsoft.svg",
+  "Mikrotik": "/brands/mikrotik.svg",
+  "MSI": "/brands/msi.svg",
+  "Orico": "/brands/orico.svg",
+  "PowerColor": "/brands/powercolor.svg",
+  "Prolink": "/brands/prolink.svg",
+  "QNAP": "/brands/qnap.svg",
+  "Rexus": "/brands/rexus.svg",
+  "Ruijie": "/brands/ruijie.svg",
+  "SanDisk": "/brands/sandisk.svg",
+  "Samsung": "/brands/samsung.svg",
+  "Sapphire": "/brands/sapphire.svg",
+  "Seagate": "/brands/seagate.svg",
+  "Solution": "/brands/solution.svg",
+  "SteelSeries": "/brands/steelseries.svg",
+  "TeamGroup": "/brands/teamgroup.svg",
+  "Tenda": "/brands/tenda.svg",
+  "Thermal Grizzly": "/brands/thermal-grizzly.svg",
+  "Toshiba": "/brands/toshiba.svg",
+  "TP-Link": "/brands/tplink.svg",
+  "Transcend": "/brands/transcend.svg",
+  "Ubiquiti": "/brands/ubiquiti.svg",
+  "Ugreen": "/brands/ugreen.svg",
+  "Vascolink": "/brands/vascolink.svg",
+  "VBR": "/brands/vbr.svg",
+  "Vention": "/brands/vention.svg",
+  "V-Gen": "/brands/vgen.svg",
+  "WD": "/brands/wd.svg",
+  "Xiaomi": "/brands/xiaomi.svg",
+  "Zotac": "/brands/zotac.svg"
 };
 
 const getInitial = (brand: string) => {
@@ -35,25 +91,35 @@ const getInitial = (brand: string) => {
 
 export function OfficialBrandSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [imageError, setImageError] = useState<Record<string, boolean>>({});
+    const [imageError, setImageError] = useState<Record<string, boolean>>({});
 
   const scroll = (dir: "left" | "right") => {
     const el = scrollRef.current;
     if (!el) return;
 
-    const card = el.querySelector("div") as HTMLElement;
+    const card = el.querySelector(".brand-card") as HTMLElement;
     if (!card) return;
 
-    const scrollAmount = card.offsetWidth * 5;
+    const gap = 10;
 
-    el.scrollBy({
-      left: dir === "left" ? -scrollAmount : scrollAmount,
+    // 🔥 pakai boundingClientRect (lebih akurat dari offsetWidth)
+    const cardWidth = card.getBoundingClientRect().width;
+
+    const step = cardWidth + gap;
+
+    // 🔥 pakai ROUND biar ga numpuk error
+    const current = Math.round(el.scrollLeft / step);
+
+    const next = dir === "right" ? current + 1 : current - 1;
+
+    el.scrollTo({
+      left: next * step,
       behavior: "smooth",
     });
   };
 
   return (
-    <section className="w-full bg-white mt-4 py-6">
+    <section className="w-full bg-white mt-4 py-6 border-y border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-0">
 
         <h2 className="mb-6 text-xl sm:text-2xl md:text-3xl font-semibold font-cocogoose text-gray-800">
@@ -79,8 +145,11 @@ export function OfficialBrandSection() {
           </button>
 
           {/* SCROLL */}
-          <div ref={scrollRef} className="overflow-x-auto scrollbar-hide">
-            <div className="flex gap-4">
+          <div
+            ref={scrollRef}
+            className="overflow-x-auto scrollbar-hide scroll-smooth px-[5px]"
+          >
+            <div className="flex gap-[10px] w-full">
 
               {brands.map((brand) => {
                 const imagePath = BRAND_LOCAL_MAP[brand];
@@ -89,7 +158,10 @@ export function OfficialBrandSection() {
                 return (
                   <div
                     key={brand}
-                    className="min-w-[calc((100%-32px)/3)] h-[80px] flex items-center justify-center bg-white shrink-0"
+                    className="brand-card shrink-0 h-[120px] flex items-center justify-center bg-white border border-gray-200 rounded-md hover:shadow-sm transition"
+                    style={{
+                      width: `calc((100% - 30px) / 4)`
+                    }}
                   >
                     {imagePath && !hasError ? (
                       <img
