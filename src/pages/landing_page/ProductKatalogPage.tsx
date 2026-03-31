@@ -1,21 +1,33 @@
 import { useEffect, useState } from "react";
 import { getProducts } from "../../services/productService";
 import { getCategories } from "../../services/adminCategoryService";
-import { Search, LayoutGrid, LayoutList } from "lucide-react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
 import InfiniteScrollTrigger from "../../components/InfiniteScrollTrigger";
+import type { Grouping } from "../../components/FilteringSidebar";
+import { getGroupings } from "../../services/groupingService";
 
 import FilteringSidebar from "../../components/FilteringSidebar";
 import HeaderProduct from "../../components/HeaderProduct";
 import type { Category } from "../../types/category";
 import Breadcrumb from "../../components/Breadcrumb";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
-
-const brandList = ["Acer","Acasis","Accurate","ADATA","AMD","Anker","APC","Arctic","ASRock","ASUS","Aten","Aukey","AverMedia","AOC","Baseus","Bantex","Belden","BenQ","Bitdefender","Blueprint","Brother","Canon","Casio","Cisco","Citizen","CommScope","Cooler Master","Corsair","Creative","Crucial","CyberPower","Dahua","Datalogic","DeepCool","Deli","Dell","D-Link","Dymo","Elgato","Eppos","Epson","Fantech","Fenvi","FiiO","FSP","FujiFilm","G.Skill","Gigabyte","Honeywell","HP","Hikvision","ICA","IKEA","Insta360","Intel","Iware","Jabra","Joyko","Kaspersky","Kenko","Keychron","Kingston","Kingston Fury","Kioxia","Kootek","Laplace","Lenovo","Lexar","LG","Lian Li","Logitech","Matrix Point","Maxhub","Matsunaga","Mcdodo","Microsoft","Mikrotik","Moft","MSI","Netgear","Nillkin","Noctua","NZXT","Obsbot","Orico","Palit","Pantum","Pioneer","Poly","PowerColor","Prolink","QNAP","Razer","Rexus","Ruijie","Sapphire","SanDisk","Seagate","Seasonic","Solution","SteelSeries","Suprema","Sunmi","Synology","TeamGroup","Tenda","TerraMaster","Thermal Grizzly","Thermaltake","Toshiba","TP-Link","Transcend","Targus","Ubiquiti","Ugreen","Vascolink","Vention","V-Gen","VBR","Western Digital","WD","Xiaomi","Xprinter","Yealink","Zahir","Zebra","ZKTeco","Zotac"];
+import { getBrands } from "../../services/brandService";
 
 export default function ProductKatalogPage() {
+    interface Brand {
+        id: string;
+        name: string;
+        image?: string;
+    }
+
+    const [brands, setBrands] = useState<Brand[]>([]);
+    const fetchBrands = async () => {
+    const data = await getBrands();
+        setBrands(data);
+    };
+
     const [totalProducts, setTotalProducts] = useState(0);
     const [layout, setLayout] = useState<"grid" | "list">("grid");
     const resetProducts = () => {
@@ -52,22 +64,42 @@ export default function ProductKatalogPage() {
 
     useEffect(() => {
         fetchCategories();
+        fetchGroupings();
+        fetchBrands();
     }, []);
 
     const parentParam = searchParams.get("parent");
     const categoryParam = searchParams.get("category");
+    const categoryIdsParam = searchParams.get("category_ids");
 
+    const fetchGroupings = async () => {
+        const data = await getGroupings();
+        setGroupings(data);
+    };
+    
     useEffect(() => {
         const isRefresh = location.key === "default";
-
+        
         if (isRefresh && searchParams.get("category")) {
             setSearchParams({}, { replace: true });
         }
     }, []);
 
+    const [groupings, setGroupings] = useState<Grouping[]>([]);
+    const groupingParam = searchParams.get("grouping");
+    
     useEffect(() => {
         fetchProducts();
-    }, [page, parentParam, categoryParam, selectedBrand, activeSearch, sort, minPrice, maxPrice]);
+    }, [
+        page,
+        groupingParam,
+        categoryIdsParam,
+        selectedBrand,
+        activeSearch,
+        sort,
+        minPrice,
+        maxPrice
+    ]);
 
     useEffect(() => {
         if (searchQuery !== null) {
@@ -83,7 +115,7 @@ export default function ProductKatalogPage() {
         setProducts([]);
         setPage(1);
         setHasMore(true);
-    }, [categoryParam]);
+    }, [groupingParam, categoryIdsParam, selectedBrand, minPrice, maxPrice, sort]);
 
     const fetchCategories = async () => {
         const data = await getCategories();
@@ -93,50 +125,69 @@ export default function ProductKatalogPage() {
     const fetchProducts = async () => {
         setLoading(true);
 
-        console.log("==== FETCH START ====");
-        console.log("PAGE:", page);
-        console.log("CATEGORY:", categoryParam);
-        console.log("BRAND:", selectedBrand);
-        console.log("SEARCH:", activeSearch);
-        console.log("SORT:", sort);
-        console.log("MIN:", minPrice);
-        console.log("MAX:", maxPrice);
-
         const params: any = {
             page,
             limit: 20,
         };
 
+        const categoryIdsFromGrouping = getCategoryIdsFromGrouping();
+
+        if (groupingParam) {
+            if (categoryIdsFromGrouping.length === 0) {
+                setProducts([]);
+                setTotalProducts(0);
+                setHasMore(false);
+                setLoading(false);
+                return;
+            }
+
+            params.category_ids = categoryIdsFromGrouping.join(",");
+        }
+
+        if (categoryParam && !groupingParam) {
+            params.category = categoryParam;
+        }
+
         if (parentParam) params.parent = parentParam;
-        if (categoryParam) params.category = categoryParam;
         if (selectedBrand.length > 0) params.brand = selectedBrand.join(",");
         if (activeSearch) params.search = activeSearch;
         if (sort) params.sort = sort;
         if (minPrice !== MIN) params.min_price = minPrice;
         if (maxPrice !== MAX) params.max_price = maxPrice;
 
-        console.log("PARAMS SENT:", params);
+        if (categoryIdsParam) {
+            params.category_ids = categoryIdsParam;
+        }
+
+        else if (groupingParam) {
+            const categoryIdsFromGrouping = getCategoryIdsFromGrouping();
+
+            if (categoryIdsFromGrouping.length === 0) {
+                setProducts([]);
+                setTotalProducts(0);
+                setHasMore(false);
+                setLoading(false);
+                return;
+            }
+
+            params.category_ids = categoryIdsFromGrouping.join(",");
+        }
+
+        else if (categoryParam) {
+            params.category = categoryParam;
+        }
 
         const res = await getProducts(params);
 
         setTotalProducts(res.total);
 
-        console.log("RESPONSE page:", res.page);
-        console.log("RESPONSE last_page:", res.last_page);
-        console.log("RESPONSE IDs:", res.data.map((p: any) => p.id));
-
-        const newProducts = res.data;
-        const currentPage = res.page;
-        const lastPage = res.last_page;
-
-        setHasMore(currentPage < lastPage);
-
         if (page === 1) {
-            setProducts(newProducts);
+            setProducts(res.data);
         } else {
-            setProducts(prev => [...prev, ...newProducts]);
+            setProducts(prev => [...prev, ...res.data]);
         }
 
+        setHasMore(res.page < res.last_page);
         setLoading(false);
     };
 
@@ -156,9 +207,22 @@ export default function ProductKatalogPage() {
     const [showFilter, setShowFilter] = useState(false);
     const [openFilter, setOpenFilter] = useState(false);
 
+
+    const getCategoryIdsFromGrouping = () => {
+        if (!groupingParam || groupings.length === 0) return [];
+
+        const grouping = groupings.find(
+            (g) => g.name === groupingParam
+        );
+
+        return grouping?.children?.map((c: any) => c.id) || [];
+    };
+
     const filterProps = {
         categories,
         categoryParam,
+        categoryIdsParam,
+        groupingParam,
         searchCategory,
         setSearchCategory,
 
@@ -167,7 +231,7 @@ export default function ProductKatalogPage() {
         searchBrand,
         setSearchBrand,
 
-        brandList,
+        brands,
 
         minPrice,
         maxPrice,
@@ -218,7 +282,8 @@ export default function ProductKatalogPage() {
                 {/* ================= SIDEBAR ================= */}
                 <div className="hidden lg:block col-span-3">
                     <FilteringSidebar
-                        categories={categories}
+                        groupings={groupings}
+                        groupingParam={groupingParam}
                         categoryParam={categoryParam}
                         searchCategory={searchCategory}
                         setSearchCategory={setSearchCategory}
@@ -228,7 +293,7 @@ export default function ProductKatalogPage() {
                         searchBrand={searchBrand}
                         setSearchBrand={setSearchBrand}
 
-                        brandList={brandList}
+                        brands={brands}
 
                         minPrice={minPrice}
                         maxPrice={maxPrice}
@@ -263,37 +328,30 @@ export default function ProductKatalogPage() {
                             <div className="flex flex-wrap gap-2 mb-4">
 
                             {/* BRAND TAGS */}
-                            {selectedBrand.map((brand) => (
-                                <div
-                                    key={brand}
-                                    className="
-                                    flex items-center gap-2
-                                    px-3 py-1 text-sm
-                                    rounded-full
-                                    bg-primary5
-                                    border border-gray-300
-                                    shadow-sm
-                                    text-gray-700
-                                    transition
-                                    "
-                                >
-                                <span>{brand}</span>
+                            {selectedBrand.map((brandId) => {
+                                const brandObj = brands.find(b => b.id === brandId);
 
-                                <button
-                                    onClick={() => {
+                                return (
+                                    <div
+                                    key={brandId}
+                                    className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-primary5 border border-gray-300 shadow-sm text-gray-700"
+                                    >
+                                    <span>{brandObj?.name || brandId}</span>
+
+                                    <button
+                                        onClick={() => {
                                         setSelectedBrand((prev) =>
-                                            prev.filter((b) => b !== brand)
+                                            prev.filter((b) => b !== brandId)
                                         );
-                                        setProducts([]);
-                                        setPage(1);
-                                        setHasMore(true);
-                                    }}
-                                    className="text-gray-500 hover:text-red-500 transition"
-                                >
-                                    ✕
-                                </button>
-                                </div>
-                            ))}
+                                        resetProducts();
+                                        }}
+                                        className="text-gray-500 hover:text-red-500"
+                                    >
+                                        ✕
+                                    </button>
+                                    </div>
+                                );
+                            })}
 
                             {/* PRICE TAG */}
                             {(isPriceFiltered) && (

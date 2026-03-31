@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getProducts } from "../../services/productService";
-import { getCategories } from "../../services/adminCategoryService";
+import { getGroupings } from "../../services/groupingService";
 import { LayoutGrid, LayoutList } from "lucide-react";
 import { useParams, useSearchParams, useLocation } from "react-router-dom";
 
@@ -10,22 +10,27 @@ import FilteringSidebar from "../../components/FilteringSidebar";
 import HeaderProduct from "../../components/HeaderProduct";
 import Breadcrumb from "../../components/Breadcrumb";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
+import { getBrands } from "../../services/brandService";
 
 import type { Product } from "../../types/product";
 import type { Category } from "../../types/category";
 
-const brandList = ["Acer","Acasis","Accurate","ADATA","AMD","Anker","APC","Arctic","ASRock","ASUS","Aten","Aukey","AverMedia","AOC","Baseus","Bantex","Belden","BenQ","Bitdefender","Blueprint","Brother","Canon","Casio","Cisco","Citizen","CommScope","Cooler Master","Corsair","Creative","Crucial","CyberPower","Dahua","Datalogic","DeepCool","Deli","Dell","D-Link","Dymo","Elgato","Eppos","Epson","Fantech","Fenvi","FiiO","FSP","FujiFilm","G.Skill","Gigabyte","Honeywell","HP","Hikvision","ICA","IKEA","Insta360","Intel","Iware","Jabra","Joyko","Kaspersky","Kenko","Keychron","Kingston","Kingston Fury","Kioxia","Kootek","Laplace","Lenovo","Lexar","LG","Lian Li","Logitech","Matrix Point","Maxhub","Matsunaga","Mcdodo","Microsoft","Mikrotik","Moft","MSI","Netgear","Nillkin","Noctua","NZXT","Obsbot","Orico","Palit","Pantum","Pioneer","Poly","PowerColor","Prolink","QNAP","Razer","Rexus","Ruijie","Sapphire","SanDisk","Seagate","Seasonic","Solution","SteelSeries","Suprema","Sunmi","Synology","TeamGroup","Tenda","TerraMaster","Thermal Grizzly","Thermaltake","Toshiba","TP-Link","Transcend","Targus","Ubiquiti","Ugreen","Vascolink","Vention","V-Gen","VBR","Western Digital","WD","Xiaomi","Xprinter","Yealink","Zahir","Zebra","ZKTeco","Zotac"];
+export default function GroupingPage() {
 
-export default function CategoriesChildPage() {
+    interface Brand {
+        id: string;
+        name: string;
+        image?: string;
+    }
+
+    const [brands, setBrands] = useState<Brand[]>([]);
+
     const [totalProducts, setTotalProducts] = useState(0);
     const [layout, setLayout] = useState<"grid" | "list">("grid");
-    const resetProducts = () => {
-        setProducts([]);
-        setPage(1);
-        setHasMore(true);
-    };
+    
     const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
+    const [groupings, setGroupings] = useState<any[]>([]);
+    const [isGroupingsLoaded, setIsGroupingsLoaded] = useState(false); // Penanda grouping sudah siap
     const [loading, setLoading] = useState(true);
 
     const [searchCategory, setSearchCategory] = useState("");
@@ -50,45 +55,60 @@ export default function CategoriesChildPage() {
     const isPriceFiltered = minPrice !== MIN || maxPrice !== MAX;
 
     const location = useLocation();
+    const groupingParam = searchParams.get("grouping");
+
+    // Dapatkan data kategori spesifik dari grouping yang dipilih
+    const currentGrouping = groupings.find((g) => g.name === groupingParam);
+    const categories = currentGrouping?.children || []; 
+
+    const resetProducts = () => {
+        setProducts([]);
+        setPage(1);
+        setHasMore(true);
+    };
+
+    const fetchGroupings = async () => {
+        const data = await getGroupings();
+        setGroupings(data);
+        setIsGroupingsLoaded(true); // Tandai selesai fetch
+    };
 
     useEffect(() => {
-        fetchCategories();
+        fetchGroupings();
+        fetchBrands();
     }, []);
 
-    const parentParam = searchParams.get("parent");
-    const categoryParam = searchParams.get("category");
+    const getCategoryIdsFromGrouping = () => {
+        if (!groupingParam || groupings.length === 0) return [];
+        const grouping = groupings.find((g) => g.name === groupingParam);
+        return grouping?.children?.map((c: any) => c.id) || [];
+    };
 
     useEffect(() => {
         const isRefresh = location.key === "default";
-
         if (isRefresh && searchParams.get("category")) {
             setSearchParams({}, { replace: true });
         }
     }, []);
 
+    // Fetch products HANYA dijalankan jika groupings sudah ke-load
     useEffect(() => {
+        if (!isGroupingsLoaded) return;
         fetchProducts();
-    }, [page, parentParam, categoryParam, selectedBrand, activeSearch, sort, minPrice, maxPrice]);
+    }, [page, groupingParam, selectedBrand, activeSearch, sort, minPrice, maxPrice, isGroupingsLoaded]);
 
     useEffect(() => {
         if (searchQuery !== null) {
             setActiveSearch(searchQuery);
-            setProducts([]);
-            setPage(1);
-            setHasMore(true);
+            resetProducts();
             setSearchParams({}, { replace: true });
         }
     }, [searchQuery]);
 
-    
-
     useEffect(() => {
-        setProducts([]);
-        setPage(1);
-        setHasMore(true);
+        resetProducts();
     }, [
-        parentParam,
-        categoryParam,
+        groupingParam,
         selectedBrand,
         activeSearch,
         sort,
@@ -96,80 +116,69 @@ export default function CategoriesChildPage() {
         maxPrice
     ]);
 
-    const fetchCategories = async () => {
-        const data = await getCategories();
-        setCategories(data);
-    };
-
     const fetchProducts = async () => {
-        setLoading(true);
+    const categoryIds = getCategoryIdsFromGrouping();
 
-        console.log("==== FETCH START ====");
-        console.log("PAGE:", page);
-        console.log("CATEGORY:", categoryParam);
-        console.log("BRAND:", selectedBrand);
-        console.log("SEARCH:", activeSearch);
-        console.log("SORT:", sort);
-        console.log("MIN:", minPrice);
-        console.log("MAX:", maxPrice);
-
-        const params: any = {
-            page,
-            limit: 20,
-        };
-
-        if (parentParam) params.parent = parentParam;
-        if (categoryParam) params.category = categoryParam;
-        if (selectedBrand.length > 0) params.brand = selectedBrand.join(",");
-        if (activeSearch) params.search = activeSearch;
-        if (sort) params.sort = sort;
-        if (minPrice !== MIN) params.min_price = minPrice;
-        if (maxPrice !== MAX) params.max_price = maxPrice;
-
-        console.log("PARAMS SENT:", params);
-
-        const res = await getProducts(params);
-
-        setTotalProducts(res.total);
-
-        console.log("RESPONSE page:", res.page);
-        console.log("RESPONSE last_page:", res.last_page);
-        console.log("RESPONSE IDs:", res.data.map((p: any) => p.id));
-
-        const newProducts = res.data;
-        const currentPage = res.page;
-        const lastPage = res.last_page;
-
-        setHasMore(currentPage < lastPage);
-
-        if (page === 1) {
-            setProducts(newProducts);
-        } else {
-            setProducts(prev => [...prev, ...newProducts]);
+    // 🚨 FIX UTAMA
+    if (groupingParam) {
+        // kalau grouping ada tapi kategori kosong → STOP
+        if (categoryIds.length === 0) {
+            setProducts([]);
+            setTotalProducts(0);
+            setHasMore(false);
+            setLoading(false);
+            return;
         }
+    }
 
-        setLoading(false);
+    setLoading(true);
+
+    const params: any = {
+        page,
+        limit: 20,
     };
+
+    if (groupingParam) {
+        params.category_ids = categoryIds.join(",");
+    }
+
+    if (selectedBrand.length > 0) params.brand = selectedBrand.join(",");
+    if (activeSearch) params.search = activeSearch;
+    if (sort) params.sort = sort;
+    if (minPrice !== MIN) params.min_price = minPrice;
+    if (maxPrice !== MAX) params.max_price = maxPrice;
+
+    const res = await getProducts(params);
+
+    setTotalProducts(res.total);
+
+    if (page === 1) {
+        setProducts(res.data);
+    } else {
+        setProducts(prev => [...prev, ...res.data]);
+    }
+
+    setHasMore(res.page < res.last_page);
+    setLoading(false);
+};
 
     const handleLoadMore = () => {
-        console.log("LOAD MORE TRIGGERED");
-        console.log("loading:", loading);
-        console.log("hasMore:", hasMore);
-
         if (!loading && hasMore) {
-            setPage((prev) => {
-                console.log("SET PAGE TO:", prev + 1);
-                return prev + 1;
-            });
+            setPage((prev) => prev + 1);
         }
     };
 
     const [openFilter, setOpenFilter] = useState(false);
 
+    const fetchBrands = async () => {
+        const data = await getBrands();
+        setBrands(data);
+    };
+
     const filterProps = {
-        categories,
+        categories, 
         showCategory: false,
-        categoryParam,
+        groupingParam,
         searchCategory,
         setSearchCategory,
 
@@ -178,7 +187,7 @@ export default function CategoriesChildPage() {
         searchBrand,
         setSearchBrand,
 
-        brandList,
+        brands,
 
         minPrice,
         maxPrice,
@@ -190,24 +199,20 @@ export default function CategoriesChildPage() {
         STEP,
 
         isPriceFiltered,
-
         resetProducts,
-
         setSearchParams,
     };
 
     return (
-    
     <div>
         {/* ================= BREADCRUMB BAR ================= */}
         <div className="w-full bg-white">
-            <div className="h-14 flex items-center px-4 lg:px-8 max-w-7xl mx-auto">
-                <div className="w-ful items-center">
+            <div className="flex items-center px-4 mx-auto h-14 lg:px-8 max-w-7xl">
+                <div className="items-center w-ful">
                     <Breadcrumb
                     items={[
                         { label: "Home", path: "/" },
-                        { label: "Kategori", path: "/categories" },
-                        { label: categoryParam || "Kategori" },
+                        { label: groupingParam || "Kategori" },
                     ]}
                     />
                 </div>
@@ -215,41 +220,12 @@ export default function CategoriesChildPage() {
         </div>
 
         {/* ================= MAIN CONTENT ================= */}
-        <div className="px-4 lg:px-8 pt-4 pb-8 mx-auto max-w-7xl">
-            {/* <GlassParticlesBackground /> */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="px-4 pt-4 pb-8 mx-auto lg:px-8 max-w-7xl">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                 
                 {/* ================= SIDEBAR ================= */}
-                <div className="hidden lg:block col-span-3">
-                    <FilteringSidebar
-                        categories={categories}
-                        showCategory={false}
-                        categoryParam={categoryParam}
-                        searchCategory={searchCategory}
-                        setSearchCategory={setSearchCategory}
-
-                        selectedBrand={selectedBrand}
-                        setSelectedBrand={setSelectedBrand}
-                        searchBrand={searchBrand}
-                        setSearchBrand={setSearchBrand}
-
-                        brandList={brandList}
-
-                        minPrice={minPrice}
-                        maxPrice={maxPrice}
-                        setMinPrice={setMinPrice}
-                        setMaxPrice={setMaxPrice}
-
-                        MIN={MIN}
-                        MAX={MAX}
-                        STEP={STEP}
-
-                        isPriceFiltered={isPriceFiltered}
-
-                        resetProducts={resetProducts}
-
-                        setSearchParams={setSearchParams}
-                    />
+                <div className="hidden col-span-3 lg:block">
+                    <FilteringSidebar {...filterProps} />
                 </div>
 
                 {/* ================= PRODUCT GRID ================= */}
@@ -266,32 +242,33 @@ export default function CategoriesChildPage() {
                     />
 
                     <div className="flex flex-wrap gap-2 mb-4">
+                        {selectedBrand.map((brandId) => {
+                            const brandObj = brands.find(b => b.id === brandId);
 
-                        {selectedBrand.map((brand) => (
-                            <div
-                            key={brand}
-                            className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-primary5 border border-gray-300 shadow-sm text-gray-700"
-                            >
-                            <span>{brand}</span>
+                            return (
+                                <div
+                                key={brandId}
+                                className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-primary5 border border-gray-300 shadow-sm text-gray-700"
+                                >
+                                <span>{brandObj?.name || brandId}</span>
 
-                            <button
-                                onClick={() => {
-                                setSelectedBrand((prev) =>
-                                    prev.filter((b) => b !== brand)
-                                );
-                                setProducts([]);
-                                setPage(1);
-                                setHasMore(true);
-                                }}
-                                className="text-gray-500 hover:text-red-500"
-                            >
-                                ✕
-                            </button>
-                            </div>
-                        ))}
+                                <button
+                                    onClick={() => {
+                                    setSelectedBrand((prev) =>
+                                        prev.filter((b) => b !== brandId)
+                                    );
+                                    resetProducts();
+                                    }}
+                                    className="text-gray-500 hover:text-red-500"
+                                >
+                                    ✕
+                                </button>
+                                </div>
+                            );
+                        })}
 
                         {isPriceFiltered && (
-                            <div className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-primary5 border border-gray-300 shadow-sm text-gray-700">
+                            <div className="flex items-center gap-2 px-3 py-1 text-sm text-gray-700 border border-gray-300 shadow-sm rounded-full bg-primary5">
                             <span>
                                 Rp {minPrice.toLocaleString("id-ID")} - Rp{" "}
                                 {maxPrice.toLocaleString("id-ID")}
@@ -301,9 +278,7 @@ export default function CategoriesChildPage() {
                                 onClick={() => {
                                 setMinPrice(MIN);
                                 setMaxPrice(MAX);
-                                setProducts([]);
-                                setPage(1);
-                                setHasMore(true);
+                                resetProducts();
                                 }}
                                 className="text-gray-500 hover:text-red-500"
                             >
@@ -364,7 +339,6 @@ export default function CategoriesChildPage() {
 
         {openFilter && (
             <div className="fixed inset-0 z-50 flex items-center justify-center lg:hidden">
-
                 <div
                 className="absolute inset-0 bg-black/40"
                 onClick={() => setOpenFilter(false)}
@@ -381,9 +355,8 @@ export default function CategoriesChildPage() {
                 overflow-y-auto
                 p-4
                 ">
-
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-semibold text-lg">Filter</h2>
+                    <h2 className="text-lg font-semibold">Filter</h2>
 
                     <button
                     onClick={() => setOpenFilter(false)}

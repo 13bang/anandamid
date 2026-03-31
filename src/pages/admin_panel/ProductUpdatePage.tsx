@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { downloadUpdateTemplate, updateMassProduct, listenImportProgress } from "../../services/productImportService";
 import { FileDown } from "lucide-react";
-import { getParentCategories } from "../../services/adminCategoryService";
+import { getCategories } from "../../services/adminCategoryService";
 
 
 export default function ProductUpdatePage() {
@@ -86,12 +86,8 @@ const handleUpdate = async () => {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const parents = await getParentCategories();
-
-      // ambil child saja
-      const children = parents.flatMap((p: any) => p.children || []);
-
-      setCategories(children);
+        const data = await getCategories();
+        setCategories(data);
     };
 
     fetchCategories();

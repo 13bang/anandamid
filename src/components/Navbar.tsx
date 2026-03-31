@@ -278,42 +278,6 @@ export default function Navbar() {
                 </span>
               </div>
 
-              {/* HUBUNGI KAMI */}
-              {/* <div className="relative" ref={contactRef}>
-                <div 
-                  onClick={() => setShowContactPopover(!showContactPopover)}
-                  className="flex items-center gap-2 cursor-pointer transition group"
-                >
-                  <MessageCircle className="text-gray-50 group-hover:text-blue-200" size={14} />
-                  <span className="font-medium text-gray-50 group-hover:text-blue-200">
-                    Hubungi Kami
-                  </span>
-                </div> */}
-
-                {/* POPUP NOMOR (POPOVER) */}
-                {/* {showContactPopover && (
-                  <div className="absolute top-full mt-2 right-0 z-[60] bg-white text-gray-800 p-4 rounded-xl shadow-2xl border border-gray-100 min-w-[220px] animate-in fade-in zoom-in duration-200">
-                    <div className="flex flex-col gap-3">
-                      <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Layanan Konsumen</p>
-                      <a 
-                        href="https://wa.me/628123456789" 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-green-50 transition group/item"
-                      >
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white">
-                          <MessageCircle size={16} />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-gray-700">WhatsApp</p>
-                          <p className="text-[11px] text-green-600">+62 812-3456-789</p>
-                        </div>
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div> */}
-
             </div>
 
           </div>

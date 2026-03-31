@@ -12,7 +12,7 @@ export default function AdminLayout() {
 
       {/* Main wrapper */}
       <div className="flex-1 p-4">
-        <main className="h-full overflow-y-auto bg-white rounded-3xl">
+        <main className="h-full overflow-y-auto bg-white">
           <Outlet />
         </main>
       </div>

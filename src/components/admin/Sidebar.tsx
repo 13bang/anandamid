@@ -11,6 +11,7 @@ import {
   CirclePercent,
   Image,
   Award,
+  Tag,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -23,6 +24,7 @@ export default function Sidebar() {
   const menu = [
     { name: "Dashboard", path: "/ayamgoreng/dashboard", icon: House },
     { name: "Kategori", path: "/ayamgoreng/category", icon: Layers },
+    { name: "Brand", path: "/ayamgoreng/brand", icon: Tag },
     { name: "Produk", path: "/ayamgoreng/product", icon: Package },
     { name: "Update Massal", path: "/ayamgoreng/update-massal", icon: FilePen },
     { name: "Upload Massal", path: "/ayamgoreng/upload-massal", icon: FileInput },

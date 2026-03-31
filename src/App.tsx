@@ -25,10 +25,11 @@ import CompanyProfile from "./pages/landing_page/company_profile/ProfilLandingPa
 import TermsPage from "./pages/landing_page/company_profile/TermsPage";
 import PageLoader from "./components/PageLoader";
 import CategoriesPage from "./pages/landing_page/CategoriesPage";
-import CategoriesChildPage from "./pages/landing_page/CategoriesChildPage";
+import GroupingPage from "./pages/landing_page/GroupingPage";
 import CertificateVerifyPage from "./pages/landing_page/CertificateVerifyPage";
 import SearchResultPage from "./pages/landing_page/SearchResultPage";
 import { initIdleTimer } from "./services/idleTimer";
+import BrandSection from "./pages/admin_panel/BrandPage";
 
 
 // ================= ROUTES =================
@@ -44,7 +45,7 @@ function AppRoutes() {
         <Route path="/parent-categories/:parent" element={<KategoriParentPage />} />
         <Route path="/product-katalog/:id" element={<ProductDetailPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
-        <Route path="/product-categories" element={<CategoriesChildPage />} />
+        <Route path="/product-grouping" element={<GroupingPage />} />
         <Route path="/company-profile" element={<CompanyProfile />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/certificate" element={<CertificateVerifyPage />} />
@@ -65,6 +66,7 @@ function AppRoutes() {
           <Route path="pricelist" element={<PricelistPage />} />
           <Route path="banner" element={<BannerPage />} />
           <Route path="certificate" element={<CertificatePage />} />
+          <Route path="brand" element={<BrandSection />} />
         </Route>
       </Route>
 

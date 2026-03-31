@@ -9,21 +9,26 @@ interface Category {
   parent_id?: string;
 }
 
+interface Grouping {
+  id: string;
+  name: string;
+  image_url?: string;
+  children: Category[];
+}
+
 interface Props {
-  categories: Category[];
+  groupings: Grouping[];
   getImageUrl: (url?: string) => string;
 }
 
 export default function LandingCategorySection({
-  categories,
+  groupings,
   getImageUrl,
 }: Props) {
   const navigate = useNavigate();
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
-  const filteredCategories = categories.filter(
-    (cat) => cat.parent_id !== null
-  );
+const filteredGroupings = groupings || [];
 
   const scrollCategory = (direction: "left" | "right") => {
     const container = categoryScrollRef.current;
@@ -77,7 +82,7 @@ export default function LandingCategorySection({
       container.removeEventListener("scroll", updateScrollState);
       window.removeEventListener("resize", updateScrollState);
     };
-  }, [categories]);
+  }, [groupings]);
 
   return (
     <section className="relative w-full">
@@ -138,17 +143,17 @@ export default function LandingCategorySection({
                 <div
                   className="
                     grid grid-rows-2 grid-flow-col
-                    auto-cols-[75px] sm:auto-cols-[100px] md:auto-cols-[110px]
+                    auto-cols-[calc((100%_-_9*14px)/10)]
                     gap-x-[14px] gap-y-4
-                    w-max
+                    w-full
                   "
                 >
 
-                  {filteredCategories.map((cat) => (
+                  {filteredGroupings.map((group) => (
                     <div
-                      key={cat.id}
+                      key={group.id}
                       onClick={() =>
-                        navigate(`/product-categories?category=${cat.name}`)
+                        navigate(`/product-grouping?grouping=${group.name}`)
                       }
                       className="
                         flex flex-col items-center
@@ -169,21 +174,21 @@ export default function LandingCategorySection({
                           border border-gray-200
                         "
                       >
-                        {cat.image_url ? (
+                        {group.image_url ? (
                           <img
-                            src={getImageUrl(cat.image_url)}
-                            alt={cat.name}
+                            src={getImageUrl(group.image_url)}
+                            alt={group.name}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                           />
                         ) : (
                           <div className="flex items-center justify-center h-full text-sm font-semibold text-gray-500">
-                            {cat.name.charAt(0)}
+                            {group.name.charAt(0)}
                           </div>
                         )}
                       </div>
 
                       <span className="mt-2 text-xs sm:text-xs text-center font-medium">
-                        {cat.name}
+                        {group.name}
                       </span>
                     </div>
                   ))}

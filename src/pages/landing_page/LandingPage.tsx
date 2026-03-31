@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { getProducts } from "../../services/productService";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { getCategories, getParentCategories } from "../../services/adminCategoryService";
+import { getCategories } from "../../services/adminCategoryService";
 import { getBanners } from "../../services/bannerService";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
@@ -11,6 +11,7 @@ import GlassParticlesBackground from "../../components/GlassParticleBackground";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 import LandingCategorySection from "../../components/LandingCategorySection";
 import { OfficialBrandSection } from "../../components/OfficialBrand";
+import { getGroupings } from "../../services/groupingService";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -291,7 +292,6 @@ export default function LandingPage() {
     fetchPopularProducts();
     fetchCategories();
     fetchBanners();
-    fetchParentCategories();
   }, []);
 
   // reset ketika search berubah
@@ -375,17 +375,6 @@ export default function LandingPage() {
         : products.slice(0, 15)
       : products;
 
-  const [parentCategories, setParentCategories] = useState<any[]>([]);
-
-  const fetchParentCategories = async () => {
-    try {
-      const data = await getParentCategories();
-      setParentCategories(data || []);
-    } catch (err) {
-      console.error("Gagal fetch parent categories", err);
-    }
-  };
-
   const fetchProductsByParent = async (parentSlug: string) => {
     try {
       const res = await getProducts({
@@ -404,33 +393,17 @@ export default function LandingPage() {
     [key: string]: any[];
   }>({});
 
+  const [groupings, setGroupings] = useState([]);
+
   useEffect(() => {
-    const fetchAllParentProducts = async () => {
-      if (parentCategories.length === 0) return;
-
-      const promises = parentCategories.map(async (parent) => {
-        const products = await fetchProductsByParent(parent.code);
-        return { id: parent.id, products };
-      });
-
-      const results = await Promise.all(promises);
-
-      const result: any = {};
-      results.forEach((r) => {
-        result[r.id] = r.products;
-      });
-
-      setParentProducts(result);
+    const fetch = async () => {
+      const data = await getGroupings();
+      console.log("GROUPINGS API:", data);
+      setGroupings(data);
     };
 
-    fetchAllParentProducts();
-  }, [parentCategories]);
-
-  const SELECTED_PARENTS: Record<string, string> = {
-    "Komputer & Laptop": "Komputer & Laptop",
-    "Komponen PC": "Komponen PC",
-    "Storage": "Storage",
-  };
+    fetch();
+  }, []);
 
   return (
     <div className="min-h-screen bg-blue-50">
@@ -509,7 +482,7 @@ export default function LandingPage() {
 
       {/* ================= CATEGORY ================= */}
       <LandingCategorySection
-        categories={categories}
+        groupings={groupings}
         getImageUrl={getImageUrl}
       />
 
@@ -672,21 +645,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* ================= PARENT CATEGORY ================= */}
-      {Object.entries(SELECTED_PARENTS).map(([name, title]) => {
-        const parent = parentCategories.find((p) => p.name === name);
-
-        return (
-          <CategoryProductSection
-            key={name}
-            title={title}
-            products={parent ? parentProducts[parent.id] : undefined}
-            loading={!parent || !parentProducts[parent.id]}
-            categorySlug={parent?.code}
-          />
-        );
-      })}
 
       <OfficialBrandSection />
 
