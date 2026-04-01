@@ -18,7 +18,7 @@ export const getBrandById = async (id: string) => {
 export const createBrand = async (data: {
   name: string;
   image?: File | null;
-  product_ids?: string[]; // 🔥 TAMBAH
+  product_ids?: string[]; 
 }) => {
   const formData = new FormData();
 

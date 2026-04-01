@@ -17,19 +17,19 @@ import BannerPage from "./pages/admin_panel/BannerPage";
 import CertificatePage from "./pages/admin_panel/CertificatePage";
 import PublicLayout from "./components/PublicLayout";
 import ProductKatalogPage from "./pages/landing_page/ProductKatalogPage";
-import KategoriParentPage from "./pages/landing_page/CategoriesParentPage";
+import CategoriesPage from "./pages/landing_page/Categories";
 import ProductDetailPage from "./pages/landing_page/ProductDetailPage";
 import ScrollToTop from "./components/ScrollToTop";
 import ScrollToTopButton from "./components/CornerActions";
 import CompanyProfile from "./pages/landing_page/company_profile/ProfilLandingPage";
 import TermsPage from "./pages/landing_page/company_profile/TermsPage";
 import PageLoader from "./components/PageLoader";
-import CategoriesPage from "./pages/landing_page/CategoriesPage";
 import GroupingPage from "./pages/landing_page/GroupingPage";
 import CertificateVerifyPage from "./pages/landing_page/CertificateVerifyPage";
 import SearchResultPage from "./pages/landing_page/SearchResultPage";
 import { initIdleTimer } from "./services/idleTimer";
 import BrandSection from "./pages/admin_panel/BrandPage";
+import PCBuilderPage from "./pages/landing_page/PCBuilderPage";
 
 
 // ================= ROUTES =================
@@ -42,15 +42,16 @@ function AppRoutes() {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/product-katalog" element={<ProductKatalogPage />} />
-        <Route path="/parent-categories/:parent" element={<KategoriParentPage />} />
+        <Route path="/product-categories" element={<CategoriesPage />} />
         <Route path="/product-katalog/:id" element={<ProductDetailPage />} />
-        <Route path="/categories" element={<CategoriesPage />} />
+        {/* <Route path="/categories" element={<CategoriesPage />} /> */}
         <Route path="/product-grouping" element={<GroupingPage />} />
         <Route path="/company-profile" element={<CompanyProfile />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/certificate" element={<CertificateVerifyPage />} />
         <Route path="/certificate/:id" element={<CertificateVerifyPage />} />
         <Route path="/search" element={<SearchResultPage />} />
+        <Route path="/pc-builder" element={<PCBuilderPage />} />
       </Route>
 
       <Route path="/ayamgoreng/login" element={<LoginPage />} />

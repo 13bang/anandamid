@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../services/adminCategoryService";
 import Breadcrumb from "../../components/Breadcrumb";
 
-export default function CategoriesPage() {
+export default function CategoriesDetailPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();

@@ -31,4 +31,14 @@ export interface Product {
 
   specifications: string[];
   variasi: string[];
+  brand: {
+    id: string;
+    name: string;
+    image_url?: string;
+    created_at?: string;
+    updated_at?: string;
+  } | null;
+
+  socket_type?: string | null;
+  ram_type?: string | null;
 }

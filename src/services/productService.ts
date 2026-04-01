@@ -31,3 +31,15 @@ export const getProductRecommendations = async (id: string) => {
   );
   return res.data;
 };
+
+export const getCompatibility = async (params?: {
+  processor_id?: string;
+  motherboard_id?: string;
+  ram_id?: string;
+}) => {
+  const res = await api.get(
+    `${import.meta.env.VITE_API_BASE}/api/v1/products/compatibility`,
+    { params }
+  );
+  return res.data;
+};

@@ -5,8 +5,35 @@ import type { Product } from "../types/product";
 import { getProducts } from "../services/productService";
 import { getCategories } from "../services/adminCategoryService";
 import SearchBar from "./SearchBar";
+import { getGroupings } from "../services/groupingService";
+
+interface Category {
+  id: string;
+  name: string;
+  code: string;
+  parent_id: string | null;
+}
+
+interface Grouping {
+  id: string;
+  name: string;
+  children: Category[];
+}
+
 
 export default function Navbar() {
+  const [groupings, setGroupings] = useState<Grouping[]>([]);
+
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups((prev) =>
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
   const getProductImage = (product: Product) => {
     const imagePath =
       product.images?.[0]?.thumbnail_url ||
@@ -65,8 +92,17 @@ export default function Navbar() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await getCategories();
-      setCategories(data);
+      try {
+        const [groupingData, categoryData] = await Promise.all([
+          getGroupings(),
+          getCategories(),
+        ]);
+
+        setGroupings(groupingData);
+        setCategories(categoryData);
+      } catch (err) {
+        console.error(err);
+      }
     };
 
     fetchData();
@@ -358,32 +394,68 @@ export default function Navbar() {
                 {open && (
                   <div
                     className="
-                      absolute left-0 top-full
-                      mt-3
-                      w-72
-                      bg-white
-                      text-gray-700
-                      shadow-lg
-                      py-2
-                      z-50
-                      max-h-96
-                      overflow-y-auto
+                      absolute left-0 top-full mt-3
+                      w-[1100px]
+                      bg-white text-gray-700
+                      shadow-md p-5 z-50
                     "
                   >
-                    {categories
-                      .filter((cat) => cat.parent_id === null)
-                      .map((cat) => (
-                        <div
-                          key={cat.id}
-                          onClick={() => {
-                            navigate(`/parent-categories/${cat.code}`);
-                            setOpen(false);
-                          }}
-                          className="px-4 py-2 text-sm hover:bg-gray-50 hover:text-primary cursor-pointer whitespace-nowrap"
-                        >
-                          {cat.name}
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-5 gap-6 max-h-[420px] overflow-y-auto pr-2">
+
+                      {groupings.map((group) => {
+
+                        const groupCategories = group.children || [];
+
+                        return (
+                          <div key={group.id} className="flex flex-col">
+
+                            {/* GROUP TITLE */}
+                            <div className="mb-2">
+                              <div
+                                onClick={() => {
+                                  navigate(`/product-grouping?grouping=${group.name}`);
+                                  setOpen(false);
+                                }}
+                                className="
+                                  text-sm font-bold text-gray-800
+                                  cursor-pointer
+                                  hover:text-primary
+                                  whitespace-nowrap overflow-hidden text-ellipsis
+                                "
+                              >
+                                {group.name}
+                              </div>
+                            </div>
+
+                            {/* CATEGORY LIST (NO DROPDOWN) */}
+                            <div className="flex flex-col gap-1">
+                              {groupCategories.map((cat) => (
+                                <div
+                                  key={cat.id}
+                                  onClick={() => {
+                                    navigate(`/product-categories?category=${cat.name}`);
+                                    setOpen(false);
+                                  }}
+                                  className="
+                                    text-sm text-gray-600
+                                    hover:text-primary
+                                    cursor-pointer
+                                    px-1 py-0.5
+                                    rounded
+                                    transition
+                                    hover:translate-x-1
+                                  "
+                                >
+                                  {cat.name}
+                                </div>
+                              ))}
+                            </div>
+
+                          </div>
+                        );
+                      })}
+
+                    </div>
                   </div>
                 )}
               </div>
@@ -410,6 +482,18 @@ export default function Navbar() {
                 }
               >
                 Produk Katalog
+              </NavLink>
+
+              {/* RAKITAN */}
+              <NavLink
+                to="/pc-builder"
+                className={({ isActive }) =>
+                  isActive
+                    ? "border-b-2 border-blue-800 pb-1 text-primary"
+                    : "hover:text-primary"
+                }
+              >
+                Rakitan
               </NavLink>
 
             </div>

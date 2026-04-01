@@ -20,33 +20,46 @@ export default function ProductWizard({
 
   const [step, setStep] = useState(1);
 
-  const getInitialForm = () => ({
-    category_id: initialData?.category?.id || "",
-    name: initialData?.name || "",
-    description: initialData?.description || "",
+    const getInitialForm = () => ({
+        category_id: initialData?.category?.id || "",
+        name: initialData?.name || "",
+        description: initialData?.description || "",
 
-    sku_seller: initialData?.sku_seller || "",
-    stock: initialData?.stock ?? 0,
-    warranty: initialData?.warranty || "",
+        sku_seller: initialData?.sku_seller || "",
+        stock: initialData?.stock ?? 0,
+        warranty: initialData?.warranty || "",
 
-    price_normal: initialData?.price_normal || 0,
-    price_discount: initialData?.price_discount || 0,
+        price_normal: initialData?.price_normal || 0,
+        price_discount: initialData?.price_discount || 0,
 
-    download_url: initialData?.download_url || "",
-    is_active: initialData?.is_active ?? true,
-    is_popular: initialData?.is_popular ?? false,
+        socket_type: initialData?.socket_type || "",
+        ram_type: initialData?.ram_type || "",
 
-    images:
-        initialData?.images?.map((img: any) => ({
+        download_url: initialData?.download_url || "",
+        is_active: initialData?.is_active ?? true,
+        is_popular: initialData?.is_popular ?? false,
+
+        images:
+            initialData?.images?.map((img: any) => ({
             id: img.id,
             image_url: img.image_url,
             file: null,
-        })) || [],
+            })) || [],
     });
-        
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     const [form, setForm] = useState(getInitialForm());
+
+    const selectedCategory = categories.find(
+        (c) => c.id === form.category_id
+    );
+
+    const isProcessor = selectedCategory?.name?.toLowerCase().includes("processor");
+    const isMotherboard = selectedCategory?.name?.toLowerCase().includes("motherboard");
+    const isRam = selectedCategory?.name?.toLowerCase().includes("ram");
+
+    const isPCComponent = isProcessor || isMotherboard || isRam;
+        
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     useEffect(() => {
         setForm(getInitialForm());
@@ -187,6 +200,57 @@ export default function ProductWizard({
             className="w-full h-24 px-3 py-2 border rounded-lg"
             />
         </div>
+
+        {/* ====================== */}
+        {/* PC SPEC SECTION */}
+        {/* ====================== */}
+        {isPCComponent && (
+        <div className="pt-4 border-t">
+            <div className="mb-4 font-semibold text-md">
+            Spesifikasi PC Builder
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+            {/* SOCKET TYPE */}
+            {(isProcessor || isMotherboard) && (
+                <div>
+                <label className="block mb-1 text-sm font-medium">
+                    Socket Type
+                </label>
+                <input
+                    type="text"
+                    placeholder="Contoh: AM4, LGA1700"
+                    value={form.socket_type}
+                    onChange={(e) =>
+                    handleChange("socket_type", e.target.value)
+                    }
+                    className="w-full px-3 py-2 border rounded-lg"
+                />
+                </div>
+            )}
+
+            {/* RAM TYPE */}
+            {(isMotherboard || isRam) && (
+                <div>
+                <label className="block mb-1 text-sm font-medium">
+                    RAM Type
+                </label>
+                <input
+                    type="text"
+                    placeholder="Contoh: DDR4, DDR5"
+                    value={form.ram_type}
+                    onChange={(e) =>
+                    handleChange("ram_type", e.target.value)
+                    }
+                    className="w-full px-3 py-2 border rounded-lg"
+                />
+                </div>
+            )}
+
+            </div>
+        </div>
+        )}
 
         {/* Inventory Section */}
         <div className="pt-4 border-t">

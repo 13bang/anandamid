@@ -1,84 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-const brands = [
-  "Acer","ADATA","AMD","AOC","APC","Arctic","ASRock","ASUS","Belden","Blueprint",
-  "Brother","Canon","CommScope","Cooler Master","Corsair","DeepCool","Dell","D-Link",
-  "Epson","Fantech","FSP","Gigabyte","G.Skill","Hikvision","HP","ICA","Intel",
-  "Kaspersky","Kingston","Kingston Fury","Lenovo","Lexar","LG","Logitech","Matsunaga",
-  "Microsoft","Mikrotik","MSI","Orico","PowerColor","Prolink","QNAP","Rexus","Ruijie",
-  "SanDisk","Samsung","Sapphire","Seagate","Solution","SteelSeries","TeamGroup","Tenda",
-  "Thermal Grizzly","Toshiba","TP-Link","Transcend","Ubiquiti","Ugreen","Vascolink",
-  "VBR","Vention","V-Gen","WD","Xiaomi","Zotac"
-];
-
-const BRAND_LOCAL_MAP: Record<string, string> = {
-  "Acer": "/brands/acer.svg",
-  "ADATA": "/brands/adata.svg",
-  "AMD": "/brands/amd.svg",
-  "AOC": "/brands/aoc.svg",
-  "APC": "/brands/apc.svg",
-  "Arctic": "/brands/arctic.svg",
-  "ASRock": "/brands/asrock.svg",
-  "ASUS": "/brands/asus.svg",
-  "Belden": "/brands/belden.svg",
-  "Blueprint": "/brands/blueprint.svg",
-  "Brother": "/brands/brother.svg",
-  "Canon": "/brands/canon.svg",
-  "CommScope": "/brands/commscope.svg",
-  "Cooler Master": "/brands/coolermaster.svg",
-  "Corsair": "/brands/corsair.svg",
-  "DeepCool": "/brands/deepcool.svg",
-  "Dell": "/brands/dell.svg",
-  "D-Link": "/brands/dlink.svg",
-  "Epson": "/brands/epson.svg",
-  "Fantech": "/brands/fantech.svg",
-  "FSP": "/brands/fsp.svg",
-  "Gigabyte": "/brands/gigabyte.svg",
-  "G.Skill": "/brands/gskill.svg",
-  "Hikvision": "/brands/hikvision.svg",
-  "HP": "/brands/hp.svg",
-  "ICA": "/brands/ica.svg",
-  "Intel": "/brands/intel.svg",
-  "Kaspersky": "/brands/kaspersky.svg",
-  "Kingston": "/brands/kingston.svg",
-  "Kingston Fury": "/brands/kingston-fury.svg",
-  "Lenovo": "/brands/lenovo.svg",
-  "Lexar": "/brands/lexar.svg",
-  "LG": "/brands/lg.svg",
-  "Logitech": "/brands/logitech.svg",
-  "Matsunaga": "/brands/matsunaga.svg",
-  "Microsoft": "/brands/microsoft.svg",
-  "Mikrotik": "/brands/mikrotik.svg",
-  "MSI": "/brands/msi.svg",
-  "Orico": "/brands/orico.svg",
-  "PowerColor": "/brands/powercolor.svg",
-  "Prolink": "/brands/prolink.svg",
-  "QNAP": "/brands/qnap.svg",
-  "Rexus": "/brands/rexus.svg",
-  "Ruijie": "/brands/ruijie.svg",
-  "SanDisk": "/brands/sandisk.svg",
-  "Samsung": "/brands/samsung.svg",
-  "Sapphire": "/brands/sapphire.svg",
-  "Seagate": "/brands/seagate.svg",
-  "Solution": "/brands/solution.svg",
-  "SteelSeries": "/brands/steelseries.svg",
-  "TeamGroup": "/brands/teamgroup.svg",
-  "Tenda": "/brands/tenda.svg",
-  "Thermal Grizzly": "/brands/thermal-grizzly.svg",
-  "Toshiba": "/brands/toshiba.svg",
-  "TP-Link": "/brands/tplink.svg",
-  "Transcend": "/brands/transcend.svg",
-  "Ubiquiti": "/brands/ubiquiti.svg",
-  "Ugreen": "/brands/ugreen.svg",
-  "Vascolink": "/brands/vascolink.svg",
-  "VBR": "/brands/vbr.svg",
-  "Vention": "/brands/vention.svg",
-  "V-Gen": "/brands/vgen.svg",
-  "WD": "/brands/wd.svg",
-  "Xiaomi": "/brands/xiaomi.svg",
-  "Zotac": "/brands/zotac.svg"
-};
+import { getBrands } from "../services/brandService";
 
 const getInitial = (brand: string) => {
   return brand
@@ -90,8 +12,23 @@ const getInitial = (brand: string) => {
 };
 
 export function OfficialBrandSection() {
+  const [brands, setBrands] = useState<any[]>([]);
+  const [imageError, setImageError] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const data = await getBrands();
+        setBrands(data);
+      } catch (err) {
+        console.error("Failed to fetch brands", err);
+      }
+    };
+
+    fetchBrands();
+  }, []);
+
   const scrollRef = useRef<HTMLDivElement>(null);
-    const [imageError, setImageError] = useState<Record<string, boolean>>({});
 
   const scroll = (dir: "left" | "right") => {
     const el = scrollRef.current;
@@ -102,12 +39,10 @@ export function OfficialBrandSection() {
 
     const gap = 10;
 
-    // 🔥 pakai boundingClientRect (lebih akurat dari offsetWidth)
     const cardWidth = card.getBoundingClientRect().width;
 
     const step = cardWidth + gap;
 
-    // 🔥 pakai ROUND biar ga numpuk error
     const current = Math.round(el.scrollLeft / step);
 
     const next = dir === "right" ? current + 1 : current - 1;
@@ -150,14 +85,13 @@ export function OfficialBrandSection() {
             className="overflow-x-auto scrollbar-hide scroll-smooth px-[5px]"
           >
             <div className="flex gap-[10px] w-full">
-
               {brands.map((brand) => {
-                const imagePath = BRAND_LOCAL_MAP[brand];
-                const hasError = imageError[brand];
+                const imagePath = brand.image_url;
+                const hasError = imageError[brand.id];
 
                 return (
                   <div
-                    key={brand}
+                    key={brand.id}
                     className="brand-card shrink-0 h-[120px] flex items-center justify-center bg-white border border-gray-200 rounded-md hover:shadow-sm transition"
                     style={{
                       width: `calc((100% - 30px) / 4)`
@@ -165,30 +99,33 @@ export function OfficialBrandSection() {
                   >
                     {imagePath && !hasError ? (
                       <img
-                        src={imagePath}
-                        alt={brand}
+                        src={
+                          imagePath.startsWith("http")
+                            ? imagePath
+                            : `${import.meta.env.VITE_API_BASE}${imagePath}`
+                        }
+                        alt={brand.name}
                         className="h-20 max-w-full object-contain"
                         onError={() =>
                           setImageError(prev => ({
                             ...prev,
-                            [brand]: true
+                            [brand.id]: true
                           }))
                         }
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center text-gray-700">
                         <div className="text-lg font-bold">
-                          {getInitial(brand)}
+                          {getInitial(brand.name)}
                         </div>
                         <div className="text-[10px] opacity-70 text-center px-1">
-                          {brand}
+                          {brand.name}
                         </div>
                       </div>
                     )}
                   </div>
                 );
               })}
-
             </div>
           </div>
 
