@@ -13,6 +13,7 @@ export default function ProductUpdatePage() {
   const [progress, setProgress] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const isErrorRef = useRef(false);
 
   const [errorModal, setErrorModal] = useState<{
     message: string;
@@ -27,11 +28,10 @@ const handleUpdate = async () => {
   try {
     setLoading(true);
     setProgress(0);
+    isErrorRef.current = false;
 
     eventSource = listenImportProgress((msg) => {
       const data = JSON.parse(msg);
-
-      console.log("SSE:", data);
 
       setLog(data.message);
 
@@ -43,7 +43,9 @@ const handleUpdate = async () => {
         eventSource?.close();
 
         setTimeout(() => {
-          setShowSuccess(true);
+            if (!isErrorRef.current) {
+                setShowSuccess(true);
+            }
         }, 300);
       }
     });
@@ -52,17 +54,32 @@ const handleUpdate = async () => {
 
   } catch (err: any) {
     eventSource?.close();
+    isErrorRef.current = true;
 
     const message = err.response?.data?.message || "Terjadi kesalahan";
-    const errors = err.response?.data?.errors;
+    let rawErrors: string[] = err.response?.data?.errors || [];
+
+    // --- LOGIKA PENAMBAHAN KODE KATEGORI ---
+    const enhancedErrors = rawErrors.map((errorStr: string) => {
+      // Cari apakah ada nama kategori yang disebutkan di dalam string error
+      const foundCategory = categories.find((cat) =>
+        errorStr.toLowerCase().includes(cat.name.toLowerCase())
+      );
+
+      // Jika ketemu, tambahkan info kode kategorinya ke pesan error
+      if (foundCategory) {
+        return `${errorStr} (Kode yang benar: ${foundCategory.code})`;
+      }
+      return errorStr;
+    });
+    // ---------------------------------------
 
     setErrorModal({
       message,
-      errors,
+      errors: enhancedErrors, // Gunakan errors yang sudah diperkaya
     });
 
     setProgress(0);
-
   } finally {
     eventSource?.close();
     setLoading(false);
@@ -119,8 +136,54 @@ const handleUpdate = async () => {
         }
     };
 
-  return (
+return (
     <div className="w-full min-h-screen p-10">
+        
+        {/* ================= ERROR MODAL ================= */}
+        {errorModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn">
+            <div className="w-[500px] max-h-[80vh] bg-white rounded-3xl shadow-2xl p-8 flex flex-col scale-100 animate-scaleIn">
+            
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+                <div className="p-2 bg-red-100 rounded-full">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                </div>
+                <h2 className="text-xl font-bold">Update Gagal</h2>
+            </div>
+
+            <p className="text-gray-600 mb-4 font-medium">
+                {errorModal.message}
+            </p>
+
+            {/* List Detail Error */}
+            <div className="flex-1 overflow-y-auto bg-red-50 rounded-xl p-4 mb-6 border border-red-100">
+                {errorModal.errors && errorModal.errors.length > 0 ? (
+                <ul className="space-y-2">
+                    {errorModal.errors.map((err, i) => (
+                    <li key={i} className="text-sm text-red-700 flex gap-2">
+                        <span className="font-bold">•</span> {err}
+                    </li>
+                    ))}
+                </ul>
+                ) : (
+                <p className="text-sm text-red-500 italic">Tidak ada detail error tambahan.</p>
+                )}
+            </div>
+
+            <button
+                onClick={() => {
+                    setErrorModal(null);
+                    resetState();
+                }}
+                className="w-full py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-900 transition font-semibold"
+            >
+                Tutup & Perbaiki File
+            </button>
+            </div>
+        </div>
+        )}
 
         {/* ================= LOADING MODAL ================= */}
 
@@ -453,31 +516,6 @@ const handleUpdate = async () => {
             </div>
 
         </div>
-
-        {errorModal && (
-            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40">
-                <div className="bg-white p-6 rounded-xl w-[400px]">
-                
-                <h2 className="font-semibold mb-2 text-red-600">
-                    {errorModal.message}
-                </h2>
-
-                <ul className="text-sm text-gray-600 max-h-40 overflow-y-auto">
-                    {errorModal.errors?.map((err, i) => (
-                    <li key={i}>• {err}</li>
-                    ))}
-                </ul>
-
-                <button
-                    onClick={() => setErrorModal(null)}
-                    className="mt-4 w-full py-2 bg-red-500 text-white rounded"
-                >
-                    Tutup
-                </button>
-
-                </div>
-            </div>
-        )}
 
     </div>
 );

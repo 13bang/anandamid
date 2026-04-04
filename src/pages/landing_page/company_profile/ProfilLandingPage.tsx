@@ -103,7 +103,7 @@ const item: Variants = {
         <div className="bg-white overflow-x-hidden md:overflow-visible">
             {/* ================= BREADCRUMB BAR ================= */}
             <div className="w-full bg-white">
-                <div className="h-14 flex items-center px-4 md:px-8">
+                <div className="h-14 flex items-center px-4 md:px-8 2xl:px-32 2xl:max-w-[1536px] 2xl:mx-auto w-full">
                     <div className="w-ful items-center">
                         <Breadcrumb
                         items={[
@@ -116,7 +116,7 @@ const item: Variants = {
             </div>
 
             {/* HERO */}
-            <section className="relative w-full min-h-[420px] md:min-h-[500px] flex items-center">
+            <section className="relative w-full min-h-[420px] md:min-h-[500px] 2xl:min-h-[600px] flex items-center">
 
                 {/* BACKGROUND IMAGE */}
                 <div className="absolute inset-0">
@@ -131,13 +131,13 @@ const item: Variants = {
                 <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent md:from-black/80 md:via-black/50"></div>
 
                 {/* CONTENT */}
-                <div className="relative px-4 sm:px-6 md:px-8 lg:px-10 w-full grid md:grid-cols-2 items-center gap-6 md:gap-10">
+                <div className="relative px-4 sm:px-6 md:px-8 lg:px-10 2xl:px-32 2xl:max-w-[1536px] 2xl:mx-auto w-full grid md:grid-cols-2 items-center gap-6 md:gap-10">
 
                     {/* TEXT */}
                     <div className="text-left text-white">
 
                         <h1 className="
-                            text-2xl sm:text-3xl md:text-5xl
+                            text-2xl sm:text-3xl md:text-5xl 2xl:text-6xl
                             font-bold leading-snug md:leading-tight
                         ">
                             Apapun Setup-nya,{" "}
@@ -146,9 +146,9 @@ const item: Variants = {
 
                         <p className="
                             mt-4 md:mt-6
-                            text-sm sm:text-base md:text-lg
+                            text-sm sm:text-base md:text-lg 2xl:text-xl
                             text-gray-200
-                            max-w-full md:max-w-xl
+                            max-w-full md:max-w-xl 2xl:max-w-2xl
                         ">
                             Mulai dari komponen PC, laptop, hingga layanan servis — semua kebutuhan teknologi tersedia dalam satu tempat. Cepat, aman, dan terpercaya sejak 2014.
                         </p>
@@ -161,22 +161,22 @@ const item: Variants = {
             {/* TENTANG */}
             <section
                 id="tentang"
-                className="border-gray-300 border-b-2 mt-10 md:mt-6 pt-8 md:pt-0 pb-12"
+                className="border-gray-300 border-b-2 mt-10 md:mt-6 pt-8 md:pt-0 pb-12 2xl:pb-20"
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-20">
+                <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-20 2xl:px-32">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
 
                         {/* TEXT */}
                         <div data-aos="fade-up" className="order-2 md:order-1">
-                            <h2 className="text-xl sm:text-2xl font-bold mb-4 text-primary">
+                            <h2 className="text-xl sm:text-2xl 2xl:text-3xl font-bold mb-4 text-primary">
                             Tentang Kami
                             </h2>
 
-                            <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-primary2">
+                            <h3 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4 text-primary2">
                             Anandam Id
                             </h3>
 
-                            <p className="text-gray-600 leading-relaxed text-sm sm:text-base text-justify">
+                            <p className="text-gray-600 leading-relaxed text-sm sm:text-base 2xl:text-lg text-justify">
                             Anandam adalah perusahaan yang bergerak di bidang penjualan perangkat
                             elektronik dan perlengkapan teknologi, seperti komputer, notebook,
                             printer, server, proyektor, serta berbagai perangkat pendukung
@@ -194,7 +194,7 @@ const item: Variants = {
                             <img
                             src="/struktur_anandam.svg"
                             alt="Struktur Anandam"
-                            className="w-[250px] sm:w-[280px] md:w-[360px] lg:w-[440px]"
+                            className="w-[250px] sm:w-[280px] md:w-[360px] lg:w-[440px] 2xl:w-[540px]"
                             />
                         </div>
 
@@ -202,86 +202,86 @@ const item: Variants = {
                 </div>
 
                 {/* ================= KEUNGGULAN ================= */}
-                <div className="mt-10 md:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-20">
+                <div className="mt-10 md:mt-16 2xl:mt-24 max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-20 2xl:px-32">
 
                     <div className="mb-10 text-left md:text-left">
                         <h3
                             data-aos="fade-up"
-                            className="text-xl sm:text-3xl md:text-4xl font-bold text-primary2 mb-4"
+                            className="text-xl sm:text-3xl md:text-4xl 2xl:text-5xl font-bold text-primary2 mb-4"
                         >
                             Mengapa Memilih Anandam?
                         </h3>
 
-                        <p data-aos="fade-up" className="text-gray-600 max-w-2xl text-justify">
+                        <p data-aos="fade-up" className="text-gray-600 max-w-2xl 2xl:max-w-3xl 2xl:text-lg text-justify">
                             Kami berkomitmen memberikan pengalaman berbelanja perangkat teknologi
                             yang mudah, aman, dan terpercaya dengan dukungan produk berkualitas
                             serta layanan profesional.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 2xl:gap-14">
 
                     {/* ITEM */}
                     <div data-aos="fade-up" className="flex flex-col items-center text-center gap-3">
-                        <Award className="w-7 h-7 md:w-8 md:h-8 text-blue-600"/>
-                        <h4 className="font-semibold text-sm md:text-base">Produk Berkualitas</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                        <Award className="w-7 h-7 md:w-8 md:h-8 2xl:w-10 2xl:h-10 text-blue-600"/>
+                        <h4 className="font-semibold text-sm md:text-base 2xl:text-lg">Produk Berkualitas</h4>
+                        <p className="text-gray-500 text-xs md:text-sm 2xl:text-base">
                         Menyediakan produk dari brand terpercaya dengan kualitas terbaik.
                         </p>
                     </div>
 
                     <div data-aos="fade-up" data-aos-delay="150" className="flex flex-col items-center text-center gap-3">
-                        <Wallet className="w-7 h-7 md:w-8 md:h-8 text-blue-600"/>
-                        <h4 className="font-semibold text-sm md:text-base">Harga Kompetitif</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                        <Wallet className="w-7 h-7 md:w-8 md:h-8 2xl:w-10 2xl:h-10 text-blue-600"/>
+                        <h4 className="font-semibold text-sm md:text-base 2xl:text-lg">Harga Kompetitif</h4>
+                        <p className="text-gray-500 text-xs md:text-sm 2xl:text-base">
                         Harga selalu diperbarui dan bersaing sesuai kondisi pasar.
                         </p>
                     </div>
 
                     <div data-aos="fade-up" data-aos-delay="300" className="flex flex-col items-center text-center gap-3">
-                        <Boxes className="w-7 h-7 md:w-8 md:h-8 text-blue-600"/>
-                        <h4 className="font-semibold text-sm md:text-base">Beragam Brand</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                        <Boxes className="w-7 h-7 md:w-8 md:h-8 2xl:w-10 2xl:h-10 text-blue-600"/>
+                        <h4 className="font-semibold text-sm md:text-base 2xl:text-lg">Beragam Brand</h4>
+                        <p className="text-gray-500 text-xs md:text-sm 2xl:text-base">
                         Berbagai merek ternama tersedia untuk memenuhi kebutuhan Anda.
                         </p>
                     </div>
 
                     <div data-aos="fade-up" data-aos-delay="450" className="flex flex-col items-center text-center gap-3">
-                        <ShieldCheck className="w-7 h-7 md:w-8 md:h-8 text-blue-600"/>
-                        <h4 className="font-semibold text-sm md:text-base">Terpercaya</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                        <ShieldCheck className="w-7 h-7 md:w-8 md:h-8 2xl:w-10 2xl:h-10 text-blue-600"/>
+                        <h4 className="font-semibold text-sm md:text-base 2xl:text-lg">Terpercaya</h4>
+                        <p className="text-gray-500 text-xs md:text-sm 2xl:text-base">
                         Kami menjaga kepercayaan pelanggan dengan layanan transparan.
                         </p>
                     </div>
 
                     <div data-aos="fade-up" className="flex flex-col items-center text-center gap-3">
-                        <Truck className="w-7 h-7 md:w-8 md:h-8 text-blue-600"/>
-                        <h4 className="font-semibold text-sm md:text-base">Pengiriman Cepat</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                        <Truck className="w-7 h-7 md:w-8 md:h-8 2xl:w-10 2xl:h-10 text-blue-600"/>
+                        <h4 className="font-semibold text-sm md:text-base 2xl:text-lg">Pengiriman Cepat</h4>
+                        <p className="text-gray-500 text-xs md:text-sm 2xl:text-base">
                         Pesanan diproses dan dikirim secepat mungkin.
                         </p>
                     </div>
 
                     <div data-aos="fade-up" data-aos-delay="150" className="flex flex-col items-center text-center gap-3">
-                        <Users className="w-7 h-7 md:w-8 md:h-8 text-blue-600"/>
-                        <h4 className="font-semibold text-sm md:text-base">Tim Profesional</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                        <Users className="w-7 h-7 md:w-8 md:h-8 2xl:w-10 2xl:h-10 text-blue-600"/>
+                        <h4 className="font-semibold text-sm md:text-base 2xl:text-lg">Tim Profesional</h4>
+                        <p className="text-gray-500 text-xs md:text-sm 2xl:text-base">
                         Didukung staf berpengalaman yang siap membantu.
                         </p>
                     </div>
 
                     <div data-aos="fade-up" data-aos-delay="300" className="flex flex-col items-center text-center gap-3">
-                        <ShoppingCart className="w-7 h-7 md:w-8 md:h-8 text-blue-600"/>
-                        <h4 className="font-semibold text-sm md:text-base">Belanja Mudah</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                        <ShoppingCart className="w-7 h-7 md:w-8 md:h-8 2xl:w-10 2xl:h-10 text-blue-600"/>
+                        <h4 className="font-semibold text-sm md:text-base 2xl:text-lg">Belanja Mudah</h4>
+                        <p className="text-gray-500 text-xs md:text-sm 2xl:text-base">
                         Sistem pembelian dirancang praktis dan nyaman.
                         </p>
                     </div>
 
                     <div data-aos="fade-up" data-aos-delay="450" className="flex flex-col items-center text-center gap-3">
-                        <BadgeCheck className="w-7 h-7 md:w-8 md:h-8 text-blue-600"/>
-                        <h4 className="font-semibold text-sm md:text-base">Garansi Produk</h4>
-                        <p className="text-gray-500 text-xs md:text-sm">
+                        <BadgeCheck className="w-7 h-7 md:w-8 md:h-8 2xl:w-10 2xl:h-10 text-blue-600"/>
+                        <h4 className="font-semibold text-sm md:text-base 2xl:text-lg">Garansi Produk</h4>
+                        <p className="text-gray-500 text-xs md:text-sm 2xl:text-base">
                         Produk dilengkapi garansi resmi dari masing-masing brand.
                         </p>
                     </div>
@@ -292,29 +292,29 @@ const item: Variants = {
             </section>
 
             {/* LAYANAN */}
-            <section id="layanan" className="py-16 md:py-24">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-20">
+            <section id="layanan" className="py-16 md:py-24 2xl:py-32">
+                <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-20 2xl:px-32">
 
                     {/* TITLE */}
                     <h2
                     data-aos="fade-up"
-                    className="text-3xl sm:text-4xl md:text-5xl font-bold mb-10 text-primary"
+                    className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-10 2xl:mb-14 text-primary"
                     >
                     Layanan
                     </h2>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 2xl:gap-32">
 
                     {/* ================= LEFT CONTENT ================= */}
                     <div className="space-y-20 md:space-y-32">
 
                         {/* LANTAI 1 */}
                         <div>
-                        <h2 data-aos="fade-up" className="text-2xl md:text-4xl font-bold mb-2">
+                        <h2 data-aos="fade-up" className="text-2xl md:text-4xl 2xl:text-5xl font-bold mb-2">
                             Lantai 1
                         </h2>
 
-                        <h3 data-aos="fade-up" className="text-xl md:text-3xl font-semibold mb-6">
+                        <h3 data-aos="fade-up" className="text-xl md:text-3xl 2xl:text-4xl font-semibold mb-6">
                             Komponen & Printer
                         </h3>
 
@@ -326,12 +326,12 @@ const item: Variants = {
                                 alt="service icon"
                                 data-aos="fade-right"
                                 data-aos-delay={i * 150}
-                                className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain"
+                                className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 2xl:w-28 2xl:h-28 object-contain"
                             />
                             ))}
                         </div>
 
-                        <p data-aos="fade-up" className="text-gray-600 text-justify">
+                        <p data-aos="fade-up" className="text-gray-600 2xl:text-lg text-justify">
                             Lantai 1 melayani penjualan berbagai komponen komputer seperti RAM,
                             SSD, motherboard, processor, casing, serta printer dan berbagai
                             perangkat pendukung lainnya.
@@ -340,11 +340,11 @@ const item: Variants = {
 
                         {/* LANTAI 2 */}
                         <div>
-                        <h2 data-aos="fade-up" className="text-2xl md:text-4xl font-bold mb-2">
+                        <h2 data-aos="fade-up" className="text-2xl md:text-4xl 2xl:text-5xl font-bold mb-2">
                             Lantai 2
                         </h2>
 
-                        <h3 data-aos="fade-up" className="text-xl md:text-3xl font-semibold mb-6">
+                        <h3 data-aos="fade-up" className="text-xl md:text-3xl 2xl:text-4xl font-semibold mb-6">
                             Notebook
                         </h3>
 
@@ -356,12 +356,12 @@ const item: Variants = {
                                 alt="laptop icon"
                                 data-aos="fade-right"
                                 data-aos-delay={i * 150}
-                                className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain"
+                                className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 2xl:w-28 2xl:h-28 object-contain"
                             />
                             ))}
                         </div>
 
-                        <p data-aos="fade-up" className="text-gray-600 text-justify">
+                        <p data-aos="fade-up" className="text-gray-600 2xl:text-lg text-justify">
                             Lantai 2 menyediakan berbagai pilihan notebook dari berbagai
                             merek ternama dengan spesifikasi yang beragam sesuai kebutuhan
                             kerja, pendidikan, maupun gaming.
@@ -370,11 +370,11 @@ const item: Variants = {
 
                         {/* LANTAI 3 */}
                         <div>
-                        <h2 data-aos="fade-up" className="text-2xl md:text-4xl font-bold mb-2">
+                        <h2 data-aos="fade-up" className="text-2xl md:text-4xl 2xl:text-5xl font-bold mb-2">
                             Lantai 3
                         </h2>
 
-                        <h3 data-aos="fade-up" className="text-xl md:text-3xl font-semibold mb-6">
+                        <h3 data-aos="fade-up" className="text-xl md:text-3xl 2xl:text-4xl font-semibold mb-6">
                             Service Center
                         </h3>
 
@@ -386,12 +386,12 @@ const item: Variants = {
                                 alt="service icon"
                                 data-aos="fade-right"
                                 data-aos-delay={i * 150}
-                                className="w-14 h-14 sm:w-16 sm:h-16 object-contain"
+                                className="w-14 h-14 sm:w-16 sm:h-16 2xl:w-20 2xl:h-20 object-contain"
                             />
                             ))}
                         </div>
 
-                        <p data-aos="fade-up" className="text-gray-600 text-justify">
+                        <p data-aos="fade-up" className="text-gray-600 2xl:text-lg text-justify">
                             Lantai 3 merupakan pusat layanan servis untuk berbagai perangkat
                             komputer dan notebook. Kami menyediakan layanan klaim garansi yang
                             diproses melalui RMA, konsultasi langsung dengan customer service,
@@ -402,17 +402,17 @@ const item: Variants = {
                         {/* PENGIRIMAN */}
                         <div className="flex flex-col items-center text-center md:text-left md:items-start">
 
-                        <h3 data-aos="fade-up" className="text-xl md:text-3xl font-bold mb-4">
+                        <h3 data-aos="fade-up" className="text-xl md:text-3xl 2xl:text-4xl font-bold mb-4">
                             Pengiriman Gratis Seluruh Jogja
                         </h3>
 
                         <img
                             src="/icons/map-jogja.svg"
-                            className="w-[160px] sm:w-[200px] md:w-[220px] mb-4"
+                            className="w-[160px] sm:w-[200px] md:w-[220px] 2xl:w-[280px] mb-4"
                             data-aos="zoom-in"
                         />
 
-                        <p data-aos="fade-up" className="text-gray-600 max-w-xl text-justify">
+                        <p data-aos="fade-up" className="text-gray-600 max-w-xl 2xl:max-w-2xl 2xl:text-lg text-justify">
                             Kami menyediakan layanan pengiriman gratis untuk seluruh wilayah
                             Yogyakarta sehingga pelanggan dapat berbelanja dengan lebih nyaman
                             dan praktis.
@@ -431,7 +431,7 @@ const item: Variants = {
                         <img
                             src="/talent_anandam3.svg"
                             alt="Talent"
-                            className="rounded-xl"
+                            className="rounded-xl w-full max-w-md 2xl:max-w-lg ml-auto"
                         />
                         </div>
                     </div>
@@ -441,14 +441,15 @@ const item: Variants = {
             </section>
             
             {/* GALERI */}
-            <section id="galeri" className="py-12 md:py-16 bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-20">
+            <section id="galeri" className="py-12 md:py-16 2xl:py-24 bg-gray-50">
+                <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-20 2xl:px-32">
 
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-10 md:mb-16">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl 2xl:text-5xl font-bold text-center mb-10 md:mb-16 2xl:mb-20">
                     Galeri Anandam
                     </h2>
 
-                    <div className="columns-2 md:columns-3 gap-4 md:gap-6 space-y-4 md:space-y-6">
+                    {/* Columns dinaikkan ke 4 pada 2xl */}
+                    <div className="columns-2 md:columns-3 2xl:columns-4 gap-4 md:gap-6 2xl:gap-8 space-y-4 md:space-y-6 2xl:space-y-8">
 
                     {[
                         "/gallery/toko1.jpg",
@@ -487,14 +488,14 @@ const item: Variants = {
             </section>
 
             {/* FAQ */}
-            <section id="faq" className="pt-16 md:pt-24 pb-12 md:pb-14 border-gray-300 border-t-2">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-20">
+            <section id="faq" className="pt-16 md:pt-24 2xl:pt-32 pb-12 md:pb-14 2xl:pb-20 border-gray-300 border-t-2">
+                <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-20 2xl:px-32">
 
                     {/* Title */}
-                    <div className="text-center mb-10 md:mb-14">
+                    <div className="text-center mb-10 md:mb-14 2xl:mb-20">
                         <h2
                             data-aos="fade-up"
-                            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3"
+                            className="text-2xl sm:text-3xl md:text-4xl 2xl:text-5xl font-bold mb-3 2xl:mb-5"
                         >
                             Frequently Asked Questions
                         </h2>
@@ -502,17 +503,17 @@ const item: Variants = {
                         <p
                             data-aos="fade-up"
                             data-aos-delay="100"
-                            className="text-gray-600 text-sm sm:text-base"
+                            className="text-gray-600 text-sm sm:text-base 2xl:text-lg"
                         >
                             Pertanyaan yang sering ditanyakan pelanggan kami
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 2xl:gap-24">
 
                         {/* ================= LEFT - FAQ ================= */}
                         <motion.div
-                            className="space-y-3 md:space-y-4"
+                            className="space-y-3 md:space-y-4 2xl:space-y-6"
                             variants={container}
                             initial="hidden"
                             whileInView="show"
@@ -523,7 +524,7 @@ const item: Variants = {
                                 key={i}
                                 variants={item}
                                 layout
-                                className={`border rounded-lg p-4 md:p-5 cursor-pointer transition ${
+                                className={`border rounded-lg p-4 md:p-5 2xl:p-6 cursor-pointer transition ${
                                 openIndex === i
                                     ? "bg-blue-100 border-blue-300"
                                     : "bg-white"
@@ -532,11 +533,11 @@ const item: Variants = {
                             >
 
                                 <div className="flex justify-between items-center gap-4">
-                                <h4 className="font-semibold text-sm sm:text-base">
+                                <h4 className="font-semibold text-sm sm:text-base 2xl:text-lg">
                                     {faq.question}
                                 </h4>
 
-                                <span className="text-blue-500 text-lg md:text-xl">
+                                <span className="text-blue-500 text-lg md:text-xl 2xl:text-2xl">
                                     {openIndex === i ? "−" : "+"}
                                 </span>
                                 </div>
@@ -553,7 +554,7 @@ const item: Variants = {
                                     }}
                                     className="overflow-hidden"
                                     >
-                                    <p className="text-gray-600 mt-3 text-sm leading-relaxed text-justify">
+                                    <p className="text-gray-600 mt-3 2xl:mt-4 text-sm 2xl:text-base leading-relaxed text-justify">
                                         {faq.answer}
                                     </p>
                                     </motion.div>
@@ -568,50 +569,50 @@ const item: Variants = {
                         <div
                             data-aos="fade-left"
                             data-aos-delay="600"
-                            className="bg-white rounded-xl shadow-sm p-5 sm:p-6 md:p-8 border"
+                            className="bg-white rounded-xl shadow-sm p-5 sm:p-6 md:p-8 2xl:p-10 border"
                         >
-                            <h3 className="text-lg md:text-xl font-semibold mb-2">
+                            <h3 className="text-lg md:text-xl 2xl:text-2xl font-semibold mb-2 2xl:mb-4">
                             Ada pertanyaan lain?
                             </h3>
 
-                            <p className="text-gray-500 mb-6 text-sm">
+                            <p className="text-gray-500 mb-6 2xl:mb-8 text-sm 2xl:text-base">
                             Silakan kirim pertanyaan Anda melalui form berikut.
                             </p>
 
-                            <form className="space-y-4">
+                            <form className="space-y-4 2xl:space-y-6">
 
                             <div>
-                                <label className="text-sm text-gray-500">Nama</label>
+                                <label className="text-sm 2xl:text-base text-gray-500">Nama</label>
                                 <input
                                 type="text"
                                 placeholder="User"
-                                className="w-full border rounded-md px-4 py-2 mt-1 text-sm"
+                                className="w-full border rounded-md px-4 py-2 2xl:py-3 mt-1 text-sm 2xl:text-base"
                                 />
                             </div>
 
                             <div>
-                                <label className="text-sm text-gray-500">Email</label>
+                                <label className="text-sm 2xl:text-base text-gray-500">Email</label>
                                 <input
                                 type="email"
                                 placeholder="email@gmail.com"
-                                className="w-full border rounded-md px-4 py-2 mt-1 text-sm"
+                                className="w-full border rounded-md px-4 py-2 2xl:py-3 mt-1 text-sm 2xl:text-base"
                                 />
                             </div>
 
                             <div>
-                                <label className="text-sm text-gray-500">
+                                <label className="text-sm 2xl:text-base text-gray-500">
                                 Pertanyaan
                                 </label>
                                 <textarea
                                 rows={4}
                                 placeholder="Tulis pertanyaan disini..."
-                                className="w-full border rounded-md px-4 py-2 mt-1 text-sm"
+                                className="w-full border rounded-md px-4 py-2 2xl:py-3 mt-1 text-sm 2xl:text-base"
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                className="w-full md:w-auto bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
+                                className="w-full md:w-auto bg-blue-600 text-white px-6 py-2 2xl:py-3 2xl:px-8 rounded-md hover:bg-blue-700 transition 2xl:text-lg"
                             >
                                 Kirim Pertanyaan
                             </button>
@@ -624,10 +625,10 @@ const item: Variants = {
             </section>
 
             {/* DIREKTUR */}
-            <section id="direktur" className="pb-12 md:pb-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-20">
+            <section id="direktur" className="pb-12 md:pb-16 2xl:pb-24">
+                <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-20 2xl:px-32">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 2xl:gap-20 items-center">
 
                     {/* FOTO DIREKTUR */}
                     <div
@@ -637,49 +638,49 @@ const item: Variants = {
                         <img
                         src="/direktur.svg"
                         alt="Direktur Anandam"
-                        className="w-[200px] sm:w-[240px] md:w-[320px] object-cover"
+                        className="w-[200px] sm:w-[240px] md:w-[320px] 2xl:w-[400px] object-cover"
                         />
                     </div>
 
                     {/* UCAPAN */}
                     <div
                         data-aos="fade-left"
-                        className="text-gray-700 leading-relaxed space-y-4 md:space-y-5 order-2 md:order-none"
+                        className="text-gray-700 leading-relaxed space-y-4 md:space-y-5 2xl:space-y-6 order-2 md:order-none"
                     >
 
                         {/* TITLE */}
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-left md:text-left mb-4 md:mb-6">
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl 2xl:text-5xl font-bold text-left md:text-left mb-4 md:mb-6 2xl:mb-8">
                         Apresiasi dan Harapan
                         </h2>
 
-                        <p className="text-justify text-sm sm:text-base">
+                        <p className="text-justify text-sm sm:text-base 2xl:text-lg">
                         Terima kasih kepada seluruh pelanggan, mitra, dan tim Anandam atas
                         kepercayaan serta kerja sama yang telah terjalin selama ini.
                         </p>
 
-                        <p className="text-justify text-sm sm:text-base">
+                        <p className="text-justify text-sm sm:text-base 2xl:text-lg">
                         Dukungan dan kepercayaan dari para pelanggan menjadi motivasi bagi
                         Anandam untuk terus menghadirkan produk teknologi berkualitas serta
                         pelayanan terbaik.
                         </p>
 
-                        <p className="text-justify text-sm sm:text-base">
+                        <p className="text-justify text-sm sm:text-base 2xl:text-lg">
                         Apresiasi juga disampaikan kepada seluruh karyawan Anandam atas
                         dedikasi dan kerja sama yang telah diberikan dalam melayani setiap
                         pelanggan dengan profesional.
                         </p>
 
-                        <p className="text-justify text-sm sm:text-base">
+                        <p className="text-justify text-sm sm:text-base 2xl:text-lg">
                         Semoga Anandam dapat terus berkembang dan memberikan manfaat bagi
                         lebih banyak pelanggan di masa mendatang.
                         </p>
 
                         {/* Nama */}
-                        <div className="pt-4 md:pt-6">
-                        <p className="font-semibold text-base md:text-lg">
+                        <div className="pt-4 md:pt-6 2xl:pt-8">
+                        <p className="font-semibold text-base md:text-lg 2xl:text-xl">
                             Muhammad Febrihono
                         </p>
-                        <p className="text-primary font-bold text-sm md:text-base">
+                        <p className="text-primary font-bold text-sm md:text-base 2xl:text-lg">
                             Direktur Utama | Anandam Computer
                         </p>
                         </div>

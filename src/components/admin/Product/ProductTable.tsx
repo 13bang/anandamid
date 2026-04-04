@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ProductRow from "./ProductRow";
 import api from "../../../services/api";
+import { updateAdminProduct } from "../../../services/adminProductService";
 
 import Swal from "sweetalert2";
 import { AlertCircle } from "lucide-react";
@@ -77,6 +78,16 @@ export default function ProductTable({
   };
 
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleInlineUpdate = async (id: string, updates: any) => {
+    try {
+      await api.put(`/admin/products/${id}`, updates);
+      onRefetch(); 
+    } catch (error) {
+      console.error("Gagal update produk:", error);
+      Swal.fire("Error", "Gagal memperbarui data", "error");
+    }
+  };
   
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
@@ -377,6 +388,7 @@ console.log("IDS TO DELETE:", idsToDelete);
               products.map((product) => (
                 <ProductRow
                   key={product.id}
+                  onInlineUpdate={handleInlineUpdate}
                   product={product}
                   isSelected={selectedIds.includes(product.id)}
                   onSelect={handleSelect}

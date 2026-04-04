@@ -60,7 +60,6 @@ export default function PCBuilderPage() {
 
             setConstraints(res.active_constraints);
 
-            // 🔥 LOGIC VALIDATION
             if (res.active_constraints) {
                 const { socket, ram_type } = res.active_constraints;
 
@@ -155,17 +154,52 @@ export default function PCBuilderPage() {
         setSelectedMonitor1(null); setSelectedMonitor2(null); setSelectedMonitor3(null); setSelectedOS(null);
     };
 
-    const getPrice = (p: Product | null) => p?.final_price || 0;
+    const [qty, setQty] = useState<{ [key: string]: number }>({
+        cpu: 1,
+        mobo: 1,
+        ram: 1,
+        vga1: 1,
+        vga2: 1,
+        psu: 1,
+        coolerCPU: 1,
+        fan1: 1,
+        fan2: 1,
+        fan3: 1,
+        casing: 1,
+        ssd1: 1,
+        ssd2: 1,
+        hdd1: 1,
+        hdd2: 1,
+        monitor1: 1,
+        monitor2: 1,
+        monitor3: 1,
+        os: 1
+    });
+
+    const getPrice = (p: Product | null, key: string) => {
+        return (p?.final_price || 0) * (qty[key] || 1);
+    };
 
     const grandTotal = 
-        getPrice(selectedCPU) + getPrice(selectedMobo) + getPrice(selectedRAM) +
-        getPrice(selectedVGA1) + getPrice(selectedVGA2) + getPrice(selectedPSU) +
-        getPrice(selectedCoolerCPU) + getPrice(selectedCoolerFan1) + 
-        getPrice(selectedCoolerFan2) + getPrice(selectedCoolerFan3) +
-        getPrice(selectedCasing) + getPrice(selectedSSD1) + getPrice(selectedSSD2) + 
-        getPrice(selectedHDD1) + getPrice(selectedHDD2) +
-        getPrice(selectedMonitor1) + getPrice(selectedMonitor2) + getPrice(selectedMonitor3) + 
-        getPrice(selectedOS);
+        getPrice(selectedCPU, "cpu") +
+        getPrice(selectedMobo, "mobo") +
+        getPrice(selectedRAM, "ram") +
+        getPrice(selectedVGA1, "vga1") +
+        getPrice(selectedVGA2, "vga2") +
+        getPrice(selectedPSU, "psu") +
+        getPrice(selectedCoolerCPU, "coolerCPU") +
+        getPrice(selectedCoolerFan1, "fan1") +
+        getPrice(selectedCoolerFan2, "fan2") +
+        getPrice(selectedCoolerFan3, "fan3") +
+        getPrice(selectedCasing, "casing") +
+        getPrice(selectedSSD1, "ssd1") +
+        getPrice(selectedSSD2, "ssd2") +
+        getPrice(selectedHDD1, "hdd1") +
+        getPrice(selectedHDD2, "hdd2") +
+        getPrice(selectedMonitor1, "monitor1") +
+        getPrice(selectedMonitor2, "monitor2") +
+        getPrice(selectedMonitor3, "monitor3") +
+        getPrice(selectedOS, "os");
 
     const isCoreComplete = selectedCPU && selectedMobo && selectedRAM;
 
@@ -184,10 +218,12 @@ export default function PCBuilderPage() {
         });
     };
 
-    const Row = ({ label, value, onChange, options, price }: any) => (
+    const Row = ({ label, value, onChange, options, price, qtyKey }: any) => (
         <div className="grid grid-cols-12 gap-4 items-center py-3 border-b border-gray-50 last:border-0">
             <div className="col-span-3 text-sm font-medium text-gray-600">{label}</div>
-            <div className="col-span-6">
+
+            {/* SELECT */}
+            <div className="col-span-5">
                 <select 
                     className="w-full border border-gray-200 p-2 rounded-lg text-sm bg-gray-50 focus:bg-white transition-all outline-none focus:ring-1 focus:ring-blue-500"
                     value={value?.id || ""}
@@ -199,14 +235,79 @@ export default function PCBuilderPage() {
                     ))}
                 </select>
             </div>
-            <div className="col-span-3 text-right text-sm font-semibold text-gray-800">
+
+            {/* QTY */}
+            <div className="col-span-2 flex justify-center">
+                <input
+                    type="number"
+                    min={1}
+                    className="w-16 border border-gray-200 p-2 rounded-lg text-sm text-center bg-gray-50 focus:bg-white outline-none"
+                    value={qty[qtyKey]}
+                    onChange={(e) =>
+                        setQty(prev => ({
+                            ...prev,
+                            [qtyKey]: Math.max(1, Number(e.target.value))
+                        }))
+                    }
+                />
+            </div>
+
+            {/* PRICE */}
+            <div className="col-span-2 text-right text-sm font-semibold text-gray-800">
                 Rp {price.toLocaleString("id-ID")}
             </div>
         </div>
     );
 
+    const WHATSAPP_NUMBER = "6281228134747";
+
+    const handleCheckout = () => {
+        const items = [
+            { item: selectedCPU, key: "cpu" },
+            { item: selectedMobo, key: "mobo" },
+            { item: selectedRAM, key: "ram" },
+            { item: selectedVGA1, key: "vga1" },
+            { item: selectedVGA2, key: "vga2" },
+            { item: selectedPSU, key: "psu" },
+            { item: selectedCoolerCPU, key: "coolerCPU" },
+            { item: selectedCoolerFan1, key: "fan1" },
+            { item: selectedCoolerFan2, key: "fan2" },
+            { item: selectedCoolerFan3, key: "fan3" },
+            { item: selectedCasing, key: "casing" },
+            { item: selectedSSD1, key: "ssd1" },
+            { item: selectedSSD2, key: "ssd2" },
+            { item: selectedHDD1, key: "hdd1" },
+            { item: selectedHDD2, key: "hdd2" },
+            { item: selectedMonitor1, key: "monitor1" },
+            { item: selectedMonitor2, key: "monitor2" },
+            { item: selectedMonitor3, key: "monitor3" },
+            { item: selectedOS, key: "os" },
+        ];
+
+        const selectedItems = items.filter(i => i.item);
+
+        const detailText = selectedItems.map(i => {
+            const qtyVal = qty[i.key] || 1;
+            const price = i.item?.final_price || 0;
+
+            return `- |x${qtyVal}| ${i.item?.name} *@ ${price.toLocaleString("id-ID")}*`;
+        }).join("\n");
+
+        const message = `Halo kak, saya mau order rakitan PC:
+
+    ${detailText}
+
+    TOTAL : Rp ${grandTotal.toLocaleString("id-ID")}
+
+    Mohon info ketersediaan ya, terima kasih!`;
+
+        const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+
+        window.open(url, "_blank");
+    };
+
     return (
-        <div className="max-w-5xl mx-auto px-6 py-12 min-h-screen">
+        <div className="max-w-7xl mx-auto px-6 xl:px-8 py-12 min-h-screen">
             <div className="flex justify-between items-end mb-8">
                 <div>
                     <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
@@ -221,8 +322,8 @@ export default function PCBuilderPage() {
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div className="lg:col-span-3 space-y-6">
                     
                     {/* SECTION 1: CORE */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -235,48 +336,51 @@ export default function PCBuilderPage() {
                             value={selectedCPU} 
                             onChange={setSelectedCPU} 
                             options={filterValidProducts(list.processors, "cpu")} 
-                            price={getPrice(selectedCPU)} 
+                            price={getPrice(selectedCPU, "cpu")}
+                            qtyKey="cpu"
                         />
                         <Row 
                             label="Motherboard" 
                             value={selectedMobo} 
                             onChange={setSelectedMobo} 
                             options={filterValidProducts(list.motherboards, "mobo")} 
-                            price={getPrice(selectedMobo)} 
+                            price={getPrice(selectedMobo, "mobo")}
+                            qtyKey="mobo"
                         />
                         <Row 
                             label="RAM" 
                             value={selectedRAM} 
                             onChange={setSelectedRAM} 
                             options={filterValidProducts(list.rams, "ram")} 
-                            price={getPrice(selectedRAM)} 
+                            price={getPrice(selectedRAM, "ram")}
+                            qtyKey="ram"
                         />
                     </div>
 
                     {/* SECTION 2: HARDWARE */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-6">Hardware Tambahan</h2>
-                        <Row label="VGA 1" value={selectedVGA1} onChange={setSelectedVGA1} options={list.vgas} price={getPrice(selectedVGA1)} />
-                        <Row label="VGA 2" value={selectedVGA2} onChange={setSelectedVGA2} options={list.vgas} price={getPrice(selectedVGA2)} />
-                        <Row label="Power Supply" value={selectedPSU} onChange={setSelectedPSU} options={list.psus} price={getPrice(selectedPSU)} />
-                        <Row label="Cooler CPU" value={selectedCoolerCPU} onChange={setSelectedCoolerCPU} options={list.coolerCPU} price={getPrice(selectedCoolerCPU)} />
-                        <Row label="Cooler Fan 1" value={selectedCoolerFan1} onChange={setSelectedCoolerFan1} options={list.coolerFan} price={getPrice(selectedCoolerFan1)} />
-                        <Row label="Cooler Fan 2" value={selectedCoolerFan2} onChange={setSelectedCoolerFan2} options={list.coolerFan} price={getPrice(selectedCoolerFan2)} />
-                        <Row label="Cooler Fan 3" value={selectedCoolerFan3} onChange={setSelectedCoolerFan3} options={list.coolerFan} price={getPrice(selectedCoolerFan3)} />
-                        <Row label="Casing PC" value={selectedCasing} onChange={setSelectedCasing} options={list.casings} price={getPrice(selectedCasing)} />
+                        <Row label="VGA 1" value={selectedVGA1} onChange={setSelectedVGA1} options={list.vgas} price={getPrice(selectedVGA1, "vga")} qtyKey="vga1" />
+                        <Row label="VGA 2" value={selectedVGA2} onChange={setSelectedVGA2} options={list.vgas} price={getPrice(selectedVGA2, "vga")} qtyKey="vga2" />
+                        <Row label="Power Supply" value={selectedPSU} onChange={setSelectedPSU} options={list.psus} price={getPrice(selectedPSU, "psu")} qtyKey="psu" />
+                        <Row label="Cooler CPU" value={selectedCoolerCPU} onChange={setSelectedCoolerCPU} options={list.coolerCPU} price={getPrice(selectedCoolerCPU, "cooler_cpu")} qtyKey="coolerCpu" />
+                        <Row label="Cooler Fan 1" value={selectedCoolerFan1} onChange={setSelectedCoolerFan1} options={list.coolerFan} price={getPrice(selectedCoolerFan1, "cooler_fan")} qtyKey="fan1" />
+                        <Row label="Cooler Fan 2" value={selectedCoolerFan2} onChange={setSelectedCoolerFan2} options={list.coolerFan} price={getPrice(selectedCoolerFan2, "cooler_fan")} qtyKey="fan2" />
+                        <Row label="Cooler Fan 3" value={selectedCoolerFan3} onChange={setSelectedCoolerFan3} options={list.coolerFan} price={getPrice(selectedCoolerFan3, "cooler_fan")} qtyKey="fan3" />
+                        <Row label="Casing PC" value={selectedCasing} onChange={setSelectedCasing} options={list.casings} price={getPrice(selectedCasing, "casing")} qtyKey="casing" />
                     </div>
 
                     {/* SECTION 3: STORAGE & DISPLAY */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-6">Penyimpanan & Layar</h2>
-                        <Row label="SSD 1" value={selectedSSD1} onChange={setSelectedSSD1} options={list.ssds} price={getPrice(selectedSSD1)} />
-                        <Row label="SSD 2" value={selectedSSD2} onChange={setSelectedSSD2} options={list.ssds} price={getPrice(selectedSSD2)} />
-                        <Row label="HDD 1" value={selectedHDD1} onChange={setSelectedHDD1} options={list.hdds} price={getPrice(selectedHDD1)} />
-                        <Row label="HDD 2" value={selectedHDD2} onChange={setSelectedHDD2} options={list.hdds} price={getPrice(selectedHDD2)} />
-                        <Row label="Monitor 1" value={selectedMonitor1} onChange={setSelectedMonitor1} options={list.monitors} price={getPrice(selectedMonitor1)} />
-                        <Row label="Monitor 2" value={selectedMonitor2} onChange={setSelectedMonitor2} options={list.monitors} price={getPrice(selectedMonitor2)} />
-                        <Row label="Monitor 3" value={selectedMonitor3} onChange={setSelectedMonitor3} options={list.monitors} price={getPrice(selectedMonitor3)} />
-                        <Row label="Operating System" value={selectedOS} onChange={setSelectedOS} options={list.oss} price={getPrice(selectedOS)} />
+                        <Row label="SSD 1" value={selectedSSD1} onChange={setSelectedSSD1} options={list.ssds} price={getPrice(selectedSSD1, "ssd")} qtyKey="ssd1" />
+                        <Row label="SSD 2" value={selectedSSD2} onChange={setSelectedSSD2} options={list.ssds} price={getPrice(selectedSSD2, "ssd")} qtyKey="ssd2" />
+                        <Row label="HDD 1" value={selectedHDD1} onChange={setSelectedHDD1} options={list.hdds} price={getPrice(selectedHDD1, "hdd")} qtyKey="hdd1" />
+                        <Row label="HDD 2" value={selectedHDD2} onChange={setSelectedHDD2} options={list.hdds} price={getPrice(selectedHDD2, "hdd")} qtyKey="hdd2" />
+                        <Row label="Monitor 1" value={selectedMonitor1} onChange={setSelectedMonitor1} options={list.monitors} price={getPrice(selectedMonitor1, "monitor")} qtyKey="monitor1" />
+                        <Row label="Monitor 2" value={selectedMonitor2} onChange={setSelectedMonitor2} options={list.monitors} price={getPrice(selectedMonitor2, "monitor")} qtyKey="monitor2" />
+                        <Row label="Monitor 3" value={selectedMonitor3} onChange={setSelectedMonitor3} options={list.monitors} price={getPrice(selectedMonitor3, "monitor")} qtyKey="monitor3" />
+                        <Row label="Operating System" value={selectedOS} onChange={setSelectedOS} options={list.oss} price={getPrice(selectedOS, "os")} qtyKey="os" />
                     </div>
                 </div>
 
@@ -317,6 +421,7 @@ export default function PCBuilderPage() {
 
                         <button 
                             disabled={!isCoreComplete}
+                            onClick={handleCheckout}
                             className="w-full mt-8 bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-lg shadow-gray-200"
                         >
                             Checkout Rakitan

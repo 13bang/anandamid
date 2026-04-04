@@ -37,14 +37,12 @@ export function OfficialBrandSection() {
     const card = el.querySelector(".brand-card") as HTMLElement;
     if (!card) return;
 
+    // Gap disesuaikan dengan gap-[10px] di JSX
     const gap = 10;
-
     const cardWidth = card.getBoundingClientRect().width;
-
     const step = cardWidth + gap;
 
     const current = Math.round(el.scrollLeft / step);
-
     const next = dir === "right" ? current + 1 : current - 1;
 
     el.scrollTo({
@@ -55,7 +53,8 @@ export function OfficialBrandSection() {
 
   return (
     <section className="w-full bg-white mt-4 py-6 border-y border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-0">
+      {/* Tambahkan 2xl:max-w-screen-2xl agar container melebar ke 1600px */}
+      <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0">
 
         <h2 className="mb-6 text-xl sm:text-2xl md:text-3xl font-semibold font-cocogoose text-gray-800">
           Official Brand
@@ -82,7 +81,7 @@ export function OfficialBrandSection() {
           {/* SCROLL */}
           <div
             ref={scrollRef}
-            className="overflow-x-auto scrollbar-hide scroll-smooth px-[5px]"
+            className="overflow-x-auto scrollbar-hide scroll-smooth px-[2px]"
           >
             <div className="flex gap-[10px] w-full">
               {brands.map((brand) => {
@@ -92,10 +91,14 @@ export function OfficialBrandSection() {
                 return (
                   <div
                     key={brand.id}
-                    className="brand-card shrink-0 h-[120px] flex items-center justify-center bg-white border border-gray-200 rounded-md hover:shadow-sm transition"
-                    style={{
-                      width: `calc((100% - 30px) / 4)`
-                    }}
+                    className="
+                      brand-card shrink-0 h-[100px] sm:h-[120px] flex items-center justify-center 
+                      bg-white border border-gray-200 rounded-md hover:shadow-sm transition
+                      w-[140px] 
+                      sm:w-[calc((100%-20px)/3)]
+                      lg:w-[calc((100%-30px)/4)]
+                      2xl:w-[calc((100%-40px)/5)]
+                    "
                   >
                     {imagePath && !hasError ? (
                       <img
@@ -105,7 +108,7 @@ export function OfficialBrandSection() {
                             : `${import.meta.env.VITE_API_BASE}${imagePath}`
                         }
                         alt={brand.name}
-                        className="h-20 max-w-full object-contain"
+                        className="h-14 sm:h-20 max-w-[80%] object-contain"
                         onError={() =>
                           setImageError(prev => ({
                             ...prev,

@@ -19,7 +19,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariasi, setSelectedVariasi] = useState<string>("");
 
-  const WHATSAPP_NUMBER = "62895375706990";
+  const WHATSAPP_NUMBER = "6281228134747";
 
   const [isZooming, setIsZooming] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
@@ -302,20 +302,21 @@ export default function ProductDetailPage() {
 
                 {/* EXTRA INFO */}
                 <div className="pt-6 space-y-4 border-t border-gray-100 mt-6">
-                   <div className="flex gap-4 items-start">
+                  <div className="flex gap-4 items-start">
                       <Truck className="text-primary mt-1" size={20} />
                       <div>
-                        <p className="text-sm font-bold text-gray-900">Subsidi Pengiriman</p>
-                        <p className="text-xs text-gray-500">Minimal Pembelian Rp 50.000,-</p>
+                        <p className="text-sm font-bold text-gray-900">Gratis Ongkir DIY & Sekitarnya</p>
+                        <p className="text-xs text-gray-500">S&K berlaku</p>
                       </div>
-                   </div>
-                   <div className="flex gap-4 items-start">
+                  </div>
+
+                  <div className="flex gap-4 items-start">
                       <ShieldCheck className="text-primary mt-1" size={20} />
                       <div>
-                        <p className="text-sm font-bold text-gray-900">Garansi Sampai 1 Tahun</p>
-                        <p className="text-xs text-gray-500">Dapatkan Garansi untuk Produk Tertentu</p>
+                        <p className="text-sm font-bold text-gray-900">Jaminan Produk Original</p>
+                        <p className="text-xs text-gray-500">100% produk asli & resmi</p>
                       </div>
-                   </div>
+                  </div>
                 </div>
               </div>
 

@@ -96,6 +96,17 @@ export default function ProductWizard({
         }));
     };
 
+    const formatRupiah = (value: number | string) => {
+        if (!value) return "";
+        return Number(value)
+            .toString()
+            .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
+
+    const parseRupiah = (value: string) => {
+        return Number(value.replace(/\./g, ""));
+    };
+
     useEffect(() => {
         console.log("IMAGES FIELD:", initialData?.images);
         console.log("FIRST IMAGE:", initialData?.images?.[0]);
@@ -310,15 +321,12 @@ export default function ProductWizard({
                     Rp
                 </div>
                 <input
-                    type="number"
-                    placeholder="Masukkan harga normal"
-                    value={form.price_normal || ""}
-                    onChange={(e) =>
-                    handleChange(
-                        "price_normal",
-                        e.target.value === "" ? 0 : Number(e.target.value)
-                    )
-                    }
+                    type="text"
+                    value={formatRupiah(form.price_normal || "")}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        handleChange("price_normal", parseRupiah(val));
+                    }}
                     className="w-full px-3 py-1.5 text-sm outline-none"
                 />
                 </div>
@@ -334,15 +342,12 @@ export default function ProductWizard({
                     Rp
                 </div>
                 <input
-                    type="number"
-                    placeholder="Masukkan harga diskon"
-                    value={form.price_discount || ""}
-                    onChange={(e) =>
-                    handleChange(
-                        "price_discount",
-                        e.target.value === "" ? 0 : Number(e.target.value)
-                    )
-                    }
+                type="text"
+                value={formatRupiah(form.price_discount || "")}
+                onChange={(e) => {
+                    const val = e.target.value;
+                    handleChange("price_discount", parseRupiah(val));
+                }}
                     className="w-full px-3 py-1.5 text-sm outline-none"
                 />
                 </div>

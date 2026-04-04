@@ -275,7 +275,7 @@ export default function ProductKatalogPage() {
         </div>
 
         {/* ================= MAIN CONTENT ================= */}
-        <div className="px-8 pt-4 pb-8 mx-auto max-w-7xl">
+        <div className="px-8 pt-4 pb-8 mx-auto max-w-7xl 2xl:max-w-screen-2xl">
             {/* <GlassParticlesBackground /> */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
@@ -392,7 +392,7 @@ export default function ProductKatalogPage() {
                         <div
                             className={
                             layout === "grid"
-                                ? "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4"
+                                ? "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5" // <--- Tambahkan di sini
                                 : "flex flex-col gap-4"
                             }
                         >
@@ -413,7 +413,7 @@ export default function ProductKatalogPage() {
                         <div
                             className={
                             layout === "grid"
-                                ? "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4"
+                                ? "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5" // <--- Tambahkan di sini
                                 : "flex flex-col gap-4"
                             }
                         >

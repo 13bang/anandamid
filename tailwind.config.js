@@ -20,6 +20,10 @@ export default {
         primary4: "#fafafa",
         primary5: "#f2f1ed",
       },
+
+      screens: {
+        '2xl': '1600px',
+      },
     },
   },
   plugins: [],

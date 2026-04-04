@@ -12,6 +12,7 @@ import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 import LandingCategorySection from "../../components/LandingCategorySection";
 import { OfficialBrandSection } from "../../components/OfficialBrand";
 import { getGroupings } from "../../services/groupingService";
+import GroupingProductSlider from "../../components/GroupingProduct";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -50,7 +51,7 @@ export default function LandingPage() {
 
   const [categories, setCategories] = useState<any[]>([]);
 
-  const scrollLeft = () => {
+const scrollLeft = () => {
     if (!scrollRef.current) return;
 
     const container = scrollRef.current;
@@ -58,7 +59,8 @@ export default function LandingPage() {
 
     if (!card) return;
 
-    const gap = 16;
+    // Ubah gap jadi 24 karena menggunakan gap-6
+    const gap = 24; 
     const cardWidth = card.offsetWidth + gap;
 
     container.scrollBy({
@@ -75,7 +77,8 @@ export default function LandingPage() {
 
     if (!card) return;
 
-    const gap = 16; // gap-4
+    // Ubah gap jadi 24 karena menggunakan gap-6
+    const gap = 24; 
     const cardWidth = card.offsetWidth + gap;
 
     container.scrollBy({
@@ -518,7 +521,8 @@ export default function LandingPage() {
       {/* ================= BANNER BRAND ================= */}
       <section className="w-full pb-10 pt-10 bg-white border-gray-200 border-b-[1px] relative overflow-hidden"> 
         <div className="flex justify-center w-full">
-          <div className="relative w-full max-w-6xl">
+          {/* Ubah max-w-6xl menjadi 2xl:max-w-screen-2xl agar bisa melebar sampai 1600px */}
+          <div className="relative w-full max-w-7xl 2xl:max-w-screen-2xl">
 
             {/* VIEWPORT */}
             <div className="overflow-hidden w-full">
@@ -526,18 +530,26 @@ export default function LandingPage() {
                 className="flex"
                 style={{
                   transition: isCenterTransitioning ? "transform 500ms ease-in-out" : "none",
-                  transform: `translateX(calc(-${currentCenter * 70}% + 15%))`
+                  /* Kalkulasi di bawah disesuaikan:
+                    - Mobile/Tablet: Slide lebar 70%, offset 15% agar center.
+                    - Desktop (2xl): Slide tetap 80%, offset 10% agar lebih penuh ke samping.
+                  */
+                  transform: isMobile 
+                    ? `translateX(calc(-${currentCenter * 70}% + 15%))` 
+                    : `translateX(calc(-${currentCenter * 80}% + 10%))`
                 }}
               >
                 {displayBanners.map((banner, i) => {
                   const isActive = i === currentCenter;
 
                   return (
-                    <div key={`${banner.id}-${i}`} className="flex-shrink-0 w-[70%] px-2 sm:px-4">
+                    /* Lebar div pembungkus diperbesar dari 70% ke 80% untuk Desktop */
+                    <div key={`${banner.id}-${i}`} className="flex-shrink-0 w-[70%] md:w-[80%] px-2 sm:px-4">
                       <div 
                         className={`
-                          w-full h-[180px] sm:h-[240px] md:h-[300px] lg:h-[416px] 
-                          rounded-md overflow-hidden shadow-lg 
+                          /* Tinggi banner ditingkatkan untuk layar 2xl */
+                          w-full h-[180px] sm:h-[240px] md:h-[350px] lg:h-[450px] 2xl:h-[550px]
+                          rounded-xl overflow-hidden shadow-lg 
                           ${isCenterTransitioning ? "transition-all duration-500" : "transition-none"}
                           ${isActive ? "scale-100 opacity-100" : "scale-90 opacity-40"} 
                         `}
@@ -545,7 +557,7 @@ export default function LandingPage() {
                         <img
                           src={getImageUrl(banner.image_url)}
                           className="w-full h-full object-cover"
-                          alt="Banner"
+                          alt="Banner Brand"
                         />
                       </div>
                     </div>
@@ -554,21 +566,21 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* BUTTONS */}
+            {/* BUTTONS - Disesuaikan posisinya agar tidak tertutup gambar yang membesar */}
             {bannerAfterPopularCenters.length > 1 && (
               <>
                 <button
                   onClick={() => moveCenter(currentCenter - 1)} 
-                  className="absolute left-2 sm:left-8 top-1/2 -translate-y-1/2 z-10 bg-white/70 hover:bg-white text-gray-800 p-2 md:p-3 rounded-full shadow-md transition-all"
+                  className="absolute left-4 2xl:left-10 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 p-3 md:p-4 rounded-full shadow-xl transition-all"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={28} />
                 </button>
 
                 <button
                   onClick={() => moveCenter(currentCenter + 1)}
-                  className="absolute right-2 sm:right-8 top-1/2 -translate-y-1/2 z-10 bg-white/70 hover:bg-white text-gray-800 p-2 md:p-3 rounded-full shadow-md transition-all"
+                  className="absolute right-4 2xl:right-10 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 p-3 md:p-4 rounded-full shadow-xl transition-all"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={28} />
                 </button>
               </>
             )}
@@ -577,9 +589,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ================= POPULAR PRODUCT ================= */}
+{/* ================= POPULAR PRODUCT ================= */}
       <section className="py-6 md:py-10 bg-white border-y border-gray-200 mt-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-0">
+        {/* Tambahkan 2xl:max-w-screen-2xl agar container melebar ke 1600px */}
+        <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0">
 
           <div className="relative">
 
@@ -635,6 +648,7 @@ export default function LandingPage() {
                   md:w-[210px]
                   lg:w-[230px]
                   xl:w-[236px]
+                  2xl:w-[246px] 
                   "
                 >
                   <ProductCard product={product} />
@@ -648,9 +662,12 @@ export default function LandingPage() {
 
       <OfficialBrandSection />
 
+      <GroupingProductSlider/>
+
       {/* ================= PRODUCT ================= */}
       <section className="w-full bg-white mt-4 border-gray-200 border-y pt-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-0 pb-10">
+        {/* Ubah max-w-7xl jadi bisa melar ke screen-2xl (1536px) di layar gede */}
+        <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0 pb-10">
 
           <h2
             className="mb-6 text-2xl md:text-3xl lg:text-4xl 
@@ -667,7 +684,7 @@ export default function LandingPage() {
           sm:grid-cols-3
           md:grid-cols-4
           lg:grid-cols-5
-          xl:grid-cols-5
+          2xl:grid-cols-6 
           gap-3 sm:gap-4
           ">
             {displayedProducts.map((product) => (
@@ -675,7 +692,8 @@ export default function LandingPage() {
             ))}
 
             {loading &&
-              Array.from({ length: isMobile ? 16 : 15 }).map((_, i) => (
+              // Update skeleton limitnya juga biar rapi
+              Array.from({ length: isMobile ? 16 : 18 }).map((_, i) => (
                 <ProductCardSkeleton key={`skeleton-${i}`} />
               ))}
           </div>

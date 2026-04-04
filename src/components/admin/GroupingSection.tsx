@@ -27,6 +27,9 @@ export default function GroupingSection({
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
     const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string>("");
+
     const toggleExpand = (id: string) => {
         setExpandedIds((prev) =>
             prev.includes(id)
@@ -36,9 +39,15 @@ export default function GroupingSection({
     };
 
     const getImageUrl = (url: string) => {
-            if (!url) return "";
-            if (url.startsWith("http")) return url;
-            return `${import.meta.env.VITE_API_BASE}${url}`;
+        if (!url) return "";
+        if (url.startsWith("http")) return url;
+
+        // Hilangkan slash di akhir base URL jika ada
+        const baseUrl = import.meta.env.VITE_API_BASE?.replace(/\/$/, "") || "";
+        // Tambahkan slash di awal URL gambar jika belum ada
+        const imagePath = url.startsWith("/") ? url : `/${url}`;
+
+        return `${baseUrl}${imagePath}`;
     };
 
     const fetchGroupings = async () => {
@@ -64,7 +73,29 @@ export default function GroupingSection({
         setEditingGrouping(g);
         setGroupingName(g.name);
         setSelectedChildren(g.children.map((c: any) => c.id));
+
+        if (g.image_url) {
+            setImagePreview(getImageUrl(g.image_url));
+        } else {
+            setImagePreview("");
+        }
+
+        setImageFile(null); // reset file
         setIsEditOpen(true);
+    };
+
+    const handleImageChange = (file: File | null) => {
+        setImageFile(file || null);
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setImagePreview("");
+        }
     };
 
     return (
@@ -267,6 +298,32 @@ export default function GroupingSection({
                             className="w-full px-3 py-2 mb-4 border rounded"
                         />
 
+                        <div className="mb-4">
+                            <label className="block text-xs font-semibold text-gray-600 mb-2">
+                                Upload Logo
+                            </label>
+
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) =>
+                                    handleImageChange(e.target.files?.[0] || null)
+                                }
+                                className="w-full text-xs"
+                            />
+
+                            {imagePreview && (
+                                <div className="mt-4 flex justify-center">
+                                    <div className="w-24 h-24 border rounded-lg overflow-hidden bg-gray-50">
+                                        <img
+                                            src={imagePreview}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="max-h-60 overflow-y-auto border rounded p-2">
 
                             {ungrouped.length === 0 && (
@@ -304,10 +361,17 @@ export default function GroupingSection({
                                 disabled={!groupingName}
                                 onClick={async () => {
                                     try {
-                                        await createGrouping({
-                                            name: groupingName,
-                                            child_ids: selectedChildren,
+                                        const formData = new FormData();
+                                        formData.append("name", groupingName);
+                                        selectedChildren.forEach((id) => {
+                                            formData.append("child_ids[]", id);
                                         });
+
+                                        if (imageFile) {
+                                            formData.append("image", imageFile);
+                                        }
+
+                                        await createGrouping(formData);
 
                                         await Swal.fire({
                                             title: "Berhasil",
@@ -353,6 +417,33 @@ export default function GroupingSection({
                         className="w-full px-3 py-2 mb-4 border rounded"
                     />
 
+                    <div className="mb-4">
+                        <label className="block text-xs font-semibold text-gray-600 mb-2">
+                            Upload Logo
+                        </label>
+
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                                handleImageChange(e.target.files?.[0] || null)
+                            }
+                            className="w-full text-xs"
+                        />
+
+                        {/* PREVIEW */}
+                        {imagePreview && (
+                            <div className="mt-4 flex justify-center">
+                                <div className="w-24 h-24 border rounded-lg overflow-hidden bg-gray-50">
+                                    <img
+                                        src={imagePreview}
+                                        className="w-full h-full object-contain"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="max-h-60 overflow-y-auto border rounded p-2">
 
                         {ungrouped.map((cat) => (
@@ -383,20 +474,59 @@ export default function GroupingSection({
 
                         <button
                         onClick={async () => {
-                            await updateGrouping(editingGrouping.id, {
-                                name: groupingName,
-                                child_ids: selectedChildren,
-                            });
+  try {
+    const formData = new FormData();
 
-                            setIsEditOpen(false);
-                            setGroupingName("");
-                            setSelectedChildren([]);
+    formData.append("name", groupingName);
 
-                            fetchGroupings();
-                            fetchUngrouped();
-                            refreshCategories();
-                        }}
-                        className="px-4 py-2 text-white bg-blue-600 rounded"
+    // ✅ FIX: kirim array dengan benar
+    selectedChildren.forEach((id) => {
+      formData.append("child_ids[]", id);
+    });
+
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
+
+    // ✅ DEBUG FORM DATA
+    console.log("=== UPDATE GROUPING ===");
+    console.log("ID:", editingGrouping.id);
+    console.log("groupingName:", groupingName);
+    console.log("selectedChildren:", selectedChildren);
+    console.log("imageFile:", imageFile);
+
+    for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1]);
+    }
+
+    const res = await updateGrouping(editingGrouping.id, formData);
+
+    console.log("RESPONSE:", res);
+
+    setIsEditOpen(false);
+    setGroupingName("");
+    setSelectedChildren([]);
+
+    fetchGroupings();
+    fetchUngrouped();
+    refreshCategories();
+
+  } catch (err: any) {
+    console.log("❌ ERROR FULL:", err);
+
+    if (err.response) {
+      console.log("❌ ERROR DATA:", err.response.data);
+      console.log("❌ ERROR STATUS:", err.response.status);
+    }
+
+    Swal.fire(
+      "Error",
+      err.response?.data?.message || "Gagal update grouping",
+      "error"
+    );
+  }
+}}
+className="px-4 py-2 text-white bg-blue-600 rounded"
                         >
                         Update
                         </button>
