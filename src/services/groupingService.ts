@@ -7,12 +7,27 @@ export const getGroupings = async () => {
 };
 
 // CREATE GROUPING
-export const createGrouping = (data: FormData) => {
-  return api.post("/groupings", data, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+export const createGrouping = async (payload: {
+  name: string;
+  child_ids: string[];
+  imageFile?: File | null;
+}) => {
+  const formData = new FormData();
+
+  formData.append("name", payload.name);
+
+  payload.child_ids.forEach((id) => {
+    formData.append("child_ids[]", id);
   });
+
+  if (payload.imageFile) {
+    formData.append("image", payload.imageFile);
+  }
+
+  // ❌ JANGAN SET HEADER MANUAL
+  const res = await api.post("/groupings", formData);
+
+  return res.data;
 };
 
 // DELETE GROUPING
@@ -44,10 +59,35 @@ export const getUngroupedCategories = async () => {
 };
 
 // UPDATE GROUPING
-export const updateGrouping = (id: string, data: FormData) => {
-  return api.patch(`/groupings/${id}`, data, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+export const updateGrouping = async (
+  id: string,
+  payload: { name: string; child_ids: string[]; imageFile?: File | null }
+) => {
+  const formData = new FormData();
+
+  formData.append("name", payload.name);
+
+  payload.child_ids.forEach((childId) => {
+    formData.append("child_ids[]", childId);
   });
+
+  if (payload.imageFile) {
+    formData.append("image", payload.imageFile);
+  }
+
+  // 🔥 DEBUG (boleh tetap dipakai)
+  console.log("=== DEBUG UPDATE GROUPING ===");
+  for (let pair of formData.entries()) {
+    console.log(pair[0], pair[1]);
+  }
+
+  try {
+    // ❌ JANGAN SET HEADER MANUAL
+    const res = await api.patch(`/groupings/${id}`, formData);
+
+    return res.data;
+  } catch (err: any) {
+    console.log("ERROR RESPONSE:", err.response?.data);
+    throw err;
+  }
 };
