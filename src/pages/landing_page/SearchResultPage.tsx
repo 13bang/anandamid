@@ -17,7 +17,7 @@ export default function SearchResultPage() {
   const [loading, setLoading] = useState(true);
 
   const [layout, setLayout] = useState<"grid" | "list">("grid");
-  const [sort, setSort] = useState<string>("popular");
+  const [sort, setSort] = useState<string>("newest");
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);

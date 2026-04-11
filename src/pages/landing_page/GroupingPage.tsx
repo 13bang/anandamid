@@ -42,7 +42,7 @@ export default function GroupingPage() {
     const searchQuery = searchParams.get("search");
 
     const [activeSearch, setActiveSearch] = useState<string | null>(null);
-    const [sort, setSort] = useState<string>("popular");
+    const [sort, setSort] = useState<string>("newest");
 
     const MIN = 0;
     const MAX = 10000000; 
@@ -176,6 +176,7 @@ export default function GroupingPage() {
     };
 
     const filterProps = {
+        groupings,
         categories, 
         showCategory: false,
         groupingParam,

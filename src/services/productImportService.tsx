@@ -14,14 +14,16 @@ export const downloadTemplate = async () => {
 };
 
 // TEMPLATE UPDATE (baru)
-export const downloadUpdateTemplate = async (categoryCodes?: string[]) => {
+export const downloadUpdateTemplate = async (categoryCodes?: string[], onlyWithSku: boolean = true) => {
+  const params = new URLSearchParams();
+  
+  if (categoryCodes && categoryCodes.length > 0) {
+    params.append("category_code", categoryCodes.join(","));
+  }
+  
+  params.append("only_with_sku", String(onlyWithSku));
 
-  const query =
-    categoryCodes && categoryCodes.length
-      ? `?category_code=${categoryCodes.join(",")}`
-      : "";
-
-  const response = await api.get(`/product-import/template-update${query}`, {
+  const response = await api.get(`/product-import/template-update?${params.toString()}`, {
     responseType: "blob",
   });
 
@@ -33,6 +35,7 @@ export const downloadUpdateTemplate = async (categoryCodes?: string[]) => {
 
   document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link); 
 };
 
 export const uploadMassProduct = async (file: File) => {

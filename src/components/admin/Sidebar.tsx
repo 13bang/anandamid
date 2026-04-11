@@ -13,6 +13,7 @@ import {
   Award,
   Tag,
 } from "lucide-react";
+import { FaTiktok } from "react-icons/fa6";
 import { useState } from "react";
 
 export default function Sidebar() {
@@ -28,9 +29,10 @@ export default function Sidebar() {
     { name: "Produk", path: "/ayamgoreng/product", icon: Package },
     { name: "Update Massal", path: "/ayamgoreng/update-massal", icon: FilePen },
     { name: "Upload Massal", path: "/ayamgoreng/upload-massal", icon: FileInput },
-    { name: "Pricelist", path: "/ayamgoreng/pricelist", icon: CirclePercent },
+    { name: "Pricelist", path: "/ayamgoreng/admin-pricelist", icon: CirclePercent },
     { name: "Banner", path: "/ayamgoreng/banner", icon: Image },
-    { name: "Sertifikat", path: "/ayamgoreng/certificate", icon: Award }
+    { name: "Sertifikat", path: "/ayamgoreng/certificate", icon: Award },
+    { name: "TikTok", path: "/ayamgoreng/tiktok", icon: FaTiktok }
   ];
 
   const handleLogout = () => {
@@ -59,9 +61,9 @@ export default function Sidebar() {
       <div className="flex items-center gap-3 overflow-hidden">
         
         {/* FOTO PROFIL */}
-        <div className="w-10 h-10 overflow-hidden rounded-full shrink-0">
+        <div className="w-10 h-10 overflow-hidden shrink-0">
           <img
-            src={user?.avatar || "/jok.jpg"}
+            src={user?.avatar || "/icon-anandam.svg"}
             alt="Profile"
             className="object-cover w-full h-full"
           />

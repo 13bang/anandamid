@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getBrands } from "../services/brandService";
+import { useNavigate } from "react-router-dom";
 
 const getInitial = (brand: string) => {
   return brand
@@ -12,8 +13,11 @@ const getInitial = (brand: string) => {
 };
 
 export function OfficialBrandSection() {
+  const navigate = useNavigate(); 
   const [brands, setBrands] = useState<any[]>([]);
   const [imageError, setImageError] = useState<Record<string, boolean>>({});
+  const [isHovered, setIsHovered] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -28,60 +32,101 @@ export function OfficialBrandSection() {
     fetchBrands();
   }, []);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (dir: "left" | "right") => {
+  const scroll = useCallback((dir: "left" | "right") => {
     const el = scrollRef.current;
     if (!el) return;
 
     const card = el.querySelector(".brand-card") as HTMLElement;
     if (!card) return;
 
-    // Gap disesuaikan dengan gap-[10px] di JSX
     const gap = 10;
-    const cardWidth = card.getBoundingClientRect().width;
-    const step = cardWidth + gap;
+    // Tetap pakai getBoundingClientRect untuk menangkap koma/desimal
+    const step = card.getBoundingClientRect().width + gap;
+    
+    const maxScrollLeft = el.scrollWidth - el.clientWidth;
+    const currentScroll = el.scrollLeft;
+    
+    const isAtEnd = Math.ceil(currentScroll) >= maxScrollLeft - 5; 
+    const isAtStart = currentScroll <= 5;
 
-    const current = Math.round(el.scrollLeft / step);
-    const next = dir === "right" ? current + 1 : current - 1;
+    // Menghitung index kartu yang sedang aktif saat ini
+    const currentIndex = Math.round(currentScroll / step);
 
-    el.scrollTo({
-      left: next * step,
-      behavior: "smooth",
-    });
-  };
+    if (dir === "right") {
+      if (isAtEnd) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        // Melompat presisi ke posisi absolut index berikutnya
+        el.scrollTo({ left: (currentIndex + 1) * step, behavior: "smooth" });
+      }
+    } else {
+      if (isAtStart) {
+        el.scrollTo({ left: maxScrollLeft, behavior: "smooth" });
+      } else {
+        // Melompat presisi ke posisi absolut index sebelumnya
+        el.scrollTo({ left: (currentIndex - 1) * step, behavior: "smooth" });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (brands.length === 0 || isHovered) return;
+
+    const timer = setInterval(() => {
+      scroll("right");
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [brands.length, isHovered, scroll]);
 
   return (
     <section className="w-full bg-white mt-4 py-6 border-y border-gray-200">
-      {/* Tambahkan 2xl:max-w-screen-2xl agar container melebar ke 1600px */}
       <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0">
-
         <h2 className="mb-6 text-xl sm:text-2xl md:text-3xl font-semibold font-cocogoose text-gray-800">
           Official Brand
         </h2>
 
-        <div className="relative">
-
+        <div 
+          className="relative"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onTouchStart={() => setIsHovered(true)}
+          onTouchEnd={() => setIsHovered(false)}
+        >
           {/* LEFT */}
           <button
             onClick={() => scroll("left")}
-            className="hidden md:flex absolute left-0 -translate-x-1/2 top-1/2 -translate-y-1/2 z-[100] p-2 bg-white shadow-md rounded-full hover:bg-gray-100"
+            className={`hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-[100] 
+            w-12 h-12 items-center justify-center 
+            bg-white/80 backdrop-blur-md border border-gray-200 
+            shadow-[0_8px_30px_rgb(0,0,0,0.12)] 
+            rounded-full text-gray-800 
+            transition-all duration-500 ease-out
+            ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}
+            hover:bg-primary hover:text-white hover:scale-110 hover:shadow-primary/20 active:scale-90`}
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={24} strokeWidth={2.5} />
           </button>
 
           {/* RIGHT */}
           <button
             onClick={() => scroll("right")}
-            className="hidden md:flex absolute right-0 translate-x-1/2 top-1/2 -translate-y-1/2 z-[100] p-2 bg-white shadow-md rounded-full hover:bg-gray-100"
+            className={`hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-[100] 
+            w-12 h-12 items-center justify-center 
+            bg-white/80 backdrop-blur-md border border-gray-200 
+            shadow-[0_8px_30px_rgb(0,0,0,0.12)] 
+            rounded-full text-gray-800 
+            transition-all duration-500 ease-out
+            ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"}
+            hover:bg-primary hover:text-white hover:scale-110 hover:shadow-primary/20 active:scale-90`}
           >
-            <ChevronRight size={20} />
+            <ChevronRight size={24} strokeWidth={2.5} />
           </button>
 
-          {/* SCROLL */}
+          {/* SCROLL CONTAINER: Ditambah snap-x dan snap-mandatory */}
           <div
             ref={scrollRef}
-            className="overflow-x-auto scrollbar-hide scroll-smooth px-[2px]"
+            className="overflow-x-auto scrollbar-hide scroll-smooth px-[2px] snap-x snap-mandatory"
           >
             <div className="flex gap-[10px] w-full">
               {brands.map((brand) => {
@@ -91,10 +136,12 @@ export function OfficialBrandSection() {
                 return (
                   <div
                     key={brand.id}
+                    onClick={() => navigate(`/product-katalog?brand=${brand.id}`)}
                     className="
-                      brand-card shrink-0 h-[100px] sm:h-[120px] flex items-center justify-center 
+                      brand-card snap-start shrink-0 h-[100px] sm:h-[120px] flex items-center justify-center 
                       bg-white border border-gray-200 rounded-md hover:shadow-sm transition
-                      w-[140px] 
+                      cursor-pointer
+                      w-[calc((100%-10px)/2)]
                       sm:w-[calc((100%-20px)/3)]
                       lg:w-[calc((100%-30px)/4)]
                       2xl:w-[calc((100%-40px)/5)]
@@ -108,7 +155,7 @@ export function OfficialBrandSection() {
                             : `${import.meta.env.VITE_API_BASE}${imagePath}`
                         }
                         alt={brand.name}
-                        className="h-14 sm:h-20 max-w-[80%] object-contain"
+                        className="h-14 sm:h-20 max-w-[80%] object-contain pointer-events-none"
                         onError={() =>
                           setImageError(prev => ({
                             ...prev,
@@ -117,7 +164,7 @@ export function OfficialBrandSection() {
                         }
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center text-gray-700">
+                      <div className="flex flex-col items-center justify-center text-gray-700 pointer-events-none">
                         <div className="text-lg font-bold">
                           {getInitial(brand.name)}
                         </div>

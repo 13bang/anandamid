@@ -155,6 +155,18 @@ export default function FilteringSidebar(props: Props) {
     });
   };
 
+  const formatRupiah = (value: number | string) => {
+    if (!value) return "";
+    return value
+      .toString()
+      .replace(/\D/g, "")
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const parseRupiah = (value: string) => {
+    return Number(value.replace(/\./g, ""));
+  };
+
   return (
     <div className="col-span-3 px-6 py-6 border border-gray-200 h-fit space-y-8 rounded-2xl bg-white shadow-sm">
       
@@ -356,6 +368,8 @@ export default function FilteringSidebar(props: Props) {
               width: `${((maxPrice - minPrice) / MAX) * 100}%`,
             }}
           />
+          
+          {/* Input untuk Harga Minimal */}
           <input
             type="range"
             min={MIN}
@@ -367,10 +381,21 @@ export default function FilteringSidebar(props: Props) {
               setMinPrice(value);
             }}
             className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-none 
-              [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 
-              [&::-webkit-slider-thumb]:border-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+              [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 
+              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white 
+              [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary
+              [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer
+              [&::-webkit-slider-thumb]:outline [&::-webkit-slider-thumb]:outline-2 [&::-webkit-slider-thumb]:outline-primary
+              active:[&::-webkit-slider-thumb]:scale-110
+
+              [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 
+              [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-primary 
+              [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white 
+              [&::-moz-range-thumb]:cursor-pointer
+              [&::-moz-range-thumb]:outline [&::-moz-range-thumb]:outline-1 [&::-moz-range-thumb]:outline-primary"
           />
+
+          {/* Input untuk Harga Maksimal */}
           <input
             type="range"
             min={MIN}
@@ -382,9 +407,18 @@ export default function FilteringSidebar(props: Props) {
               setMaxPrice(value);
             }}
             className="absolute inset-0 w-full appearance-none bg-transparent pointer-events-none 
-              [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
-              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 
-              [&::-webkit-slider-thumb]:border-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+              [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 
+              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white 
+              [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary
+              [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer
+              [&::-webkit-slider-thumb]:outline [&::-webkit-slider-thumb]:outline-2 [&::-webkit-slider-thumb]:outline-primary
+              active:[&::-webkit-slider-thumb]:scale-110
+
+              [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 
+              [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-primary 
+              [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white 
+              [&::-moz-range-thumb]:cursor-pointer
+              [&::-moz-range-thumb]:outline [&::-moz-range-thumb]:outline-1 [&::-moz-range-thumb]:outline-primary"
           />
         </div>
 
@@ -394,11 +428,11 @@ export default function FilteringSidebar(props: Props) {
             <span className="absolute left-2 top-[22px] text-xs text-gray-500">Rp</span>
             <label className="mb-1 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Minimal</label>
             <input
-              type="number"
-              value={minPrice === MIN ? "" : minPrice}
+              type="text"
+              value={minPrice === MIN ? "" : formatRupiah(minPrice)}
               placeholder="0"
               onChange={(e) => {
-                const value = Number(e.target.value);
+                const value = parseRupiah(e.target.value);
                 if (value < maxPrice) setMinPrice(value);
               }}
               className="w-full pl-7 pr-2 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
@@ -409,10 +443,10 @@ export default function FilteringSidebar(props: Props) {
             <span className="absolute left-2 top-[22px] text-xs text-gray-500">Rp</span>
             <label className="mb-1 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Maksimal</label>
             <input
-              type="number"
-              value={maxPrice}
+              type="text"
+              value={formatRupiah(maxPrice)}
               onChange={(e) => {
-                const value = Number(e.target.value);
+                const value = parseRupiah(e.target.value);
                 if (value > minPrice) setMaxPrice(value);
               }}
               className="w-full pl-7 pr-2 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"

@@ -12,7 +12,7 @@ export interface Banner {
 export const getBanners = async (): Promise<Banner[]> => {
   const res = await fetch(BASE_URL);
   if (!res.ok) throw new Error("Gagal fetch banner");
-  console.log(res);
+  // Log sudah dihapus dari sini
   return res.json();
 };
 

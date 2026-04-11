@@ -17,6 +17,46 @@ const items = [1,2,3,4,5,6]
 
 export default function CompanyProfile() {
 
+const [name, setName] = useState("")
+const [email, setEmail] = useState("")
+const [message, setMessage] = useState("")
+const [loading, setLoading] = useState(false)
+
+const API_BASE = import.meta.env.VITE_API_BASE
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
+
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/contact`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            name,
+            email,
+            message,
+        }),
+    })
+
+    if (res.ok) {
+      alert("Pesan berhasil dikirim!")
+      setName("")
+      setEmail("")
+      setMessage("")
+    } else {
+      alert("Gagal kirim pesan")
+    }
+  } catch (err) {
+    console.error(err)
+    alert("Terjadi error")
+  } finally {
+    setLoading(false)
+  }
+}
+
 const komponenIcons = [
   "/icons/cpu1.svg",
   "/icons/pc-rakitan.svg",
@@ -40,34 +80,34 @@ const serviceIcons = [
 const [openIndex, setOpenIndex] = useState<number | null>(0)
 const faqs = [
   {
-    question: "Bagaimana?",
+    question: "Bagaimana cara memesan produk di Anandam.id?",
     answer:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit."
+      "Bisa langsung cek dan chat dengan CS kami. WA kami ada di setiap produk, jadi langsung bisa ditanyakan."
   },
   {
-    question: "Kenapa?",
+    question: "Apakah semua produk memiliki garansi resmi?",
     answer:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit."
+      "Kami hanya menjual produk baru dan bergaransi resmi dari distributor di Indonesia. Masa garansi bervariasi tergantung merek dan jenis komponen (umumnya 1–3 tahun)."
   },
   {
-    question: "Kok bisa?",
+    question: "Apakah bisa membantu merakit PC (Custom Build)?",
     answer:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit."
+      "Anda bisa memilih komponen sendiri melalui menu 'Rakitan' kami, dan tim teknisi ahli kami akan merakit serta melakukan stress-test sebelum dikirimkan ke alamat Anda."
   },
   {
-    question: "Mengapa",
+    question: "Apakah melayani pengiriman ke luar kota/pulau?",
     answer:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit."
+      "Kami melayani pengiriman ke seluruh wilayah Indonesia menggunakan ekspedisi terpercaya. Untuk barang sensitif seperti monitor atau PC rakitan, kami sangat menyarankan penambahan packing kayu."
   },
   {
-    question: "Owalah?",
+    question: "Untuk Pembelian apakah bisa Faktur Pajak?",
     answer:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit."
+      "Kami adalah Pengusaha Kena Pajak yang taat. Ketika kebutuhan anda menggunakan faktur atau bahkan NTPN kita bisa bantu lebih lanjut."
   },
   {
-    question: "Yayayaya?",
+    question: "Pengiriman benar Gratis kak di DI Yogyakarta?",
     answer:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit."
+      "Pengiriman kami gratis diseluruh DI Yogyakarta dan sekitar nya kak. Dikirim menggunakan armada kami, jadi keamanan barang terjamin."
   }
 ]
 
@@ -121,14 +161,14 @@ const item: Variants = {
                 {/* BACKGROUND IMAGE */}
                 <div className="absolute inset-0">
                     <img
-                        src="/anandam_depan.svg"
+                        src="/anandam-depan.svg"
                         alt="Background"
                         className="w-full h-full object-cover max-w-full object-center md:object-right"
                     />
                 </div>
 
                 {/* OVERLAY GRADIENT HITAM */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent md:from-black/80 md:via-black/50"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent md:from-black/60 md:via-black/30"></div>
 
                 {/* CONTENT */}
                 <div className="relative px-4 sm:px-6 md:px-8 lg:px-10 2xl:px-32 2xl:max-w-[1536px] 2xl:mx-auto w-full grid md:grid-cols-2 items-center gap-6 md:gap-10">
@@ -452,16 +492,18 @@ const item: Variants = {
                     <div className="columns-2 md:columns-3 2xl:columns-4 gap-4 md:gap-6 2xl:gap-8 space-y-4 md:space-y-6 2xl:space-y-8">
 
                     {[
-                        "/gallery/toko1.jpg",
-                        "/gallery/toko5.jpg",
-                        "/gallery/toko3.jpg",
-                        "/gallery/toko4.jpg",
-                        "/gallery/toko2.jpg",
-                        "/gallery/toko7.jpg",
-                        "/gallery/toko6.jpg",
-                        "/gallery/toko9.jpg",
-                        "/gallery/toko9.jpg",
-                        "/gallery/toko8.jpg",
+                        "/gallery/galeri1.JPG",
+                        "/gallery/galeri2.JPG",
+                        "/gallery/galeri3.JPG",
+                        "/gallery/galeri4.JPG",
+                        "/gallery/galeri5.JPG",
+                        "/gallery/galeri13.jpg",
+                        "/gallery/galeri6.JPG",
+                        "/gallery/galeri10.JPG",
+                        "/gallery/galeri11.jpg",
+                        "/gallery/galeri12.jpg",
+                        "/gallery/galeri14.jpg",
+                        "/gallery/galeri15.JPG",
                     ].map((src, i) => {
 
                         const randomDelay = Math.floor(Math.random() * 600);
@@ -579,42 +621,49 @@ const item: Variants = {
                             Silakan kirim pertanyaan Anda melalui form berikut.
                             </p>
 
-                            <form className="space-y-4 2xl:space-y-6">
+                            <form onSubmit={handleSubmit} className="space-y-4 2xl:space-y-6">
 
                             <div>
                                 <label className="text-sm 2xl:text-base text-gray-500">Nama</label>
                                 <input
                                 type="text"
-                                placeholder="User"
-                                className="w-full border rounded-md px-4 py-2 2xl:py-3 mt-1 text-sm 2xl:text-base"
+                                    placeholder="User"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full border rounded-md px-4 py-2 2xl:py-3 mt-1 text-sm 2xl:text-base"
                                 />
                             </div>
 
                             <div>
                                 <label className="text-sm 2xl:text-base text-gray-500">Email</label>
                                 <input
-                                type="email"
-                                placeholder="email@gmail.com"
-                                className="w-full border rounded-md px-4 py-2 2xl:py-3 mt-1 text-sm 2xl:text-base"
+                                    type="email"
+                                    placeholder="email@gmail.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full border rounded-md px-4 py-2 2xl:py-3 mt-1 text-sm 2xl:text-base"
                                 />
                             </div>
 
                             <div>
                                 <label className="text-sm 2xl:text-base text-gray-500">
-                                Pertanyaan
+                                    Pertanyaan
                                 </label>
                                 <textarea
-                                rows={4}
-                                placeholder="Tulis pertanyaan disini..."
-                                className="w-full border rounded-md px-4 py-2 2xl:py-3 mt-1 text-sm 2xl:text-base"
+                                    rows={4}
+                                    placeholder="Tulis pertanyaan disini..."
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    className="w-full border rounded-md px-4 py-2 2xl:py-3 mt-1 text-sm 2xl:text-base"
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                className="w-full md:w-auto bg-blue-600 text-white px-6 py-2 2xl:py-3 2xl:px-8 rounded-md hover:bg-blue-700 transition 2xl:text-lg"
+                                disabled={loading}
+                                className="w-full md:w-auto bg-blue-600 text-white px-6 py-2 2xl:py-3 2xl:px-8 rounded-md hover:bg-blue-700 transition 2xl:text-lg disabled:opacity-50"
                             >
-                                Kirim Pertanyaan
+                                {loading ? "Mengirim..." : "Kirim Pertanyaan"}
                             </button>
 
                             </form>
@@ -625,13 +674,13 @@ const item: Variants = {
             </section>
 
             {/* DIREKTUR */}
-            <section id="direktur" className="pb-12 md:pb-16 2xl:pb-24">
+            {/* <section id="direktur" className="pb-12 md:pb-16 2xl:pb-24">
                 <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-20 2xl:px-32">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 2xl:gap-20 items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 2xl:gap-20 items-center"> */}
 
                     {/* FOTO DIREKTUR */}
-                    <div
+                    {/* <div
                         data-aos="fade-right"
                         className="flex justify-center order-1 md:order-none"
                     >
@@ -640,16 +689,16 @@ const item: Variants = {
                         alt="Direktur Anandam"
                         className="w-[200px] sm:w-[240px] md:w-[320px] 2xl:w-[400px] object-cover"
                         />
-                    </div>
+                    </div> */}
 
                     {/* UCAPAN */}
-                    <div
+                    {/* <div
                         data-aos="fade-left"
                         className="text-gray-700 leading-relaxed space-y-4 md:space-y-5 2xl:space-y-6 order-2 md:order-none"
-                    >
+                    > */}
 
                         {/* TITLE */}
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl 2xl:text-5xl font-bold text-left md:text-left mb-4 md:mb-6 2xl:mb-8">
+                        {/* <h2 className="text-2xl sm:text-3xl md:text-4xl 2xl:text-5xl font-bold text-left md:text-left mb-4 md:mb-6 2xl:mb-8">
                         Apresiasi dan Harapan
                         </h2>
 
@@ -673,10 +722,10 @@ const item: Variants = {
                         <p className="text-justify text-sm sm:text-base 2xl:text-lg">
                         Semoga Anandam dapat terus berkembang dan memberikan manfaat bagi
                         lebih banyak pelanggan di masa mendatang.
-                        </p>
+                        </p> */}
 
                         {/* Nama */}
-                        <div className="pt-4 md:pt-6 2xl:pt-8">
+                        {/* <div className="pt-4 md:pt-6 2xl:pt-8">
                         <p className="font-semibold text-base md:text-lg 2xl:text-xl">
                             Muhammad Febrihono
                         </p>
@@ -685,11 +734,11 @@ const item: Variants = {
                         </p>
                         </div>
 
-                    </div>
-
+                    </div> */}
+{/* 
                     </div>
                 </div>
-            </section>
+            </section> */}
 
         </div>
     );

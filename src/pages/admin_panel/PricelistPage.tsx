@@ -12,7 +12,7 @@ import { Upload, Laptop, Cpu } from "lucide-react";
 const BASE_FILE_URL =
   `${import.meta.env.VITE_API_BASE}/uploads/pricelists`;
 
-export default function PricelistPage() {
+export default function AdminPricelistPage() {
   const [data, setData] = useState<Pricelist[]>([]);
   const [activeType, setActiveType] =
     useState<PricelistType>("laptop");

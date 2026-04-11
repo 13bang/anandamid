@@ -83,7 +83,8 @@ export default function HeaderProduct({
                 <span>
                   {sort === "price_desc" && "Harga Tertinggi"}
                   {sort === "price_asc" && "Harga Terendah"}
-                  {sort === "newest" && "Terbaru"}
+                  {sort === "popular" && "Paling Populer"}
+                  {(sort === "newest" || !sort) && "Terbaru"}
                 </span>
 
                 <span className="text-gray-400">▾</span>
@@ -115,6 +116,13 @@ export default function HeaderProduct({
                     className="px-4 py-2 text-xs md:text-sm hover:bg-gray-100 cursor-pointer"
                   >
                     Harga Terendah
+                  </div>
+
+                  <div
+                    onClick={() => { setSort("popular"); setOpenSort(false); }}
+                    className="px-4 py-2 text-xs md:text-sm hover:bg-gray-100 cursor-pointer"
+                  >
+                    Paling Populer
                   </div>
 
                   <div

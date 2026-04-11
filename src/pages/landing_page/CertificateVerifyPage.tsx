@@ -14,6 +14,18 @@ export default function CertificateVerifyPage(){
     const [showDuplicateModal, setShowDuplicateModal] = useState(false)
     const [selectedSchool, setSelectedSchool] = useState("")
 
+    const formatDate = (dateString: string) => {
+        if (!dateString) return "-"
+
+        const date = new Date(dateString)
+
+        return date.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        })
+    }
+
     const handleSearch = async () => {
 
         if(!query) return
@@ -342,7 +354,9 @@ export default function CertificateVerifyPage(){
                         </div>
 
                         <div>
-                            <b>Tanggal :</b> {certificate.start_date} - {certificate.end_date}
+                            <div>
+                                <b>Tanggal :</b> {formatDate(certificate.start_date)} - {formatDate(certificate.end_date)}
+                            </div>
                         </div>
 
                         <div>

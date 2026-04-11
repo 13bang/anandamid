@@ -41,33 +41,45 @@ export default function ProductRow({
     setTempValue(value);
   };
 
-  const renderInlineInput = (field: string) => (
-    <input
-      autoFocus
-      type="text"
-      className="w-full px-1 py-1 border border-blue-500 rounded focus:outline-none"
-      value={
-        field === "price_normal" || field === "price_discount"
-          ? formatRupiah(tempValue || "")
-          : tempValue
-      }
-      onChange={(e) => {
-        const val = e.target.value;
+  const renderInlineInput = (field: string) => {
+    // 1. Tentukan lebar input berdasarkan nama field agar tidak merusak lebar kolom
+    let inputStyles = "w-full min-w-[150px]"; // Default untuk kolom nama
+    
+    if (field === "stock") {
+      inputStyles = "w-7 text-center"; // Lebar kecil untuk stok
+    } else if (field === "price_normal" || field === "price_discount") {
+      inputStyles = "w-24"; // Lebar sedang untuk harga
+    }
 
-        if (field === "price_normal" || field === "price_discount") {
-          const numeric = parseRupiah(val);
-          setTempValue(numeric);
-        } else {
-          setTempValue(val);
+    return (
+      <input
+        autoFocus
+        type="text"
+        // 2. Terapkan style dinamis di sini
+        className={`${inputStyles} px-1 py-0.5 text-sm border border-blue-500 rounded focus:outline-none bg-white`}
+        value={
+          field === "price_normal" || field === "price_discount"
+            ? formatRupiah(tempValue || "")
+            : tempValue
         }
-      }}
-      onBlur={() => handleBlur(field)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") handleBlur(field);
-        if (e.key === "Escape") setEditingField(null);
-      }}
-    />
-  );
+        onChange={(e) => {
+          const val = e.target.value;
+
+          if (field === "price_normal" || field === "price_discount") {
+            const numeric = parseRupiah(val);
+            setTempValue(numeric);
+          } else {
+            setTempValue(val);
+          }
+        }}
+        onBlur={() => handleBlur(field)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleBlur(field);
+          if (e.key === "Escape") setEditingField(null);
+        }}
+      />
+    );
+  };
 
   const formatRupiah = (value: number | string) => {
     if (!value) return "";
@@ -82,7 +94,7 @@ export default function ProductRow({
 
   return (
     <tr className="transition bg-white border-b border-gray-100 hover:bg-gray-50">
-      <td className="px-3 py-2 text-center">
+      <td className="px-3 py-2 text-center sticky left-0 bg-white z-10">
         <input
           type="checkbox"
           checked={isSelected}
@@ -98,6 +110,7 @@ export default function ProductRow({
 
           return thumbnail ? (
             <img
+              loading="lazy"
               src={getThumbnailUrl(thumbnail)}
               alt={product.name}
               width={32}
@@ -108,11 +121,16 @@ export default function ProductRow({
               }}
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
+
+                if (img.dataset.fallbackApplied === "true") {
+                  img.src = "/icon-anandam.svg"; 
+                  return;
+                }
+
+                img.dataset.fallbackApplied = "true";
+
                 const filename = thumbnail.split("/").pop();
                 const fallback = `${import.meta.env.VITE_API_BASE}/uploads/products/original/${filename}`;
-
-                console.log("IMAGE FAILED:", getThumbnailUrl(thumbnail));
-                console.log("FALLBACK USED:", fallback);
 
                 img.src = fallback;
               }}
@@ -125,6 +143,7 @@ export default function ProductRow({
           );
         })()}
       </td>
+      
       {/* KOLOM NAMA */}
       <td 
         className="px-3 py-2 font-medium cursor-pointer hover:bg-blue-50"
@@ -133,9 +152,22 @@ export default function ProductRow({
         {editingField === "name" ? (
           renderInlineInput("name")
         ) : (
-          <div className="flex items-center">
+          <div className="flex flex-wrap items-center gap-1">
             {product.name}
-            {product.is_duplicate && <span className="ml-2 text-[10px] px-2 py-1 bg-red-500 text-white rounded-md">DUP!</span>}
+            
+            {/* Label Duplikat */}
+            {product.is_duplicate && (
+              <span className="text-[9px] px-1.5 py-0.5 bg-red-500 text-white rounded font-bold uppercase">
+                DUP
+              </span>
+            )}
+
+            {/* Label No Category (BARU) */}
+            {!product.category && (
+              <span className="text-[9px] px-1.5 py-0.5 bg-amber-500 text-white rounded font-bold uppercase">
+                NO CAT
+              </span>
+            )}
           </div>
         )}
       </td>

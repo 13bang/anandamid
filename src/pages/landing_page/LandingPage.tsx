@@ -13,6 +13,8 @@ import LandingCategorySection from "../../components/LandingCategorySection";
 import { OfficialBrandSection } from "../../components/OfficialBrand";
 import { getGroupings } from "../../services/groupingService";
 import GroupingProductSlider from "../../components/GroupingProduct";
+import PopularProduct from "../../components/PopularProduct";
+import { getTikTokLiveStatus } from "../../services/tiktokService";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -160,6 +162,8 @@ const scrollLeft = () => {
   const [currentHero, setCurrentHero] = useState(0);
   const autoSlideRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(true);
+
+  const [isHovered, setIsHovered] = useState(false);
 
   const startAutoSlide = () => {
     if (autoSlideRef.current) clearInterval(autoSlideRef.current);
@@ -401,11 +405,83 @@ const scrollLeft = () => {
   useEffect(() => {
     const fetch = async () => {
       const data = await getGroupings();
-      console.log("GROUPINGS API:", data);
       setGroupings(data);
     };
 
     fetch();
+  }, []);
+
+  const [showLiveModal, setShowLiveModal] = useState(true);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  const isDraggingModal = useRef(false);
+  const hasDragged = useRef(false); 
+  const offset = useRef({ x: 0, y: 0 });
+
+  const handleMouseDownModal = (e: React.MouseEvent) => {
+    if (!modalRef.current) return;
+
+    isDraggingModal.current = true;
+    hasDragged.current = false; 
+
+    const rect = modalRef.current.getBoundingClientRect();
+    offset.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  };
+
+  const handleMouseMoveModal = (e: MouseEvent) => {
+    if (!isDraggingModal.current || !modalRef.current) return;
+
+    hasDragged.current = true; 
+
+    modalRef.current.style.left = `${e.clientX - offset.current.x}px`;
+    modalRef.current.style.top = `${e.clientY - offset.current.y}px`;
+  };
+
+  const handleMouseUpModal = () => {
+    isDraggingModal.current = false;
+    setTimeout(() => {
+      hasDragged.current = false;
+    }, 50);
+  };
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMoveModal);
+    window.addEventListener("mouseup", handleMouseUpModal);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMoveModal);
+      window.removeEventListener("mouseup", handleMouseUpModal);
+    };
+  }, []);
+
+  const handleLiveClick = (e: React.MouseEvent) => {
+    if (hasDragged.current) {
+      e.preventDefault(); 
+    }
+  };
+
+  // State untuk status live sesungguhnya
+  const [isLive, setIsLive] = useState(false);
+
+  useEffect(() => {
+    const checkTikTokLiveStatus = async () => {
+      try {
+        const res = await getTikTokLiveStatus();
+        setIsLive(res.is_live);
+      } catch (err) {
+        console.error("Gagal cek status live:", err);
+        setIsLive(false);
+      }
+    };
+
+    checkTikTokLiveStatus();
+
+    const interval = setInterval(checkTikTokLiveStatus, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -522,7 +598,11 @@ const scrollLeft = () => {
       <section className="w-full pb-10 pt-10 bg-white border-gray-200 border-b-[1px] relative overflow-hidden"> 
         <div className="flex justify-center w-full">
           {/* Ubah max-w-6xl menjadi 2xl:max-w-screen-2xl agar bisa melebar sampai 1600px */}
-          <div className="relative w-full max-w-7xl 2xl:max-w-screen-2xl">
+          <div 
+            className="relative w-full max-w-7xl 2xl:max-w-screen-2xl group"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
 
             {/* VIEWPORT */}
             <div className="overflow-hidden w-full">
@@ -569,18 +649,34 @@ const scrollLeft = () => {
             {/* BUTTONS - Disesuaikan posisinya agar tidak tertutup gambar yang membesar */}
             {bannerAfterPopularCenters.length > 1 && (
               <>
+                {/* LEFT BUTTON */}
                 <button
-                  onClick={() => moveCenter(currentCenter - 1)} 
-                  className="absolute left-4 2xl:left-10 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 p-3 md:p-4 rounded-full shadow-xl transition-all"
+                  onClick={() => moveCenter(currentCenter - 1)}
+                  className={`hidden md:flex absolute left-4 2xl:left-10 top-1/2 -translate-y-1/2 z-[100] 
+                  w-12 h-12 items-center justify-center 
+                  bg-white/80 backdrop-blur-md border border-gray-200 
+                  shadow-[0_8px_30px_rgb(0,0,0,0.12)] 
+                  rounded-full text-gray-800 
+                  transition-all duration-500 ease-out
+                  ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}
+                  hover:bg-primary hover:text-white hover:scale-110 hover:shadow-primary/20 active:scale-90`}
                 >
-                  <ChevronLeft size={28} />
+                  <ChevronLeft size={24} strokeWidth={2.5} />
                 </button>
 
+                {/* RIGHT BUTTON */}
                 <button
                   onClick={() => moveCenter(currentCenter + 1)}
-                  className="absolute right-4 2xl:right-10 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 p-3 md:p-4 rounded-full shadow-xl transition-all"
+                  className={`hidden md:flex absolute right-4 2xl:right-10 top-1/2 -translate-y-1/2 z-[100] 
+                  w-12 h-12 items-center justify-center 
+                  bg-white/80 backdrop-blur-md border border-gray-200 
+                  shadow-[0_8px_30px_rgb(0,0,0,0.12)] 
+                  rounded-full text-gray-800 
+                  transition-all duration-500 ease-out
+                  ${isHovered ? "opacity-100 translate-x-0 delay-75" : "opacity-0 translate-x-12"}
+                  hover:bg-primary hover:text-white hover:scale-110 hover:shadow-primary/20 active:scale-90`}
                 >
-                  <ChevronRight size={28} />
+                  <ChevronRight size={24} strokeWidth={2.5} />
                 </button>
               </>
             )}
@@ -589,76 +685,7 @@ const scrollLeft = () => {
         </div>
       </section>
 
-{/* ================= POPULAR PRODUCT ================= */}
-      <section className="py-6 md:py-10 bg-white border-y border-gray-200 mt-4">
-        {/* Tambahkan 2xl:max-w-screen-2xl agar container melebar ke 1600px */}
-        <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0">
-
-          <div className="relative">
-
-            <h2
-              className="text-xl md:text-3xl lg:text-4xl font-semibold font-cocogoose text-center
-              bg-gray-800 text-transparent bg-clip-text inline-block"
-            >
-              Produk Populer
-            </h2>
-
-            {/* BUTTON LEFT */}
-            <button
-              onClick={scrollLeft}
-              className="
-              hidden md:flex
-              absolute left-1 md:-left-5 top-1/2 -translate-y-1/2 
-              z-[100] p-3 bg-white shadow-md rounded-full hover:bg-gray-100 transition"
-            >
-              <ChevronLeft size={20} />
-            </button>
-
-            {/* BUTTON RIGHT */}
-            <button
-              onClick={scrollRight}
-              className="
-              hidden md:flex
-              absolute right-1 md:-right-5 top-1/2 -translate-y-1/2 
-              z-[100] p-3 bg-white shadow-md rounded-full hover:bg-gray-100 transition"
-            >
-              <ChevronRight size={20} />
-            </button>
-
-            <div
-              ref={scrollRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseLeave}
-              className="
-              flex gap-6 overflow-x-auto scrollbar-hide
-              scroll-smooth snap-x snap-mandatory
-              cursor-grab active:cursor-grabbing
-              "
-            >
-              {popularProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="
-                  product-slide
-                  flex-shrink-0 snap-start py-4 select-none
-                  w-[47%]
-                  sm:w-[180px]
-                  md:w-[210px]
-                  lg:w-[230px]
-                  xl:w-[236px]
-                  2xl:w-[246px] 
-                  "
-                >
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </div>
-      </section>
+      <PopularProduct popularProducts={popularProducts} />
 
       <OfficialBrandSection />
 
@@ -706,6 +733,64 @@ const scrollLeft = () => {
           />
         </div>
       </section>
+
+      {/* Modal Tiktok */}
+      {showLiveModal && isLive && (
+        <div
+          ref={modalRef}
+          onMouseDown={handleMouseDownModal}
+          className="
+            fixed z-[9999]
+            w-[220px] sm:w-[260px]
+            bg-black rounded-xl overflow-hidden shadow-2xl
+            cursor-move
+          "
+          style={{
+            top: "100px",
+            left: "20px",
+          }}
+        >
+          {/* CLOSE BUTTON */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Biar gak memicu klik ke parent
+              setShowLiveModal(false);
+            }}
+            className="absolute top-1 right-1 z-10 bg-black/60 text-white text-xs px-2 py-1 rounded"
+          >
+            ✕
+          </button>
+
+          {/* CONTENT */}
+          <a
+            href="https://www.tiktok.com/@anandamidstore/live" 
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleLiveClick}
+            className="select-none block" 
+            draggable="false" 
+          >
+            <div className="relative pointer-events-none">
+              <img
+                src="/public/tiktoklive.svg"
+                className="w-full h-[140px] object-cover"
+                alt="Live Thumbnail"
+              />
+
+              {/* LIVE BADGE */}
+              <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded">
+                LIVE
+              </div>
+
+            </div>
+
+            <div className="p-2 text-white text-sm pointer-events-none">
+              🔴 Live sekarang di TikTok
+            </div>
+          </a>
+        </div>
+      )}
+
     </div>
   );
 }

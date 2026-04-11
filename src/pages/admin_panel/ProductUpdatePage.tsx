@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { downloadUpdateTemplate, updateMassProduct, listenImportProgress } from "../../services/productImportService";
-import { FileDown } from "lucide-react";
+import { FileDown, Loader2 } from "lucide-react";
 import { getCategories } from "../../services/adminCategoryService";
+import api from "../../services/api";
 
 export default function ProductUpdatePage() {
   const [log, setLog] = useState("");
@@ -13,6 +14,98 @@ export default function ProductUpdatePage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const isErrorRef = useRef(false);
 
+  const [templateStatus, setTemplateStatus] = useState<{
+    available: boolean;
+    expiresAt: number | null;
+  }>({ available: false, expiresAt: null });
+
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  const fetchTemplateStatus = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (selectedCategories.length > 0) {
+        params.append("category_code", selectedCategories.join(","));
+      }
+      params.append("only_with_sku", String(onlyWithSku));
+
+      const res = await api.get(
+        `/product-import/template-update/status?${params.toString()}`
+      );
+
+      const data = res.data;
+
+      setTemplateStatus({
+        available: data.available,
+        expiresAt: data.expires_at,
+      });
+
+      if (data.expires_at) {
+        setTimeLeft(data.expires_at - Date.now());
+      }
+    } catch (err) {
+      console.error("Gagal ambil status template", err);
+    }
+  };
+
+  const [onlyWithSku, setOnlyWithSku] = useState<boolean>(true);
+
+  const [isDownloading, setIsDownloading] = useState(false);
+  const handleGenerateTemplate = async () => {
+    try {
+      setIsDownloading(true);
+
+      const params = new URLSearchParams();
+      if (selectedCategories.length > 0) {
+        params.append("category_code", selectedCategories.join(","));
+      }
+      params.append("only_with_sku", String(onlyWithSku));
+
+      await api.get(
+        `/product-import/template-update?${params.toString()}&force=true`
+      );
+
+      await fetchTemplateStatus(); // refresh status
+
+    } catch (error) {
+      alert("Gagal generate template");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const params = new URLSearchParams();
+
+      if (selectedCategories.length > 0) {
+        params.append("category_code", selectedCategories.join(","));
+      }
+
+      params.append("only_with_sku", String(onlyWithSku));
+
+      const res = await api.get(
+        `/product-import/template-update/download?${params.toString()}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "product-update-template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Gagal download template");
+    }
+  };
+
   const [errorModal, setErrorModal] = useState<{
     message: string;
     errors?: string[];
@@ -22,6 +115,35 @@ export default function ProductUpdatePage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    fetchTemplateStatus();
+  }, [selectedCategories, onlyWithSku]);
+
+  useEffect(() => {
+    if (!templateStatus.expiresAt) return;
+
+    const interval = setInterval(() => {
+      const diff = templateStatus.expiresAt! - Date.now();
+
+      if (diff <= 0) {
+        setTemplateStatus({ available: false, expiresAt: null });
+        setTimeLeft(0);
+        clearInterval(interval);
+      } else {
+        setTimeLeft(diff);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [templateStatus.expiresAt]);
+
+  const formatTime = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${min}:${sec.toString().padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -222,13 +344,61 @@ export default function ProductUpdatePage() {
             )}
           </div>
 
-          {/* DOWNLOAD TEMPLATE */}
+          <div className="max-w-md space-y-3 p-4 border rounded-xl bg-gray-50/50">
+            <p className="font-medium text-sm text-gray-700">Opsi Download Template</p>
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center justify-center">
+                  <input
+                    type="radio"
+                    name="skuOption"
+                    checked={onlyWithSku === true}
+                    onChange={() => setOnlyWithSku(true)}
+                    className="peer appearance-none w-5 h-5 border border-gray-300 rounded-full checked:border-green-600 checked:bg-green-600 transition-all"
+                  />
+                  <div className="absolute w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                </div>
+                <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                  Hanya Produk dengan SKU Seller
+                </span>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center justify-center">
+                  <input
+                    type="radio"
+                    name="skuOption"
+                    checked={onlyWithSku === false}
+                    onChange={() => setOnlyWithSku(false)}
+                    className="peer appearance-none w-5 h-5 border border-gray-300 rounded-full checked:border-green-600 checked:bg-green-600 transition-all"
+                  />
+                  <div className="absolute w-2 h-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                </div>
+                <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                  Semua Produk
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* GENERATE TEMPLATE BUTTON */}
           <button
-            onClick={() => downloadUpdateTemplate(selectedCategories)}
-            className="flex items-center gap-2 text-green-700 hover:text-green-900"
+            onClick={handleGenerateTemplate}
+            disabled={isDownloading}
+            className={`flex items-center gap-2 transition-all px-4 py-2 rounded-lg border ${
+              isDownloading 
+                ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed" 
+                : "text-green-700 bg-green-50 border-green-200 hover:bg-green-100 hover:border-green-300"
+            }`}
           >
-            <FileDown size={18} />
-            <span className="font-medium">Download Template</span>
+            {isDownloading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <FileDown size={18} />
+            )}
+            <span className="font-medium">
+              {isDownloading ? "Menyiapkan File..." : "Generate Template"}
+            </span>
           </button>
 
           {/* ================= DROPZONE ================= */}
@@ -329,6 +499,7 @@ export default function ProductUpdatePage() {
             <div className="space-y-5">
               {[
                 "Pilih kategori produk yang ingin diupdate.",
+                "Pilih Opsi Download All atau SKU Seller Only.",
                 "Download template Excel.",
                 "Edit data produk pada file Excel.",
                 "Upload kembali file Excel.",
@@ -341,7 +512,35 @@ export default function ProductUpdatePage() {
               ))}
             </div>
           </div>
+          
+          {/* ================= DOWNLOAD RESULT ================= */}
+          <div className="mt-6 border-t pt-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              Template Siap Download
+            </p>
+
+            {templateStatus.available ? (
+              <>
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  <FileDown size={16} />
+                  Download Template
+                </button>
+
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Expired dalam {formatTime(timeLeft)}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-400 text-center">
+                Belum ada template. Klik "Generate Template" dulu.
+              </p>
+            )}
+          </div>
         </div>
+
 
       </div>
     </div>

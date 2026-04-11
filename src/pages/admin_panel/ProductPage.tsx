@@ -34,11 +34,14 @@
 
       const [showDuplicateOnly, setShowDuplicateOnly] = useState(false);
       const [duplicateTotal, setDuplicateTotal] = useState(0);
+      const [showNoCategoryOnly, setShowNoCategoryOnly] = useState(false);
+      const [noCategoryTotal, setNoCategoryTotal] = useState(0);
+      const noCategoryCount = noCategoryTotal;
       const duplicateCount = duplicateTotal;
 
       useEffect(() => {
-        fetchProducts(page, search, showDuplicateOnly);
-      }, [page, limit, search, showDuplicateOnly]);
+        fetchProducts(page, search, showDuplicateOnly, showNoCategoryOnly);
+      }, [page, limit, search, showDuplicateOnly, showNoCategoryOnly]);
 
       useEffect(() => {
         fetchCategories();
@@ -69,7 +72,8 @@
       const fetchProducts = async (
         currentPage: number,
         searchQuery = "",
-        onlyDuplicate = showDuplicateOnly
+        onlyDuplicate = showDuplicateOnly,
+        onlyNoCategory = showNoCategoryOnly
       ) => {
         try {
           const result = await getAdminProducts({
@@ -77,12 +81,14 @@
             limit,
             search: searchQuery,
             only_duplicate: onlyDuplicate,
+            only_no_category: onlyNoCategory, 
           });
 
           setProducts(result.data);
           setTotal(result.total);
           setLastPage(result.last_page);
           setDuplicateTotal(result.duplicateTotal);
+          setNoCategoryTotal(result.noCategoryTotal); 
 
         } catch (err) {
           console.error("Gagal fetch product", err);
@@ -137,6 +143,12 @@
               onToggleDuplicateFilter={() => {
                 setPage(1);
                 setShowDuplicateOnly(prev => !prev);
+              }}
+              noCategoryCount={noCategoryCount}
+              showNoCategoryOnly={showNoCategoryOnly}
+              onToggleNoCategoryFilter={() => {
+                setPage(1);
+                setShowNoCategoryOnly(prev => !prev);
               }}
               onPageChange={setPage}
               onLimitChange={(newLimit) => {

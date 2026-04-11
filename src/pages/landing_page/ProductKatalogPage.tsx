@@ -22,9 +22,15 @@ export default function ProductKatalogPage() {
         image?: string;
     }
 
+    const [searchParams, setSearchParams] = useSearchParams();
+    const searchQuery = searchParams.get("search");
+    
+    // 1. Tangkap parameter brand dari URL
+    const brandParam = searchParams.get("brand");
+
     const [brands, setBrands] = useState<Brand[]>([]);
     const fetchBrands = async () => {
-    const data = await getBrands();
+        const data = await getBrands();
         setBrands(data);
     };
 
@@ -40,15 +46,18 @@ export default function ProductKatalogPage() {
     const [loading, setLoading] = useState(true);
 
     const [searchCategory, setSearchCategory] = useState("");
-    const [selectedBrand, setSelectedBrand] = useState<string[]>([]);
+    
+    // 2. Ubah inisialisasi state selectedBrand, jika ada brandParam jadikan nilai awal
+    const [selectedBrand, setSelectedBrand] = useState<string[]>(
+        brandParam ? brandParam.split(",") : []
+    );
+    
     const [searchBrand, setSearchBrand] = useState("");
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
-    const [searchParams, setSearchParams] = useSearchParams();
-    const searchQuery = searchParams.get("search");
 
     const [activeSearch, setActiveSearch] = useState<string | null>(null);
-    const [sort, setSort] = useState<string>("newest");
+    const [sort, setSort] = useState<string>(searchParams.get("sort") || "newest");
 
     const MIN = 0;
     const MAX = 10000000; 
@@ -61,6 +70,19 @@ export default function ProductKatalogPage() {
     const isPriceFiltered = minPrice !== MIN || maxPrice !== MAX;
 
     const location = useLocation();
+
+    // 3. Tambahkan useEffect ini agar state tersinkronisasi 
+    //    jika user menekan tombol 'Back' atau URL berubah dari tempat lain.
+    useEffect(() => {
+        const currentBrandParam = searchParams.get("brand");
+        if (currentBrandParam) {
+            setSelectedBrand(currentBrandParam.split(","));
+        } else if (!currentBrandParam && selectedBrand.length > 0) {
+            // Reset jika parameter hilang dari URL tapi state masih ada
+             setSelectedBrand([]);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
 
     useEffect(() => {
         fetchCategories();
@@ -207,7 +229,6 @@ export default function ProductKatalogPage() {
     const [showFilter, setShowFilter] = useState(false);
     const [openFilter, setOpenFilter] = useState(false);
 
-
     const getCategoryIdsFromGrouping = () => {
         if (!groupingParam || groupings.length === 0) return [];
 
@@ -219,6 +240,7 @@ export default function ProductKatalogPage() {
     };
 
     const filterProps = {
+        groupings,
         categories,
         categoryParam,
         categoryIdsParam,
@@ -247,7 +269,7 @@ export default function ProductKatalogPage() {
         resetProducts,
 
         setSearchParams,
-        };
+    };
 
     return (
     
@@ -365,7 +387,7 @@ export default function ProductKatalogPage() {
                                     shadow-sm
                                     text-gray-700
                                     transition
-                                    "
+                                "
                                 >
                                 <span>
                                     Rp {minPrice.toLocaleString("id-ID")} - Rp{" "}
@@ -439,7 +461,7 @@ export default function ProductKatalogPage() {
         </div>
 
         {openFilter && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center lg:hidden">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center lg:hidden">
 
                 {/* overlay */}
                 <div

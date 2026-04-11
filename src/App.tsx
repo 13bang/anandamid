@@ -12,7 +12,7 @@ import AdminProductPage from "./pages/admin_panel/ProductPage";
 import LandingPage from "./pages/landing_page/LandingPage";
 import ProductUpdatePage from "./pages/admin_panel/ProductUpdatePage";
 import ProductUploadPage from "./pages/admin_panel/ProductUploadPage";
-import PricelistPage from "./pages/admin_panel/PricelistPage";
+import AdminPricelistPage from "./pages/admin_panel/PricelistPage";
 import BannerPage from "./pages/admin_panel/BannerPage";
 import CertificatePage from "./pages/admin_panel/CertificatePage";
 import PublicLayout from "./components/PublicLayout";
@@ -30,6 +30,9 @@ import SearchResultPage from "./pages/landing_page/SearchResultPage";
 import { initIdleTimer } from "./services/idleTimer";
 import BrandSection from "./pages/admin_panel/BrandPage";
 import PCBuilderPage from "./pages/landing_page/PCBuilderPage";
+import PublicPricelistPage from "./pages/landing_page/PricelistPage";
+import ServerBusyPage from "./pages/ServerBusyPage";
+import TiktokPage from "./pages/admin_panel/TiktokPage";
 
 
 // ================= ROUTES =================
@@ -38,6 +41,8 @@ function AppRoutes() {
 
   return (
     <Routes location={location} key={location.pathname}>
+
+      <Route path="/server-busy" element={<ServerBusyPage />} />
 
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
@@ -52,6 +57,7 @@ function AppRoutes() {
         <Route path="/certificate/:id" element={<CertificateVerifyPage />} />
         <Route path="/search" element={<SearchResultPage />} />
         <Route path="/pc-builder" element={<PCBuilderPage />} />
+        <Route path="/price-list" element={<PublicPricelistPage />} />
       </Route>
 
       <Route path="/ayamgoreng/login" element={<LoginPage />} />
@@ -64,10 +70,11 @@ function AppRoutes() {
           <Route path="product" element={<AdminProductPage />} />
           <Route path="update-massal" element={<ProductUpdatePage />} />
           <Route path="upload-massal" element={<ProductUploadPage />} />
-          <Route path="pricelist" element={<PricelistPage />} />
+          <Route path="admin-pricelist" element={<AdminPricelistPage />} />
           <Route path="banner" element={<BannerPage />} />
           <Route path="certificate" element={<CertificatePage />} />
           <Route path="brand" element={<BrandSection />} />
+          <Route path="tiktok" element={<TiktokPage />} />
         </Route>
       </Route>
 

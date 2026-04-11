@@ -26,6 +26,17 @@ export default function BannerPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tempTitle, setTempTitle] = useState("");
 
+  const SLOT_OPTIONS = [
+    "hero",
+    "banner-after-category",
+    "banner-after-category-mobile",
+    "banner-after-popular-left",
+    "banner-after-popular-right",
+    "banner-after-popular-center",
+    "banner-after-popular-mobile-top",
+    "banner-after-popular-mobile-bottom",
+  ];
+
   const fetchData = async () => {
     try {
       const res = await getBanners();
@@ -180,31 +191,34 @@ export default function BannerPage() {
                     </div>
 
                     <div className="px-4 pb-3">
-  {editingSlotId === banner.id ? (
-    <input
-      value={tempSlot}
-      onChange={(e) => setTempSlot(e.target.value)}
-      onBlur={() => handleSaveSlot(banner.id)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          handleSaveSlot(banner.id);
-        }
-      }}
-      className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-      autoFocus
-    />
-  ) : (
-    <p
-      onClick={() => {
-        setEditingSlotId(banner.id);
-        setTempSlot(banner.slot || "");
-      }}
-      className="text-xs text-gray-500 cursor-pointer hover:text-black"
-    >
-      Slot: {banner.slot || "Belum ada slot"}
-    </p>
-  )}
-</div>
+                      {editingSlotId === banner.id ? (
+                        <select
+                          value={tempSlot}
+                          onChange={(e) => setTempSlot(e.target.value)}
+                          onBlur={() => handleSaveSlot(banner.id)}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg"
+                          autoFocus
+                        >
+                          <option value="">Pilih Slot</option>
+
+                          {SLOT_OPTIONS.map((slot) => (
+                            <option key={slot} value={slot}>
+                              {slot}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p
+                          onClick={() => {
+                            setEditingSlotId(banner.id);
+                            setTempSlot(banner.slot || "");
+                          }}
+                          className="text-xs text-gray-500 cursor-pointer hover:text-black"
+                        >
+                          Slot: {banner.slot || "Belum ada slot"}
+                        </p>
+                      )}
+                    </div>
 
                     {/* IMAGE */}
                     <img
@@ -279,13 +293,19 @@ export default function BannerPage() {
             />
 
           </label>
-            <input
-              type="text"
-              placeholder="Masukkan nama slot (contoh: hero, bottom_left)"
+            <select
               value={selectedSlot}
               onChange={(e) => setSelectedSlot(e.target.value)}
               className="w-full mt-4 h-10 px-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
-            />
+            >
+              <option value="">Pilih Slot Banner</option>
+
+              {SLOT_OPTIONS.map((slot) => (
+                <option key={slot} value={slot}>
+                  {slot}
+                </option>
+              ))}
+            </select>
 
           <button
             onClick={handleUpload}

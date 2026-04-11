@@ -214,6 +214,14 @@ export default function Navbar() {
     parent_id: string | null;
   }
 
+  const menuClass = ({ isActive }: { isActive: boolean }) =>
+    `relative flex items-center py-[6px] ${
+      isActive ? "text-primary font-semibold" : "text-gray-700 hover:text-primary"
+    } after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-primary
+      after:transition-all after:duration-300 ${
+        isActive ? "after:w-full" : "after:w-0 hover:after:w-full"
+      }`;
+
   return (
     <>
       {/* ================= TOP INFO BAR ================= */}
@@ -375,99 +383,84 @@ export default function Navbar() {
           `}
         >
           <div className="w-full mx-auto px-8 py-3">
-            <div className="hidden md:flex gap-12 text-sm font-medium text-gray-700">
+            <div className="hidden md:flex items-center gap-12 text-sm font-medium text-gray-700">
 
               {/* MENU DROPDOWN */}
               <div
-                className="relative"
+                className="relative flex items-center"
                 onMouseEnter={() => setOpen(true)}
                 onMouseLeave={() => setOpen(false)}
               >
-                <div className="flex items-center gap-2 cursor-pointer transition hover:text-primary">
-                  {/* <MenuIcon size={18} strokeWidth={2} /> */}
-                  <span>Menu</span>
-                  <ChevronDown size={16} strokeWidth={2} />
+                <div 
+                  className={`
+                    relative group draw-border-btn flex items-center gap-2 cursor-pointer transition 
+                    ${open ? 'active-border text-primary' : 'hover:text-primary'}
+                  `}
+                >
+                  {/* Garis-garis Animasi */}
+                  <span className="line line-top"></span>
+                  <span className="line line-right"></span>
+                  <span className="line line-bottom"></span>
+                  <span className="line line-left"></span>
+
+                  {/* Konten Menu */}
+                  <span>Kategori Produk</span>
+                  <ChevronDown 
+                    size={16} 
+                    strokeWidth={2} 
+                    className={`transition-transform duration-300 ${open ? 'rotate-180' : ''}`} 
+                  />
                 </div>
 
+                {/* Invisible Bridge agar kursor tidak terputus saat pindah ke dropdown */}
                 <div className="absolute left-0 top-full h-3 w-full"></div>
 
-                {open && (
-                  <div
-                    className="
-                      absolute left-0 top-full mt-3
-                      w-[1100px]
-                      bg-white text-gray-700
-                      shadow-md p-5 z-50
-                    "
-                  >
-                    <div className="grid grid-cols-5 gap-6 max-h-[420px] overflow-y-auto pr-2">
+                {/* DROPDOWN CONTAINER (Selalu ada di DOM, animasi diatur lewat CSS) */}
+                <div className={`dropdown-container ${open ? 'is-open' : ''}`}>
+                  <div className="grid grid-cols-5 gap-6 max-h-[420px] overflow-y-auto pr-2">
+                    {groupings.map((group) => {
+                      const groupCategories = group.children || [];
+                      return (
+                        <div key={group.id} className="flex flex-col">
+                          {/* GROUP TITLE */}
+                          <div className="mb-2">
+                            <div
+                              onClick={() => {
+                                navigate(`/product-grouping?grouping=${group.name}`);
+                                setOpen(false);
+                              }}
+                              className="text-sm font-bold text-gray-800 cursor-pointer hover:text-primary whitespace-nowrap overflow-hidden text-ellipsis"
+                            >
+                              {group.name}
+                            </div>
+                          </div>
 
-                      {groupings.map((group) => {
-
-                        const groupCategories = group.children || [];
-
-                        return (
-                          <div key={group.id} className="flex flex-col">
-
-                            {/* GROUP TITLE */}
-                            <div className="mb-2">
+                          {/* CATEGORY LIST */}
+                          <div className="flex flex-col gap-1">
+                            {groupCategories.map((cat) => (
                               <div
+                                key={cat.id}
                                 onClick={() => {
-                                  navigate(`/product-grouping?grouping=${group.name}`);
+                                  navigate(`/product-categories?category=${cat.name}`);
                                   setOpen(false);
                                 }}
-                                className="
-                                  text-sm font-bold text-gray-800
-                                  cursor-pointer
-                                  hover:text-primary
-                                  whitespace-nowrap overflow-hidden text-ellipsis
-                                "
+                                className="text-sm text-gray-600 hover:text-primary cursor-pointer px-1 py-0.5 rounded transition hover:translate-x-1"
                               >
-                                {group.name}
+                                {cat.name}
                               </div>
-                            </div>
-
-                            {/* CATEGORY LIST (NO DROPDOWN) */}
-                            <div className="flex flex-col gap-1">
-                              {groupCategories.map((cat) => (
-                                <div
-                                  key={cat.id}
-                                  onClick={() => {
-                                    navigate(`/product-categories?category=${cat.name}`);
-                                    setOpen(false);
-                                  }}
-                                  className="
-                                    text-sm text-gray-600
-                                    hover:text-primary
-                                    cursor-pointer
-                                    px-1 py-0.5
-                                    rounded
-                                    transition
-                                    hover:translate-x-1
-                                  "
-                                >
-                                  {cat.name}
-                                </div>
-                              ))}
-                            </div>
-
+                            ))}
                           </div>
-                        );
-                      })}
-
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* TENTANG KAMI */}
               <NavLink
                 to="/company-profile"
-                className={({ isActive }) =>
-                  isActive
-                    ? "border-b-2 border-blue-800 pb-1 text-primary"
-                    : "hover:text-primary"
-                }
+                className={menuClass} 
               >
                 Tentang Kami
               </NavLink>
@@ -475,11 +468,7 @@ export default function Navbar() {
               {/* PRODUCT KATALOG */}
               <NavLink
                 to="/product-katalog"
-                className={({ isActive }) =>
-                  isActive
-                    ? "border-b-2 border-blue-800 pb-1 text-primary"
-                    : "hover:text-primary"
-                }
+                className={menuClass}
               >
                 Produk Katalog
               </NavLink>
@@ -487,13 +476,17 @@ export default function Navbar() {
               {/* RAKITAN */}
               <NavLink
                 to="/pc-builder"
-                className={({ isActive }) =>
-                  isActive
-                    ? "border-b-2 border-blue-800 pb-1 text-primary"
-                    : "hover:text-primary"
-                }
+                className={menuClass}
               >
                 Rakitan
+              </NavLink>
+
+              {/* PRICELIST */}
+              <NavLink
+                to="/price-list"
+                className={menuClass}
+              >
+                Pricelist
               </NavLink>
 
             </div>
@@ -505,7 +498,7 @@ export default function Navbar() {
       {/* ================= MOBILE SIDEBAR ================= */}
       <div
         className={`
-          fixed inset-0 z-[999]
+          fixed inset-0 z-[1000]
           transition
           ${mobileMenuOpen ? "visible" : "invisible"}
         `}
@@ -553,6 +546,17 @@ export default function Navbar() {
               Home
             </div>
 
+            {/* TENTANG KAMI */}
+            <div
+              onClick={() => {
+                navigate("/company-profile");
+                setMobileMenuOpen(false);
+              }}
+              className="text-sm font-medium cursor-pointer"
+            >
+              Tentang Kami
+            </div>
+
             {/* PRODUK KATALOG */}
             <div
               onClick={() => {
@@ -562,6 +566,28 @@ export default function Navbar() {
               className="text-sm font-medium cursor-pointer"
             >
               Produk Katalog
+            </div>
+
+            {/* Rakitan */}
+            <div
+              onClick={() => {
+                navigate("/pc-builder");
+                setMobileMenuOpen(false);
+              }}
+              className="text-sm font-medium cursor-pointer"
+            >
+              Rakitan
+            </div>
+
+            {/* Pricelist */}
+            <div
+              onClick={() => {
+                navigate("/price-list");
+                setMobileMenuOpen(false);
+              }}
+              className="text-sm font-medium cursor-pointer"
+            >
+              Pricelist
             </div>
 
             {/* ================= KATEGORI ================= */}
@@ -580,71 +606,69 @@ export default function Navbar() {
                 />
               </div>
 
-              {/* LIST KATEGORI */}
+              {/* LIST GROUPING & KATEGORI */}
               {openKategori && (
-                <div className="mt-2 flex flex-col gap-2">
+                <div className="mt-2 flex flex-col gap-1">
 
-                  {categories
-                    .filter((cat) => !cat.parent_id)
-                    .map((parent) => {
+                  {groupings.map((group) => {
+                    const hasChildren = group.children && group.children.length > 0;
+                    const isOpen = expandedGroups.includes(group.id);
 
-                      const children = categories.filter(
-                        (cat) => String(cat.parent_id) === String(parent.id)
-                      );
+                    return (
+                      <div key={group.id} className="flex flex-col">
 
-                      const hasChildren = children.length > 0;
-                      const isOpen = openCategory === parent.id;
+                        {/* GROUP PARENT */}
+                        <div
+                          onClick={() => toggleGroup(group.id)}
+                          className="flex items-center justify-between text-sm cursor-pointer pl-2 py-1.5"
+                        >
+                          <span className={isOpen ? "font-semibold text-primary" : "text-gray-800"}>
+                            {group.name}
+                          </span>
 
-                      return (
-                        <div key={parent.id}>
-
-                          {/* PARENT */}
-                          <div
-                            onClick={() => {
-                              if (!hasChildren) {
-                                navigate(`/parent-categories/${parent.name}`);
-                                setMobileMenuOpen(false);
-                              }
-                            }}
-                            className="flex items-center justify-between text-sm cursor-pointer pl-2"
-                          >
-                            <span>{parent.name}</span>
-
-                            {hasChildren && (
-                              <ChevronDown
-                                size={14}
-                                onClick={(e) => {
-                                  e.stopPropagation(); // penting supaya tidak trigger navigate
-                                  setOpenCategory(isOpen ? null : parent.id);
-                                }}
-                                className={`transition ${isOpen ? "rotate-180" : ""}`}
-                              />
-                            )}
-                          </div>
-
-                          {/* CHILD */}
-                          {isOpen && hasChildren && (
-                            <div className="pl-4 mt-1 flex flex-col gap-1">
-
-                              {children.map((child) => (
-                                <div
-                                  key={child.id}
-                                  onClick={() => {
-                                    navigate(`/product-categories?category=${child.name}`);
-                                    setMobileMenuOpen(false);
-                                  }}
-                                  className="text-sm text-gray-600 cursor-pointer hover:text-primary"
-                                >
-                                  {child.name}
-                                </div>
-                              ))}
-
-                            </div>
+                          {hasChildren && (
+                            <ChevronDown
+                              size={14}
+                              className={`transition ${isOpen ? "rotate-180 text-primary" : "text-gray-500"}`}
+                            />
                           )}
-
                         </div>
-                      );
-                    })}
+
+                        {/* KATEGORI CHILD (DROPDOWN) */}
+                        {isOpen && hasChildren && (
+                          <div className="pl-6 flex flex-col gap-2 mt-1 mb-2 border-l-2 border-gray-100 ml-3">
+                            
+                            {/* Opsi untuk melihat semua produk di Grouping ini (mirip klik judul di desktop) */}
+                            <div
+                              onClick={() => {
+                                navigate(`/product-grouping?grouping=${group.name}`);
+                                setMobileMenuOpen(false);
+                              }}
+                              className="text-sm font-semibold text-gray-800 cursor-pointer hover:text-primary"
+                            >
+                              Semua di {group.name}
+                            </div>
+
+                            {/* List Kategori */}
+                            {group.children.map((cat) => (
+                              <div
+                                key={cat.id}
+                                onClick={() => {
+                                  navigate(`/product-categories?category=${cat.name}`);
+                                  setMobileMenuOpen(false);
+                                }}
+                                className="text-sm text-gray-600 cursor-pointer hover:text-primary"
+                              >
+                                {cat.name}
+                              </div>
+                            ))}
+
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })}
 
                 </div>
               )}

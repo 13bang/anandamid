@@ -5,6 +5,11 @@ export interface Category {
   code_slug: string | null;
   image_url: string | null;
 
+  grouping?: {
+    id: string;
+    name: string;
+  };
+
   parent_id: string | null;
 
   created_at: string;

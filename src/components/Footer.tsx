@@ -127,6 +127,16 @@ export default function Footer() {
                   Sertifikat PKL
                 </Link>
               </li>
+              <li>
+                <Link to="/pc-builder" className="hover:text-white">
+                  Rakitan
+                </Link>
+              </li>
+              <li>
+                <Link to="/price-list" className="hover:text-white">
+                  Pricelist 
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -146,7 +156,7 @@ export default function Footer() {
               </div>
               <div>
                 <p className="text-gray-300">Email :</p>
-                <p className="text-white">sales@anandamcomputer.com</p>
+                <p className="text-white">sales@anandam.id</p>
               </div>
             </div>
           </div>

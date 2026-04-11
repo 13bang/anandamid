@@ -36,7 +36,7 @@ export default function CategoriesPage() {
 
   const [selectedBrand, setSelectedBrand] = useState<string[]>([]);
   const [searchBrand, setSearchBrand] = useState("");
-  const [sort, setSort] = useState("newest");
+  const [sort, setSort] = useState<string>("newest");
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);

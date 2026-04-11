@@ -4,7 +4,7 @@ import api from "../../../services/api";
 import { updateAdminProduct } from "../../../services/adminProductService";
 
 import Swal from "sweetalert2";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Tag, AlertTriangle, Trash2 } from "lucide-react";
 
 interface ProductTableProps {
   products: any[];
@@ -22,6 +22,9 @@ interface ProductTableProps {
   onImageClick: (url: string) => void;
   onSearch: (query: string) => void;
   onRefetch: () => void;
+  noCategoryCount: number; 
+  showNoCategoryOnly: boolean; 
+  onToggleNoCategoryFilter: () => void; 
 }
 
 export default function ProductTable({
@@ -40,6 +43,9 @@ export default function ProductTable({
   onImageClick,
   onSearch,
   onRefetch,
+  noCategoryCount,
+  showNoCategoryOnly,
+  onToggleNoCategoryFilter,
 }: ProductTableProps) {
   const getPageNumbers = () => {
     const pages = [];
@@ -274,79 +280,85 @@ console.log("IDS TO DELETE:", idsToDelete);
     }
   };
 
-  return (
+return (
     <div className="overflow-hidden bg-white border border-gray-200 shadow rounded-2xl">
-      <div className="overflow-x-auto">
-        {/* ACTION BAR */}
-        {selectedIds.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 text-sm border-b bg-red-50">
-            <span className="font-medium">
-              {selectedIds.length} produk dipilih
-            </span>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setSelectedIds([])}
-                className="px-3 py-1 border rounded-md hover:bg-gray-100"
-              >
-                Batal
-              </button>
+      <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
+          {/* ACTION BAR BULK DELETE TETAP SAMA */}
+          {selectedIds.length > 0 && (
+            <div className="flex items-center justify-between px-4 py-2 bg-red-50 border-b">
+              <span className="text-sm text-red-700">
+                {selectedIds.length} produk dipilih
+              </span>
 
               <button
                 onClick={handleBulkDelete}
-                className="px-3 py-1 text-white bg-red-500 rounded-md hover:bg-red-600"
+                disabled={isDeleting}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                Hapus Terpilih
+                <Trash2 size={16} />
+                Hapus
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        <table className="min-w-full text-xs table-auto">
+        <table className="min-w-[900px] text-xs table-auto">
           <thead className="bg-white">
-
-            {/* Search & Duplicate Row */}
             <tr className="border-b">
               <th colSpan={10} className="px-4 py-3 bg-white">
                 <div className="flex items-center justify-between">
                   
-                  {/* DUPLICATE ALERT */}
-                  {duplicateCount > 0 ? (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={onToggleDuplicateFilter}
-                        className={`group flex items-center gap-0 hover:gap-2 px-2 py-2 text-xs rounded-full transition-all duration-300 ${
-                          showDuplicateOnly
-                            ? "bg-red-600 text-white"
-                            : "bg-red-100 text-red-700 hover:bg-red-200"
-                        }`}
-                      >
-                        <AlertCircle size={18} />
+                  <div className="flex items-center gap-3"> {/* Container Alert */}
+                    
+                    {duplicateCount > 0 && (
+                      <div className="flex items-center gap-2">
                         
-                        {/* Teks hanya muncul saat hover */}
-                        <span className="max-w-0 overflow-hidden whitespace-nowrap transition-all duration-300 group-hover:max-w-[200px]">
-                          {duplicateCount} Duplicate Produk
-                        </span>
-                      </button>
+                        <button
+                          onClick={onToggleDuplicateFilter}
+                          className={`group flex items-center gap-0 hover:gap-2 px-2 py-2 text-xs rounded-full transition-all duration-300 ${
+                            showDuplicateOnly ? "bg-red-600 text-white" : "bg-red-100 text-red-700 hover:bg-red-200"
+                          }`}
+                        >
+                          <AlertCircle size={18} />
+                          <span className="max-w-0 overflow-hidden whitespace-nowrap transition-all duration-300 group-hover:max-w-[200px]">
+                            {duplicateCount} Duplicate Produk
+                          </span>
+                        </button>
 
-                      {showDuplicateOnly && (
                         <button
                           onClick={handleDeleteDuplicate}
-                          className="px-2 py-1 text-xs text-white bg-red-600 rounded-md hover:bg-red-700"
+                          disabled={isDeleting}
+                          className="flex items-center gap-1 px-2 py-2 text-xs text-white bg-red-600 rounded-full hover:bg-red-700 disabled:opacity-50"
+                          title="Hapus Duplicate"
                         >
-                          Hapus
+                          <Trash2 size={16} />
                         </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div />
-                  )}
+
+                      </div>
+                    )}
+
+                    {/* ALERT NO CATEGORY (Baru) */}
+                    {noCategoryCount > 0 && (
+                      <button
+                        onClick={onToggleNoCategoryFilter}
+                        className={`group flex items-center gap-0 hover:gap-2 px-2 py-2 text-xs rounded-full transition-all duration-300 ${
+                          showNoCategoryOnly 
+                            ? "bg-amber-600 text-white" 
+                            : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                        }`}
+                      >
+                        <Tag size={18} />
+                        <span className="max-w-0 overflow-hidden whitespace-nowrap transition-all duration-300 group-hover:max-w-[200px]">
+                          {noCategoryCount} Belum Ada Kategori
+                        </span>
+                      </button>
+                    )}
+                  </div>
 
                   {/* SEARCH */}
                   <input
                     type="text"
                     placeholder="Cari..."
-                    className="w-64 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-40 sm:w-64 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onChange={(e) => onSearch(e.target.value)}
                   />
                   
@@ -356,7 +368,7 @@ console.log("IDS TO DELETE:", idsToDelete);
 
             {/* Column Header */}
             <tr className="border-b bg-gray-50">
-              <th className="px-3 py-2 text-center">
+              <th className="px-3 py-2 text-center sticky left-0 bg-white z-10">
                 <input
                   type="checkbox"
                   checked={

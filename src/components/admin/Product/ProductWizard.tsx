@@ -107,12 +107,11 @@ export default function ProductWizard({
         return Number(value.replace(/\./g, ""));
     };
 
-    useEffect(() => {
-        console.log("IMAGES FIELD:", initialData?.images);
-        console.log("FIRST IMAGE:", initialData?.images?.[0]);
-        console.log("FIRST IMAGE URL:", initialData?.images?.[0]?.image_url);
-        }, [initialData]);
-
+    // useEffect(() => {
+    //     console.log("IMAGES FIELD:", initialData?.images);
+    //     console.log("FIRST IMAGE:", initialData?.images?.[0]);
+    //     console.log("FIRST IMAGE URL:", initialData?.images?.[0]?.image_url);
+    //     }, [initialData]);
 
     return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

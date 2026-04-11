@@ -11,7 +11,7 @@
   }
 
 
-  const WHATSAPP_NUMBER = "62895375706990";
+  const WHATSAPP_NUMBER = "6281228134747";
 
   const ProductCard: React.FC<Props> = ({
     product,
@@ -62,6 +62,43 @@
           ? imagePath
           : `${import.meta.env.VITE_API_BASE}${imagePath}`
         : "/icon-anandam.svg";
+
+      const metaItems: {
+        label: string;
+        onClick: () => void;
+      }[] = [];
+
+      if (product.brand?.id && product.brand?.name) {
+        metaItems.push({
+          label: product.brand.name,
+          onClick: () =>
+            navigate(`/product-katalog?brand=${product.brand!.id}`),
+        });
+      }
+
+      if (product.category?.grouping?.name) {
+        metaItems.push({
+          label: product.category.grouping.name,
+          onClick: () =>
+            navigate(
+              `/product-grouping?grouping=${encodeURIComponent(
+                product.category!.grouping!.name
+              )}`
+            ),
+        });
+      }
+
+      if (product.category?.name) {
+        metaItems.push({
+          label: product.category.name,
+          onClick: () =>
+            navigate(
+              `/product-categories?category=${encodeURIComponent(
+                product.category!.name
+              )}`
+            ),
+        });
+      }
 
     return (
       <div
@@ -136,7 +173,7 @@
           )}
 
         </div>
-
+        
         {/* CONTENT */}
         <div
           className={`
@@ -147,6 +184,37 @@
           `}
         >
           <div className="flex flex-col gap-1 flex-1">
+
+            <div className="text-[11px] text-gray-500 leading-tight flex items-center overflow-hidden whitespace-nowrap">
+              {metaItems.map((item, index) => {
+                const isLast = index === metaItems.length - 1;
+
+                return (
+                  <React.Fragment key={index}>
+                    
+                    {index > 0 && (
+                      <span className="mx-1 text-gray-400 flex-shrink-0">|</span>
+                    )}
+
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        item.onClick();
+                      }}
+                      className={`
+                        hover:text-primary cursor-pointer transition
+                        ${isLast ? "truncate min-w-0 flex-1" : "flex-shrink-0"}
+                      `}
+                    >
+                      {item.label}
+                    </span>
+
+                  </React.Fragment>
+                );
+              })}
+            </div>
+
+            {/* TITLE */}
             <h3
               className={`font-semibold leading-snug hover:text-primary ${
                 layout === "grid"

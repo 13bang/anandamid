@@ -7,6 +7,7 @@ export interface Product {
   sku_id: string | null;
   name: string;
   description: string | null;
+  brand_id: string | null;
 
   price_normal: number;
   price_discount: number | null;
@@ -26,6 +27,10 @@ export interface Product {
   updated_at: string;
 
   category: Category;
+  grouping?: {
+    id: string;
+    name: string;
+  };
   images: ProductImage[];
   thumbnail_url: string;
 

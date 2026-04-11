@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react"; // Tambahkan useMemo
 import React from "react";
 import Swal from "sweetalert2";
 
@@ -10,32 +10,53 @@ import {
 } from "../../services/brandService";
 
 import BrandModalForm from "../../components/brandModalForm";
-
 import { getProducts } from "../../services/productService";
-
 import { assignProductsToBrand, removeProductFromBrand } from "../../services/productBrandService";
 
 import {
   TrashIcon,
   ArrowTopRightOnSquareIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 
 export default function BrandSection() {
   const [brands, setBrands] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
-
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
+  
+  // --- STATE BARU UNTUK SEARCH & PAGINATION ---
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-
   const [brandName, setBrandName] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
-
   const [editingBrand, setEditingBrand] = useState<any>(null);
-
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // --- LOGIKA FILTERING & PAGINATION ---
+  const filteredBrands = useMemo(() => {
+    return brands.filter((b) =>
+      b.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [brands, searchTerm]);
+
+  const totalPages = Math.ceil(filteredBrands.length / itemsPerPage);
+  
+  const currentItems = useMemo(() => {
+    const lastIndex = currentPage * itemsPerPage;
+    const firstIndex = lastIndex - itemsPerPage;
+    return filteredBrands.slice(firstIndex, lastIndex);
+  }, [filteredBrands, currentPage, itemsPerPage]);
+
+  // Reset ke halaman 1 jika user mencari sesuatu
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) =>
@@ -71,180 +92,248 @@ export default function BrandSection() {
     setIsEditOpen(true);
   };
 
+    const getPagination = () => {
+        const pages = [];
+        const maxVisible = 5; 
+
+        if (totalPages <= maxVisible) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
+
+        const start = Math.max(1, currentPage - 2);
+        const end = Math.min(totalPages, currentPage + 2);
+
+        if (start > 1) {
+            pages.push(1);
+            if (start > 2) pages.push("...");
+        }
+
+        for (let i = start; i <= end; i++) {
+            pages.push(i);
+        }
+
+        if (end < totalPages) {
+            if (end < totalPages - 1) pages.push("...");
+            pages.push(totalPages);
+        }
+
+        return pages;
+    };
+
   return (
-    <div className="mb-6">
+    <div className="mb-6 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+        
+        {/* SEARCH & ADD HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+            <div className="relative w-full md:w-64">
+                <input
+                    type="text"
+                    placeholder="Cari brand..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+            </div>
 
-      {/* HEADER */}
-      <div className="flex justify-end mb-3">
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="px-4 py-2 text-sm text-white bg-green-600 rounded-lg font-semibold"
-        >
-          + Tambah Brand
-        </button>
-      </div>
+            <button
+            onClick={() => setIsCreateOpen(true)}
+            className="w-full md:w-auto px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition shadow-sm"
+            >
+            + Tambah Brand
+            </button>
+        </div>
 
-      {/* TABLE */}
-      <div className="border rounded-xl overflow-x-auto">
-        <table className="min-w-full text-xs table-fixed">
-          <thead className="text-gray-600 bg-gray-50">
-            <tr>
-              <th className="px-3 py-2 w-[80px]">Logo</th>
-              <th className="px-3 py-2 text-left">Nama</th>
-              <th className="px-3 py-2 text-center">Jumlah Produk</th>
-              <th className="px-3 py-2 text-center">Aksi</th>
-            </tr>
-          </thead>
+        {/* TABLE */}
+        <div className="border rounded-xl overflow-hidden">
+            <table className="min-w-full text-xs table-fixed">
+            <thead className="text-gray-600 bg-gray-50 border-b">
+                <tr>
+                <th className="px-3 py-3 w-[80px]">Logo</th>
+                <th className="px-3 py-3 text-left uppercase font-bold tracking-wider">Nama</th>
+                <th className="px-3 py-3 text-center uppercase font-bold tracking-wider">Jumlah Produk</th>
+                <th className="px-3 py-3 text-center uppercase font-bold tracking-wider">Aksi</th>
+                </tr>
+            </thead>
 
-          <tbody>
-            {brands.map((b) => (
+            <tbody className="divide-y">
+                {currentItems.map((b) => (
                 <React.Fragment key={b.id}>
-
-                {/* PARENT */}
-                <tr
-                    className="bg-white border-t cursor-pointer hover:bg-gray-50"
+                    <tr
+                    className="bg-white hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => toggleExpand(b.id)}
-                >
-                <td className="px-3 py-2">
-                    {b.image_url ? (
+                    >
+                    <td className="px-3 py-3 text-center">
+                        {b.image_url ? (
                         <img
                             src={getImageUrl(b.image_url)}
-                            className="w-10 h-10 object-contain border rounded cursor-pointer hover:scale-105 transition"
+                            className="w-10 h-10 object-contain border rounded-md shadow-sm mx-auto hover:scale-110 transition"
                             onClick={(e) => {
-                                e.stopPropagation(); 
-                                setPreviewImage(getImageUrl(b.image_url));
+                            e.stopPropagation();
+                            setPreviewImage(getImageUrl(b.image_url));
                             }}
                         />
-                    ) : (
-                    <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-xs text-gray-400 rounded">
-                        N/A
-                    </div>
-                    )}
-                </td>
+                        ) : (
+                        <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-[10px] text-gray-400 rounded-md mx-auto">N/A</div>
+                        )}
+                    </td>
+                    <td className="px-3 py-3 font-semibold text-gray-700">{b.name}</td>
+                    <td className="px-3 py-3 text-center">
+                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-[10px] font-bold">
+                            {b.products?.length || 0} Produk
+                        </span>
+                    </td>
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-center gap-3">
+                        <button onClick={() => openEditModal(b)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                            <ArrowTopRightOnSquareIcon className="w-4 h-4" /> Ubah
+                        </button>
+                        <button 
+                            onClick={async () => {
+                                const confirm = await Swal.fire({
+                                    title: "Hapus Brand?",
+                                    text: b.name,
+                                    icon: "warning",
+                                    showCancelButton: true,
+                                    confirmButtonColor: "#d33",
+                                });
+                                if (confirm.isConfirmed) {
+                                    await deleteBrand(b.id);
+                                    fetchBrands();
+                                }
+                            }}
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1"
+                        >
+                            <TrashIcon className="w-4 h-4" /> Hapus
+                        </button>
+                        </div>
+                    </td>
+                    </tr>
 
-                <td className="px-3 py-2 font-medium">{b.name}</td>
-
-                <td className="px-3 py-2 text-center">
-                    {b.products?.length || 0}
-                </td>
-
-                <td className="px-3 py-2">
-                    <div className="flex justify-center gap-4">
-                    <button
-                        onClick={(e) => {
-                        e.stopPropagation();
-                        openEditModal(b);
-                        }}
-                        className="flex items-center gap-1 text-primary font-semibold"
-                    >
-                        <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                        Edit
-                    </button>
-
-                    <button
-                        onClick={async (e) => {
-                        e.stopPropagation();
-
-                        const confirm = await Swal.fire({
-                            title: "Hapus Brand?",
-                            text: b.name,
-                            icon: "warning",
-                            showCancelButton: true,
-                        });
-
-                        if (confirm.isConfirmed) {
-                            await deleteBrand(b.id);
-                            fetchBrands();
-                        }
-                        }}
-                        className="flex items-center gap-1 text-red-600"
-                    >
-                        <TrashIcon className="w-4 h-4" />
-                        Hapus
-                    </button>
-                    </div>
-                </td>
-                </tr>
-
-                {/* CHILD PRODUCTS */}
-                <tr>
-                <td colSpan={4} className="p-0">
-                    <div
-                    className={`overflow-hidden transition-all ${
-                        expandedIds.includes(b.id) ? "max-h-96" : "max-h-0"
-                    }`}
-                    >
-                    <table className="w-full">
-                        <tbody>
-                        {b.products?.map((p: any) => (
-                            <tr key={p.id} className="border-t">
-                                <td className="w-[80px]"></td>
-
-                                <td className="px-3 py-2 pl-8">
-                                    └ {p.name}
-                                </td>
-
-                                <td className="text-center text-xs text-gray-400">
-                                    produk
-                                </td>
-
-                                <td className="text-center">
-                                    <button
-                                        onClick={async (e) => {
-                                            e.stopPropagation();
-
-                                            const confirm = await Swal.fire({
-                                            title: "Hapus dari brand?",
-                                            text: p.name,
-                                            icon: "warning",
-                                            showCancelButton: true,
-                                            confirmButtonText: "Ya, hapus",
-                                            cancelButtonText: "Batal",
-                                            });
-
-                                            if (!confirm.isConfirmed) return;
-
-                                            try {
+                    {/* CHILD PRODUCTS (COLLAPSIBLE) */}
+                    {expandedIds.includes(b.id) && b.products?.map((p: any) => (
+                        <tr key={p.id} className="bg-gray-50/50 border-t">
+                            <td></td>
+                            <td className="px-6 py-2 text-gray-500 italic">└ {p.name}</td>
+                            <td className="text-center text-[10px] text-gray-400 uppercase tracking-tighter">item</td>
+                            <td className="text-center">
+                                <button 
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const confirm = await Swal.fire({ title: "Lepas dari brand?", text: p.name, icon: "question", showCancelButton: true });
+                                        if (confirm.isConfirmed) {
                                             await removeProductFromBrand(p.id);
-
-                                            await Swal.fire({
-                                                icon: "success",
-                                                title: "Berhasil",
-                                                text: "Produk berhasil dilepas dari brand",
-                                                timer: 1500,
-                                                showConfirmButton: false,
-                                            });
-
                                             fetchBrands();
-                                            fetchProducts();
-                                            } catch (err) {
-                                            console.error(err);
+                                        }
+                                    }}
+                                    className="text-red-400 hover:text-red-600 text-[10px]"
+                                >
+                                    Hapus
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </React.Fragment>
+                ))}
+            </tbody>
+            </table>
+        </div>
 
-                                            await Swal.fire({
-                                                icon: "error",
-                                                title: "Gagal",
-                                                text: "Gagal menghapus produk dari brand",
-                                            });
-                                            }
-                                        }}
-                                        className="text-red-500 text-xs"
-                                        >
-                                        Hapus
-                                    </button>
-                                </td>
-                            </tr>
+        {/* FOOTER: ENTRIES & PAGINATION */}
+        <div className="flex flex-col md:flex-row justify-between items-center mt-5 gap-4">
+            <div className="text-sm text-gray-500">
+                Show 
+                <select 
+                    value={itemsPerPage} 
+                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                    className="mx-2 border rounded p-1"
+                >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                </select>
+                entries
+            </div>
+
+            <div className="flex items-center gap-2">
+                <button 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => p - 1)}
+                    className="p-2 border rounded-md disabled:opacity-30 hover:bg-gray-50"
+                >
+                    <ChevronLeftIcon className="w-4 h-4" />
+                </button>
+                
+                    <div className="flex items-center gap-1 text-sm">
+
+                        {/* FIRST */}
+                        <button
+                            onClick={() => setCurrentPage(1)}
+                            disabled={currentPage === 1}
+                            className="px-2 py-1 border rounded disabled:opacity-30"
+                        >
+                            {"<<"}
+                        </button>
+
+                        {/* PREV */}
+                        <button
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-2 py-1 border rounded disabled:opacity-30"
+                        >
+                            {"<"}
+                        </button>
+
+                        {/* PAGE NUMBERS */}
+                        {getPagination().map((item, index) => (
+                            item === "..." ? (
+                            <span key={index} className="px-2 text-gray-400">...</span>
+                            ) : (
+                            <button
+                                key={index}
+                                onClick={() => setCurrentPage(Number(item))}
+                                className={`px-3 py-1 rounded ${
+                                currentPage === item
+                                    ? "bg-blue-600 text-white"
+                                    : "hover:bg-gray-100 border"
+                                }`}
+                            >
+                                {item}
+                            </button>
+                            )
                         ))}
-                        </tbody>
-                    </table>
-                    </div>
-                </td>
-                </tr>
 
-            </React.Fragment>
-            ))}
-        </tbody>
-        </table>
-    </div>
+                        {/* NEXT */}
+                        <button
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-2 py-1 border rounded disabled:opacity-30"
+                        >
+                            {">"}
+                        </button>
+
+                        {/* LAST */}
+                        <button
+                            onClick={() => setCurrentPage(totalPages)}
+                            disabled={currentPage === totalPages}
+                            className="px-2 py-1 border rounded disabled:opacity-30"
+                        >
+                            {">>"}
+                        </button>
+
+                    </div>
+
+                <button 
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    className="p-2 border rounded-md disabled:opacity-30 hover:bg-gray-50"
+                >
+                    <ChevronRightIcon className="w-4 h-4" />
+                </button>
+            </div> 
+        </div>
 
         {/* MODAL CREATE */}
         {isCreateOpen && (

@@ -318,7 +318,7 @@ export default function ProductUploadPage() {
                             {[
                                 "Download template Excel terlebih dahulu.",
                                 "Isi data produk sesuai format pada template.",
-                                "Upload kembali file Excel ke sistem.",
+                                "Upload kembali file Excel.",
                                 "Sistem akan memproses upload produk."
                             ].map((text, i) => (
                                 <div key={i} className="flex gap-4">
