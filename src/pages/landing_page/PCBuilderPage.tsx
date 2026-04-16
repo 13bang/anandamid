@@ -428,11 +428,11 @@ export default function PCBuilderPage() {
                 </div>
             </div>
 
-            {loading && (
+            {/* {loading && (
                 <div className="fixed bottom-8 right-8 bg-black/80 text-white px-5 py-2.5 rounded-full shadow-2xl text-[11px] font-bold tracking-widest uppercase z-50">
                     Syncing...
                 </div>
-            )}
+            )} */}
         </div>
     </div>
     );

@@ -139,6 +139,43 @@ const item: Variants = {
   }
 }
 
+// ================= MODAL GALERI LOGIC =================
+const [isGalleryOpen, setIsGalleryOpen] = useState(false)
+const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0)
+
+const galleryImages = [
+  "/gallery/galeri1.JPG",
+  "/gallery/galeri2.JPG",
+  "/gallery/galeri3.JPG",
+  "/gallery/galeri4.JPG",
+  "/gallery/galeri5.JPG",
+  "/gallery/galeri13.jpg",
+  "/gallery/galeri6.JPG",
+  "/gallery/galeri10.JPG",
+  "/gallery/galeri11.jpg",
+  "/gallery/galeri12.jpg",
+  "/gallery/galeri14.jpg",
+  "/gallery/galeri15.JPG",
+]
+
+const openGallery = (index: number) => {
+  setCurrentGalleryIndex(index)
+  setIsGalleryOpen(true)
+}
+
+const closeGallery = () => setIsGalleryOpen(false)
+
+const nextImage = (e: React.MouseEvent) => {
+  e.stopPropagation() // Mencegah modal tertutup saat klik tombol
+  setCurrentGalleryIndex((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1))
+}
+
+const prevImage = (e: React.MouseEvent) => {
+  e.stopPropagation() // Mencegah modal tertutup saat klik tombol
+  setCurrentGalleryIndex((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1))
+}
+// ======================================================
+
     return (
         <div className="bg-white overflow-x-hidden md:overflow-visible">
             {/* ================= BREADCRUMB BAR ================= */}
@@ -481,31 +518,16 @@ const item: Variants = {
             </section>
             
             {/* GALERI */}
-            <section id="galeri" className="py-12 md:py-16 2xl:py-24 bg-gray-50">
+            <section id="galeri" className="py-12 md:py-16 2xl:py-24 border-gray-300 border-t-2">
                 <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-20 2xl:px-32">
 
                     <h2 className="text-2xl sm:text-3xl md:text-4xl 2xl:text-5xl font-bold text-center mb-10 md:mb-16 2xl:mb-20">
                     Galeri Anandam
                     </h2>
 
-                    {/* Columns dinaikkan ke 4 pada 2xl */}
                     <div className="columns-2 md:columns-3 2xl:columns-4 gap-4 md:gap-6 2xl:gap-8 space-y-4 md:space-y-6 2xl:space-y-8">
 
-                    {[
-                        "/gallery/galeri1.JPG",
-                        "/gallery/galeri2.JPG",
-                        "/gallery/galeri3.JPG",
-                        "/gallery/galeri4.JPG",
-                        "/gallery/galeri5.JPG",
-                        "/gallery/galeri13.jpg",
-                        "/gallery/galeri6.JPG",
-                        "/gallery/galeri10.JPG",
-                        "/gallery/galeri11.jpg",
-                        "/gallery/galeri12.jpg",
-                        "/gallery/galeri14.jpg",
-                        "/gallery/galeri15.JPG",
-                    ].map((src, i) => {
-
+                    {galleryImages.map((src, i) => {
                         const randomDelay = Math.floor(Math.random() * 600);
 
                         return (
@@ -513,7 +535,8 @@ const item: Variants = {
                             key={i}
                             data-aos="zoom-in"
                             data-aos-delay={randomDelay}
-                            className="overflow-hidden rounded-md group break-inside-avoid"
+                            className="overflow-hidden rounded-md group break-inside-avoid cursor-pointer"
+                            onClick={() => openGallery(i)}
                         >
                             <img
                             src={src}
@@ -673,72 +696,70 @@ const item: Variants = {
                 </div>
             </section>
 
-            {/* DIREKTUR */}
-            {/* <section id="direktur" className="pb-12 md:pb-16 2xl:pb-24">
-                <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-20 2xl:px-32">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 2xl:gap-20 items-center"> */}
-
-                    {/* FOTO DIREKTUR */}
-                    {/* <div
-                        data-aos="fade-right"
-                        className="flex justify-center order-1 md:order-none"
+            {/* MODAL GALERI LIGHTBOX */}
+            <AnimatePresence>
+                {isGalleryOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={closeGallery}
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4"
                     >
-                        <img
-                        src="/direktur.svg"
-                        alt="Direktur Anandam"
-                        className="w-[200px] sm:w-[240px] md:w-[320px] 2xl:w-[400px] object-cover"
-                        />
-                    </div> */}
+                        {/* Tombol Close */}
+                        <button
+                            onClick={closeGallery}
+                            className="absolute top-4 right-4 md:top-8 md:right-8 text-white hover:text-gray-300 p-2 z-50 transition"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
 
-                    {/* UCAPAN */}
-                    {/* <div
-                        data-aos="fade-left"
-                        className="text-gray-700 leading-relaxed space-y-4 md:space-y-5 2xl:space-y-6 order-2 md:order-none"
-                    > */}
+                        {/* Tombol Prev */}
+                        <button
+                            onClick={prevImage}
+                            className="absolute left-2 md:left-8 text-white hover:text-gray-300 p-2 z-50 transition"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 md:h-14 md:w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
 
-                        {/* TITLE */}
-                        {/* <h2 className="text-2xl sm:text-3xl md:text-4xl 2xl:text-5xl font-bold text-left md:text-left mb-4 md:mb-6 2xl:mb-8">
-                        Apresiasi dan Harapan
-                        </h2>
-
-                        <p className="text-justify text-sm sm:text-base 2xl:text-lg">
-                        Terima kasih kepada seluruh pelanggan, mitra, dan tim Anandam atas
-                        kepercayaan serta kerja sama yang telah terjalin selama ini.
-                        </p>
-
-                        <p className="text-justify text-sm sm:text-base 2xl:text-lg">
-                        Dukungan dan kepercayaan dari para pelanggan menjadi motivasi bagi
-                        Anandam untuk terus menghadirkan produk teknologi berkualitas serta
-                        pelayanan terbaik.
-                        </p>
-
-                        <p className="text-justify text-sm sm:text-base 2xl:text-lg">
-                        Apresiasi juga disampaikan kepada seluruh karyawan Anandam atas
-                        dedikasi dan kerja sama yang telah diberikan dalam melayani setiap
-                        pelanggan dengan profesional.
-                        </p>
-
-                        <p className="text-justify text-sm sm:text-base 2xl:text-lg">
-                        Semoga Anandam dapat terus berkembang dan memberikan manfaat bagi
-                        lebih banyak pelanggan di masa mendatang.
-                        </p> */}
-
-                        {/* Nama */}
-                        {/* <div className="pt-4 md:pt-6 2xl:pt-8">
-                        <p className="font-semibold text-base md:text-lg 2xl:text-xl">
-                            Muhammad Febrihono
-                        </p>
-                        <p className="text-primary font-bold text-sm md:text-base 2xl:text-lg">
-                            Direktur Utama | Anandam Computer
-                        </p>
+                        {/* Gambar */}
+                        <div 
+                            className="relative max-w-[90vw] max-h-[85vh] flex items-center justify-center"
+                            onClick={(e) => e.stopPropagation()} 
+                        >
+                            <motion.img
+                                key={currentGalleryIndex}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.2 }}
+                                src={galleryImages[currentGalleryIndex]}
+                                alt={`Gallery ${currentGalleryIndex + 1}`}
+                                className="max-w-full max-h-[85vh] object-contain rounded-md"
+                            />
+                            
+                            {/* Counter */}
+                            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-white text-sm md:text-base tracking-widest">
+                                {currentGalleryIndex + 1} / {galleryImages.length}
+                            </div>
                         </div>
 
-                    </div> */}
-{/* 
-                    </div>
-                </div>
-            </section> */}
+                        {/* Tombol Next */}
+                        <button
+                            onClick={nextImage}
+                            className="absolute right-2 md:right-8 text-white hover:text-gray-300 p-2 z-50 transition"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 md:h-14 md:w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
         </div>
     );

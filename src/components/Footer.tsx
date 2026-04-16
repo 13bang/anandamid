@@ -1,5 +1,47 @@
-import { Facebook, Instagram, Youtube } from "lucide-react";
+import { Facebook, Instagram, Youtube, Copy } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
+
+type CopyNumberProps = {
+  label: string;
+  number: string;
+};
+
+function CopyNumber({ label, number }: CopyNumberProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(number);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      console.error("Gagal meng-copy:", err);
+      alert("Browser memblokir fitur copy. Pastikan menggunakan HTTPS atau localhost.");
+    }
+  };
+
+  return (
+    <div className="group">
+      <p className="text-gray-300">{label}</p>
+
+      <div 
+        onClick={handleCopy} 
+        className="flex items-center gap-2 cursor-pointer w-fit"
+      >
+        <p className="text-white">{number}</p>
+
+        <button className="opacity-0 group-hover:opacity-100 transition">
+          {copied ? (
+            <span className="text-xs text-green-400 font-bold">✓</span>
+          ) : (
+            <Copy size={14} className="text-gray-400 hover:text-white" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Footer() {
   return (
@@ -20,7 +62,7 @@ export default function Footer() {
             <div className="w-32 h-[2px] bg-gray-400 my-6" />
 
             <p className="text-sm leading-relaxed text-gray-300">
-              Anandam ID adalah partner terpercaya untuk kebutuhan perangkat teknologi, mulai dari komputer, laptop, hingga aksesoris pendukung lainnya. Kami berkomitmen menghadirkan produk berkualitas dengan harga kompetitif serta pelayanan yang cepat, mudah, dan profesional.
+              Anandam ID adalah partner terpercaya untuk kebutuhan teknologi mulai dari komputer, laptop, hingga aksesoris. Kami menghadirkan produk berkualitas dengan harga kompetitif serta layanan yang cepat dan profesional.
             </p>
 
             {/* Social Icons */}
@@ -123,11 +165,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/certificate" className="hover:text-white">
-                  Sertifikat PKL
-                </Link>
-              </li>
-              <li>
                 <Link to="/pc-builder" className="hover:text-white">
                   Rakitan
                 </Link>
@@ -135,6 +172,11 @@ export default function Footer() {
               <li>
                 <Link to="/price-list" className="hover:text-white">
                   Pricelist 
+                </Link>
+              </li>
+              <li>
+                <Link to="/certificate" className="hover:text-white">
+                  Sertifikat PKL
                 </Link>
               </li>
             </ul>
@@ -146,18 +188,9 @@ export default function Footer() {
               Kontak
             </h3>
             <div className="text-sm space-y-3">
-              <div>
-                <p className="text-gray-300">Sales :</p>
-                <p className="text-white">+62 8122-8134-747</p>
-              </div>
-              <div>
-                <p className="text-gray-300">Customer Service :</p>
-                <p className="text-white">+62 8595-0544-597</p>
-              </div>
-              <div>
-                <p className="text-gray-300">Email :</p>
-                <p className="text-white">sales@anandam.id</p>
-              </div>
+              <CopyNumber label="Sales :" number="+62 8122-8134-747" />
+              <CopyNumber label="Customer Service :" number="+62 8595-0544-597" />
+              <CopyNumber label="Email :" number="sales@anandam.id" />
             </div>
           </div>
 

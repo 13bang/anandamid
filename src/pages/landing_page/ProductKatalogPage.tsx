@@ -214,13 +214,9 @@ export default function ProductKatalogPage() {
     };
 
     const handleLoadMore = () => {
-        console.log("LOAD MORE TRIGGERED");
-        console.log("loading:", loading);
-        console.log("hasMore:", hasMore);
 
         if (!loading && hasMore) {
             setPage((prev) => {
-                console.log("SET PAGE TO:", prev + 1);
                 return prev + 1;
             });
         }

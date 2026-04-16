@@ -11,7 +11,7 @@ export default function AdminLayout() {
       </div>
 
       {/* Main wrapper */}
-      <div className="flex-1 p-4">
+      <div className="flex-1">
         <main className="h-full overflow-y-auto bg-white">
           <Outlet />
         </main>

@@ -343,6 +343,65 @@ const scrollLeft = () => {
     }
   };
 
+  const dragStartX = useRef<number>(0);
+  // 1. Ganti useState menjadi useRef agar tidak memicu re-render
+  const dragOffsetRef = useRef<number>(0); 
+  // 2. Tambahkan ref untuk menangkap elemen div pembungkus banner
+  const sliderTrackRef = useRef<HTMLDivElement>(null); 
+
+  const handleBannerDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    stopCenterAutoSlide(); 
+    setIsCenterTransitioning(false); 
+
+    if ('touches' in e) {
+      dragStartX.current = e.touches[0].clientX;
+    } else {
+      dragStartX.current = e.pageX;
+    }
+  };
+
+  const handleBannerDragMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if (dragStartX.current === 0) return;
+
+    let currentX = 0;
+    if ('touches' in e) {
+      currentX = e.touches[0].clientX;
+    } else {
+      currentX = e.pageX;
+    }
+
+    const diff = currentX - dragStartX.current;
+    dragOffsetRef.current = diff; 
+
+    // 3. MANIPULASI DOM LANGSUNG: Ubah posisi gambar tanpa re-render React
+    if (sliderTrackRef.current) {
+      const basePct = isMobile ? 70 : 80;
+      const offsetPct = isMobile ? 15 : 10;
+      sliderTrackRef.current.style.transform = `translateX(calc(-${currentCenter * basePct}% + ${offsetPct}% + ${diff}px))`;
+    }
+  };
+
+  const handleBannerDragEnd = () => {
+    if (dragStartX.current === 0) return;
+
+    setIsCenterTransitioning(true); 
+
+    // Ambil nilai dari ref
+    const diff = dragOffsetRef.current; 
+
+    if (diff < -50) {
+      moveCenter(currentCenter + 1);
+    } else if (diff > 50) {
+      moveCenter(currentCenter - 1);
+    }
+
+    // Reset nilai
+    dragStartX.current = 0;
+    dragOffsetRef.current = 0; 
+    
+    startCenterAutoSlide();
+  };
+
   const fetchProducts = async (page = 1) => {
     try {
       setLoading(true);
@@ -605,15 +664,21 @@ const scrollLeft = () => {
           >
 
             {/* VIEWPORT */}
-            <div className="overflow-hidden w-full">
+            <div 
+              className="overflow-hidden w-full cursor-grab active:cursor-grabbing touch-pan-y"
+              onMouseDown={handleBannerDragStart}
+              onMouseMove={handleBannerDragMove}
+              onMouseUp={handleBannerDragEnd}
+              onMouseLeave={handleBannerDragEnd}
+              onTouchStart={handleBannerDragStart}
+              onTouchMove={handleBannerDragMove}
+              onTouchEnd={handleBannerDragEnd}
+            >
               <div
                 className="flex"
+                ref={sliderTrackRef}
                 style={{
                   transition: isCenterTransitioning ? "transform 500ms ease-in-out" : "none",
-                  /* Kalkulasi di bawah disesuaikan:
-                    - Mobile/Tablet: Slide lebar 70%, offset 15% agar center.
-                    - Desktop (2xl): Slide tetap 80%, offset 10% agar lebih penuh ke samping.
-                  */
                   transform: isMobile 
                     ? `translateX(calc(-${currentCenter * 70}% + 15%))` 
                     : `translateX(calc(-${currentCenter * 80}% + 10%))`
@@ -623,11 +688,9 @@ const scrollLeft = () => {
                   const isActive = i === currentCenter;
 
                   return (
-                    /* Lebar div pembungkus diperbesar dari 70% ke 80% untuk Desktop */
                     <div key={`${banner.id}-${i}`} className="flex-shrink-0 w-[70%] md:w-[80%] px-2 sm:px-4">
                       <div 
                         className={`
-                          /* Tinggi banner ditingkatkan untuk layar 2xl */
                           w-full h-[180px] sm:h-[240px] md:h-[350px] lg:h-[450px] 2xl:h-[550px]
                           rounded-xl overflow-hidden shadow-lg 
                           ${isCenterTransitioning ? "transition-all duration-500" : "transition-none"}
@@ -636,8 +699,9 @@ const scrollLeft = () => {
                       >
                         <img
                           src={getImageUrl(banner.image_url)}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover select-none pointer-events-none"
                           alt="Banner Brand"
+                          draggable={false}
                         />
                       </div>
                     </div>

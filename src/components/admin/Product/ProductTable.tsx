@@ -368,7 +368,7 @@ return (
 
             {/* Column Header */}
             <tr className="border-b bg-gray-50">
-              <th className="px-3 py-2 text-center sticky left-0 bg-white z-10">
+              <th className="px-3 py-2 text-center sticky left-0 bg-white z-10 w-[40px] min-w-[40px]">
                 <input
                   type="checkbox"
                   checked={
@@ -378,14 +378,38 @@ return (
                   onChange={handleSelectAll}
                 />
               </th>
-              <th className="px-3 py-2 text-left">Gambar</th>
-              <th className="px-3 py-2 text-left w-[35%]">Nama</th>
-              <th className="px-3 py-2 text-center">Stok</th>
-              <th className="px-3 py-2 text-left">Harga Normal</th>
-              <th className="px-3 py-2 text-left">Diskon</th>
-              <th className="px-3 py-2 text-left">Harga Final</th>
-              <th className="px-3 py-2 text-center">Aktif</th>
-              <th className="px-3 py-2 text-center">Populer</th>
+
+              <th className="px-3 py-2 text-left w-[60px] min-w-[60px]">
+                Gambar
+              </th>
+
+              <th className="px-3 py-2 text-left w-[35%] min-w-[360px]">
+                Nama
+              </th>
+
+              <th className="px-3 py-2 text-center w-[70px] min-w-[70px]">
+                Stok
+              </th>
+
+              <th className="px-3 py-2 text-left w-[130px] min-w-[130px]">
+                Harga Normal
+              </th>
+
+              <th className="px-3 py-2 text-left w-[110px] min-w-[110px]">
+                Diskon
+              </th>
+
+              <th className="px-3 py-2 text-left w-[130px] min-w-[130px]">
+                Harga Final
+              </th>
+
+              <th className="px-3 py-2 text-center w-[90px] min-w-[90px]">
+                Aktif
+              </th>
+
+              <th className="px-3 py-2 text-center w-[90px] min-w-[90px]">
+                Populer
+              </th>
             </tr>
           </thead>
 

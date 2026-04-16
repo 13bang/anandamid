@@ -33,6 +33,7 @@ import PCBuilderPage from "./pages/landing_page/PCBuilderPage";
 import PublicPricelistPage from "./pages/landing_page/PricelistPage";
 import ServerBusyPage from "./pages/ServerBusyPage";
 import TiktokPage from "./pages/admin_panel/TiktokPage";
+import { GlobalImportProvider } from "./components/admin/NotificationUpdateUpload";
 
 
 // ================= ROUTES =================
@@ -40,7 +41,7 @@ function AppRoutes() {
   const location = useLocation()
 
   return (
-    <Routes location={location} key={location.pathname}>
+    <Routes>
 
       <Route path="/server-busy" element={<ServerBusyPage />} />
 
@@ -63,7 +64,11 @@ function AppRoutes() {
       <Route path="/ayamgoreng/login" element={<LoginPage />} />
 
       <Route path="/ayamgoreng" element={<ProtectedRoute />}>
-        <Route element={<AdminLayout />}>
+        <Route element={
+          <GlobalImportProvider>
+            <AdminLayout />
+          </GlobalImportProvider>
+        }>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="category" element={<CategoryPage />} />

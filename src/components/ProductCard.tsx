@@ -143,6 +143,7 @@
             src={imageSrc}
             alt={product.name}
             onLoad={() => setImageLoaded(true)}
+            draggable={false}
             className={`
               w-full h-full object-cover
               transition-all duration-300 ease-in-out
@@ -165,11 +166,7 @@
           />
 
           {isOutOfStock && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="bg-gray-500 text-white text-xs font-bold px-4 py-1 rounded-3xl tracking-wider">
-                HABIS
-              </span>
-            </div>
+            <div className="absolute inset-0 bg-gray-500/40"></div>
           )}
 
         </div>

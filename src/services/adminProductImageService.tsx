@@ -39,7 +39,7 @@ export const updateProductImages = async (
 };
 
 export const deleteProductImage = async (id: string) => {
-  const res = await api.delete(`${API_URL}/${id}`, {
+  const res = await api.delete(`/admin/products/image/${id}`, {
     headers: getAuthHeader(),
   });
 

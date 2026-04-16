@@ -248,7 +248,7 @@ export default function BrandSection() {
                 <select 
                     value={itemsPerPage} 
                     onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                    className="mx-2 border rounded p-1"
+                    className="mx-2 border rounded p-1 outline-none"
                 >
                     <option value={5}>5</option>
                     <option value={10}>10</option>
@@ -257,82 +257,62 @@ export default function BrandSection() {
                 entries
             </div>
 
-            <div className="flex items-center gap-2">
-                <button 
+            <div className="flex items-center gap-1 text-sm">
+                {/* FIRST */}
+                <button
+                    onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(p => p - 1)}
-                    className="p-2 border rounded-md disabled:opacity-30 hover:bg-gray-50"
+                    className="px-2 py-1 rounded disabled:opacity-30 transition-colors hover:text-primary"
                 >
-                    <ChevronLeftIcon className="w-4 h-4" />
+                    {"<<"}
                 </button>
-                
-                    <div className="flex items-center gap-1 text-sm">
 
-                        {/* FIRST */}
-                        <button
-                            onClick={() => setCurrentPage(1)}
-                            disabled={currentPage === 1}
-                            className="px-2 py-1 border rounded disabled:opacity-30"
-                        >
-                            {"<<"}
-                        </button>
+                {/* PREV */}
+                <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-2 py-1 rounded disabled:opacity-30 transition-colors hover:text-primary"
+                >
+                    {"<"}
+                </button>
 
-                        {/* PREV */}
-                        <button
-                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-2 py-1 border rounded disabled:opacity-30"
-                        >
-                            {"<"}
-                        </button>
+                {/* PAGE NUMBERS */}
+                {getPagination().map((item, index) => (
+                    item === "..." ? (
+                    <span key={index} className="px-2 text-gray-400">...</span>
+                    ) : (
+                    <button
+                        key={index}
+                        onClick={() => setCurrentPage(Number(item))}
+                        className={`px-3 py-1 rounded transition-colors ${
+                        currentPage === item
+                            ? " text-primary"
+                            : "hover:text-primary"
+                        }`}
+                    >
+                        {item}
+                    </button>
+                    )
+                ))}
 
-                        {/* PAGE NUMBERS */}
-                        {getPagination().map((item, index) => (
-                            item === "..." ? (
-                            <span key={index} className="px-2 text-gray-400">...</span>
-                            ) : (
-                            <button
-                                key={index}
-                                onClick={() => setCurrentPage(Number(item))}
-                                className={`px-3 py-1 rounded ${
-                                currentPage === item
-                                    ? "bg-blue-600 text-white"
-                                    : "hover:bg-gray-100 border"
-                                }`}
-                            >
-                                {item}
-                            </button>
-                            )
-                        ))}
-
-                        {/* NEXT */}
-                        <button
-                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="px-2 py-1 border rounded disabled:opacity-30"
-                        >
-                            {">"}
-                        </button>
-
-                        {/* LAST */}
-                        <button
-                            onClick={() => setCurrentPage(totalPages)}
-                            disabled={currentPage === totalPages}
-                            className="px-2 py-1 border rounded disabled:opacity-30"
-                        >
-                            {">>"}
-                        </button>
-
-                    </div>
-
-                <button 
+                {/* NEXT */}
+                <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    onClick={() => setCurrentPage(p => p + 1)}
-                    className="p-2 border rounded-md disabled:opacity-30 hover:bg-gray-50"
+                    className="px-2 py-1 rounded disabled:opacity-30 transition-colors hover:text-primary"
                 >
-                    <ChevronRightIcon className="w-4 h-4" />
+                    {">"}
                 </button>
-            </div> 
+
+                {/* LAST */}
+                <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="px-2 py-1 rounded disabled:opacity-30 transition-colors hover:text-primary"
+                >
+                    {">>"}
+                </button>
+            </div>
         </div>
 
         {/* MODAL CREATE */}
@@ -368,27 +348,27 @@ export default function BrandSection() {
         {/* MODAL EDIT */}
         {isEditOpen && (
             <BrandModalForm
-            title="Edit Brand"
-            brandName={brandName}
-            setBrandName={setBrandName}
-            products={products}
-            selectedProducts={selectedProducts}
-            setSelectedProducts={setSelectedProducts}
-            setImageFile={setImageFile}
-            onClose={() => setIsEditOpen(false)}
-            onSubmit={async () => {
-                await updateBrand(editingBrand.id, {
-                name: brandName,
-                image: imageFile,
-                });
+                title="Edit Brand"
+                brandName={brandName}
+                setBrandName={setBrandName}
+                products={products}
+                selectedProducts={selectedProducts}
+                setSelectedProducts={setSelectedProducts}
+                setImageFile={setImageFile}
+                onClose={() => setIsEditOpen(false)}
+                onSubmit={async () => {
+                    await updateBrand(editingBrand.id, {
+                        name: brandName,
+                        image: imageFile,
+                    });
 
-                await assignProductsToBrand(editingBrand.id, selectedProducts);
+                    await assignProductsToBrand(editingBrand.id, selectedProducts);
 
-                fetchBrands();
-                fetchProducts();
+                    await fetchBrands();
+                    await fetchProducts(); 
 
-                setIsEditOpen(false);
-            }}
+                    setIsEditOpen(false);   
+                }}
             />
         )}
 

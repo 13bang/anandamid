@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { getProductById, getProductsByCategory } from "../../services/productService";
+import { getProductById, getProductsByCategory, getProducts } from "../../services/productService";
 import { FaWhatsapp, FaSearchPlus, FaBan, FaCheckCircle } from "react-icons/fa";
 import { ChevronLeft, ChevronRight, Truck, ShieldCheck } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
@@ -45,11 +45,24 @@ export default function ProductDetailPage() {
       if (data.variasi && data.variasi.length > 0) {
         setSelectedVariasi(data.variasi[0]);
       }
-      const related = await getProductsByCategory(data.category.name);
-      const filtered = related.filter((p: Product) => p.id !== data.id).slice(0, 30);
-      setRelatedProducts(filtered);
+      
+      let related = [];
+      if (data.category && data.category.name) {
+        related = await getProductsByCategory(data.category.name);
+      } else {
+        const response = await getProducts(); 
+        
+        const allProducts = Array.isArray(response) ? response : (response.data || []);
+        
+        related = [...allProducts].sort(() => 0.5 - Math.random());
+      }
+
+      if (Array.isArray(related)) {
+        const filtered = related.filter((p: Product) => p.id !== data.id).slice(0, 30);
+        setRelatedProducts(filtered);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Gagal mengambil data produk:", err);
     } finally {
       setLoading(false);
       setLoadingRelated(false);
@@ -183,7 +196,6 @@ export default function ProductDetailPage() {
   // ==========================================
   // AKHIR DARI SKELETON LOADING UI
   // ==========================================
-
   if (!product) return <div className="p-10 text-center font-semibold text-gray-500">Product not found</div>;
 
   const normalPrice = Number(product.price_normal) || 0;
@@ -282,12 +294,14 @@ export default function ProductDetailPage() {
           <div className="lg:col-span-5 order-2 lg:row-span-2">
             <div className="lg:sticky lg:top-36 lg:border lg:border-gray-200 lg:rounded-2xl lg:p-8 lg:shadow-sm bg-white py-2 lg:py-0">
               
-              {/* CATEGORY & BRAND TAGS */}
+              {/* CATEGORY & BRAND TAGS (Diubah agar aman jika kategori null) */}
               <div className="flex flex-wrap gap-2 mb-3 lg:mb-4 mt-6">
-                <span className="px-3 py-1 bg-blue-50 text-[10px] font-bold uppercase tracking-widest text-blue-600 rounded border border-blue-100">
-                  {product.category.name}
-                </span>
-                {product.brand && (
+                {product.category?.name && (
+                  <span className="px-3 py-1 bg-blue-50 text-[10px] font-bold uppercase tracking-widest text-blue-600 rounded border border-blue-100">
+                    {product.category.name}
+                  </span>
+                )}
+                {product.brand?.name && (
                   <span className="px-3 py-1 bg-blue-50 text-[10px] font-bold uppercase tracking-widest text-blue-600 rounded border border-blue-100">
                     {product.brand.name}
                   </span>
@@ -313,9 +327,16 @@ export default function ProductDetailPage() {
 
               {/* SKU & STOCK */}
               <div className="space-y-2 lg:space-y-3 mb-6 lg:mb-8 pb-6 lg:pb-8 border-b border-gray-100">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <FaCheckCircle className="text-primary" />
-                  <span>Sisa stok {product.stock}</span>
+                <div className="text-sm">
+                  {isOutOfStock ? (
+                    <span className="inline-block px-3 py-1 bg-red-50 text-red-600 font-bold rounded-md border border-red-100">
+                      Stok Habis
+                    </span>
+                  ) : (
+                    <span className="text-gray-600">
+                      Sisa stok: <span className="font-bold text-gray-900">{product.stock}</span>
+                    </span>
+                  )}
                 </div>
                 <div className="text-sm text-gray-500">
                   SKU: <span className="font-medium text-gray-900">{product.sku_seller}</span>
@@ -349,14 +370,42 @@ export default function ProductDetailPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3 lg:gap-4">
                    <div className="flex items-center border border-gray-300 rounded-lg h-12">
-                      <button onClick={() => setQuantity(q => q > 1 ? q - 1 : 1)} className="px-3 lg:px-4 text-xl text-black">-</button>
-                      <span className="px-2 lg:px-4 font-bold w-10 lg:w-12 text-center text-gray-900">{quantity}</span>
-                      <button onClick={() => setQuantity(q => q + 1)} className="px-3 lg:px-4 text-xl text-black">+</button>
+                      {/* Tombol Minus */}
+                      <button 
+                        onClick={() => setQuantity(q => q > 1 ? q - 1 : 1)} 
+                        disabled={quantity <= 1 || isOutOfStock}
+                        className={`px-3 lg:px-4 text-xl transition-colors ${
+                          quantity <= 1 || isOutOfStock 
+                            ? "text-gray-300 cursor-not-allowed" 
+                            : "text-black hover:text-primary"
+                        }`}
+                      >
+                        -
+                      </button>
+                      
+                      {/* Angka Quantity */}
+                      <span className="px-2 lg:px-4 font-bold w-10 lg:w-12 text-center text-gray-900 select-none">
+                        {isOutOfStock ? 0 : quantity}
+                      </span>
+                      
+                      {/* Tombol Plus */}
+                      <button 
+                        onClick={() => setQuantity(q => q < Number(product.stock) ? q + 1 : q)} 
+                        disabled={quantity >= Number(product.stock) || isOutOfStock}
+                        className={`px-3 lg:px-4 text-xl transition-colors ${
+                          quantity >= Number(product.stock) || isOutOfStock 
+                            ? "text-gray-300 cursor-not-allowed" 
+                            : "text-black hover:text-primary"
+                        }`}
+                      >
+                        +
+                      </button>
                    </div>
                    
+                   {/* Tombol Action */}
                    {isOutOfStock ? (
-                      <button disabled className="flex-1 h-12 bg-red-100 text-red-600 font-bold rounded-lg flex items-center justify-center gap-2 text-sm lg:text-base">
-                        <FaBan /> Stok Habis
+                      <button disabled className="flex-1 h-12 bg-gray-100 text-gray-400 font-bold rounded-lg flex items-center justify-center gap-2 text-sm lg:text-base cursor-not-allowed border border-gray-200">
+                        <FaWhatsapp /> Chat via Whatsapp
                       </button>
                    ) : (
                       <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" 
@@ -431,7 +480,10 @@ export default function ProductDetailPage() {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
-            <h2 className="text-xl lg:text-3xl font-bold mb-2 lg:mb-4 text-gray-900">Produk Serupa</h2>
+            {/* JUDUL DINAMIS BERDASARKAN KATEGORI */}
+            <h2 className="text-xl lg:text-3xl font-bold mb-2 lg:mb-4 text-gray-900">
+              {product.category?.name ? "Produk Serupa" : "Mungkin Anda Tertarik"}
+            </h2>
             
             {/* LEFT BUTTON */}
             <button
@@ -492,21 +544,57 @@ export default function ProductDetailPage() {
         </div>
       </section>
 
-      {/* MODAL ZOOM */}
+      {/* MODAL ZOOM (Sudah Diupdate ala Shopee) */}
       {showModal && (
         <div 
-          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 p-4" 
+          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black/95 p-4" 
           onClick={() => setShowModal(false)}
         >
-          <img
-            src={
-              product.images[activeImage]?.image_url?.startsWith("http") 
-                ? product.images[activeImage]?.image_url 
-                : `${import.meta.env.VITE_API_BASE}${product.images[activeImage]?.image_url}`
-            }
-            className="max-w-full max-h-full object-contain shadow-2xl"
-            alt="Zoomed Product"
-          />
+          {/* Tombol Close */}
+          <button 
+            onClick={() => setShowModal(false)}
+            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 z-50 transition-colors"
+          >
+            &times;
+          </button>
+
+          {/* Gambar Utama */}
+          <div 
+            className="w-full max-w-4xl h-[65vh] flex items-center justify-center mb-6"
+            onClick={(e) => e.stopPropagation()} // Supaya klik gambar tidak nutup modal
+          >
+            <img
+              src={
+                product.images[activeImage]?.image_url?.startsWith("http") 
+                  ? product.images[activeImage]?.image_url 
+                  : `${import.meta.env.VITE_API_BASE}${product.images[activeImage]?.image_url}`
+              }
+              className="max-w-full max-h-full object-contain shadow-2xl transition-all"
+              alt="Zoomed Product"
+            />
+          </div>
+
+          {/* List Thumbnail */}
+          <div 
+            className="flex gap-4 overflow-x-auto max-w-4xl w-full px-4 pb-4 scrollbar-hide justify-center"
+            onClick={(e) => e.stopPropagation()} // Supaya klik area thumbnail tidak nutup modal
+          >
+            {product.images.map((img, index) => (
+              <img
+                key={img.id}
+                src={
+                  img.image_url?.startsWith("http") 
+                    ? img.image_url 
+                    : `${import.meta.env.VITE_API_BASE}${img.image_url}`
+                }
+                onClick={() => setActiveImage(index)}
+                className={`w-16 h-16 md:w-20 md:h-20 object-cover rounded-lg cursor-pointer transition-all border-2 flex-shrink-0 ${
+                  activeImage === index ? "border-primary opacity-100 scale-105" : "border-transparent opacity-50 hover:opacity-100"
+                }`}
+                alt={`Thumbnail Modal ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       )}
     </>

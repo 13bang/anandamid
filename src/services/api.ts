@@ -7,6 +7,20 @@ const api = axios.create({
 
 // ================= GLOBAL STATE =================
 let isRedirecting = false;
+let isRefreshing = false; // Penanda apakah sedang proses refresh
+let failedQueue: any[] = []; // Antrean untuk request yang nunggu token baru
+
+// Fungsi untuk memproses antrean request setelah token berhasil/gagal di-refresh
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
 // ================= REQUEST =================
 api.interceptors.request.use((config) => {
@@ -37,7 +51,6 @@ api.interceptors.response.use(
     const isTimeout = error.code === "ECONNABORTED";
 
     if (isNetworkError || isTimeout) {
-      
       if (!originalRequest._retryNetwork) {
         originalRequest._retryNetwork = true;
         console.warn("⚠️ Server lambat/tidak merespon, mencoba ulang dalam 3 detik...");
@@ -49,33 +62,50 @@ api.interceptors.response.use(
       const isGetMethod = originalRequest.method?.toLowerCase() === 'get';
 
       if (isGetMethod) {
-        console.error("🚨 SERVER DOWN / MATI TOTAL saat load data. Mengalihkan halaman...");
-        if (!isRedirecting) {
-          isRedirecting = true;
-          window.location.href = "/server-busy";
+        const isAdminPanel = window.location.pathname.startsWith("/ayamgoreng");
+
+        if (isAdminPanel) {
+          console.error("🚨 Gagal memuat ulang data di background. Menggagalkan redirect supaya halaman admin tidak ter-refresh.");
+        } else {
+          console.error("🚨 SERVER DOWN / MATI TOTAL saat load data. Mengalihkan halaman...");
+          if (!isRedirecting) {
+            isRedirecting = true;
+            window.location.href = "/server-busy";
+          }
         }
-      } else {
-        console.error("🚨 Gagal memproses data (Timeout/Network Error). Meneruskan error ke UI...");
       }
 
       return Promise.reject(error);
     }
 
-    // ================= TOKEN EXPIRED =================
+    // ================= TOKEN EXPIRED (401 HANDLER) =================
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url.includes("/auth/refresh")
     ) {
+      
+      if (isRefreshing) {
+        return new Promise(function (resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
         const refreshToken = localStorage.getItem("refresh_token");
 
         if (!refreshToken) {
-          localStorage.clear();
-          window.location.href = "/ayamgoreng/login";
-          return Promise.reject(error);
+          throw new Error("No refresh token available");
         }
 
         const res = await axios.post(
@@ -91,19 +121,20 @@ api.interceptors.response.use(
         localStorage.setItem("token", newAccessToken);
         localStorage.setItem("refresh_token", newRefreshToken);
 
-        // re-init idle timer
         import("./idleTimer").then(({ initIdleTimer }) => {
           initIdleTimer();
         });
 
-        // retry request
-        originalRequest.headers = {
-          ...originalRequest.headers,
-          Authorization: `Bearer ${newAccessToken}`,
-        };
+        isRefreshing = false;
+        processQueue(null, newAccessToken);
 
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
+        
       } catch (err) {
+        isRefreshing = false;
+        processQueue(err, null);
+        
         localStorage.clear();
         window.location.href = "/ayamgoreng/login";
         return Promise.reject(err);
