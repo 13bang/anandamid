@@ -5,10 +5,10 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
 import InfiniteScrollTrigger from "../../components/InfiniteScrollTrigger";
-import type { Grouping } from "../../components/FilteringSidebar";
+import type { Grouping } from "../../components/FilteringSidebarKatalog";
 import { getGroupings } from "../../services/groupingService";
 
-import FilteringSidebar from "../../components/FilteringSidebar";
+import FilteringSidebarKatalog from "../../components/FilteringSidebarKatalog";
 import HeaderProduct from "../../components/HeaderProduct";
 import type { Category } from "../../types/category";
 import Breadcrumb from "../../components/Breadcrumb";
@@ -299,7 +299,7 @@ export default function ProductKatalogPage() {
                 
                 {/* ================= SIDEBAR ================= */}
                 <div className="hidden lg:block col-span-3">
-                    <FilteringSidebar
+                    <FilteringSidebarKatalog
                         groupings={groupings}
                         groupingParam={groupingParam}
                         categoryParam={categoryParam}
@@ -490,7 +490,7 @@ export default function ProductKatalogPage() {
                     </button>
                 </div>
 
-                <FilteringSidebar {...filterProps} />
+                <FilteringSidebarKatalog {...filterProps} />
 
                 </div>
             </div>

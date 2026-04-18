@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react"; // Tambahkan useMemo
+import { useEffect, useState, useMemo } from "react";
 import React from "react";
 import Swal from "sweetalert2";
 
@@ -16,8 +16,6 @@ import { assignProductsToBrand, removeProductFromBrand } from "../../services/pr
 import {
   TrashIcon,
   ArrowTopRightOnSquareIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 
 export default function BrandSection() {
@@ -53,7 +51,6 @@ export default function BrandSection() {
     return filteredBrands.slice(firstIndex, lastIndex);
   }, [filteredBrands, currentPage, itemsPerPage]);
 
-  // Reset ke halaman 1 jika user mencari sesuatu
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
@@ -92,33 +89,51 @@ export default function BrandSection() {
     setIsEditOpen(true);
   };
 
-    const getPagination = () => {
-        const pages = [];
-        const maxVisible = 5; 
+  const handleToggleActive = async (brand: any, e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    
+    setBrands((prev) =>
+      prev.map((b) =>
+        b.id === brand.id ? { ...b, is_active: !b.is_active } : b
+      )
+    );
 
-        if (totalPages <= maxVisible) {
-            return Array.from({ length: totalPages }, (_, i) => i + 1);
-        }
+    try {
+      await updateBrand(brand.id, { is_active: !brand.is_active });
+    } catch (error) {
+      console.error("Gagal update status brand", error);
+      fetchBrands();
+      Swal.fire("Error", "Gagal mengubah status brand", "error");
+    }
+  };
 
-        const start = Math.max(1, currentPage - 2);
-        const end = Math.min(totalPages, currentPage + 2);
+  const getPagination = () => {
+      const pages = [];
+      const maxVisible = 5; 
 
-        if (start > 1) {
-            pages.push(1);
-            if (start > 2) pages.push("...");
-        }
+      if (totalPages <= maxVisible) {
+          return Array.from({ length: totalPages }, (_, i) => i + 1);
+      }
 
-        for (let i = start; i <= end; i++) {
-            pages.push(i);
-        }
+      const start = Math.max(1, currentPage - 2);
+      const end = Math.min(totalPages, currentPage + 2);
 
-        if (end < totalPages) {
-            if (end < totalPages - 1) pages.push("...");
-            pages.push(totalPages);
-        }
+      if (start > 1) {
+          pages.push(1);
+          if (start > 2) pages.push("...");
+      }
 
-        return pages;
-    };
+      for (let i = start; i <= end; i++) {
+          pages.push(i);
+      }
+
+      if (end < totalPages) {
+          if (end < totalPages - 1) pages.push("...");
+          pages.push(totalPages);
+      }
+
+      return pages;
+  };
 
   return (
     <div className="mb-6 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
@@ -154,6 +169,7 @@ export default function BrandSection() {
                 <th className="px-3 py-3 w-[80px]">Logo</th>
                 <th className="px-3 py-3 text-left uppercase font-bold tracking-wider">Nama</th>
                 <th className="px-3 py-3 text-center uppercase font-bold tracking-wider">Jumlah Produk</th>
+                <th className="px-3 py-3 text-center uppercase font-bold tracking-wider w-[100px]">Status</th>
                 <th className="px-3 py-3 text-center uppercase font-bold tracking-wider">Aksi</th>
                 </tr>
             </thead>
@@ -185,6 +201,27 @@ export default function BrandSection() {
                             {b.products?.length || 0} Produk
                         </span>
                     </td>
+                    
+                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            type="button"
+                            onClick={(e) => handleToggleActive(b, e)}
+                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                                b.is_active ? 'bg-primary' : 'bg-gray-200'
+                            }`}
+                            role="switch"
+                            aria-checked={b.is_active}
+                        >
+                            <span className="sr-only">Toggle active status</span>
+                            <span
+                                aria-hidden="true"
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    b.is_active ? 'translate-x-4' : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                    </td>
+
                     <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-center gap-3">
                         <button onClick={() => openEditModal(b)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
@@ -218,6 +255,7 @@ export default function BrandSection() {
                             <td></td>
                             <td className="px-6 py-2 text-gray-500 italic">└ {p.name}</td>
                             <td className="text-center text-[10px] text-gray-400 uppercase tracking-tighter">item</td>
+                            <td></td> {/* Kosongkan kolom status untuk baris produk */}
                             <td className="text-center">
                                 <button 
                                     onClick={async (e) => {

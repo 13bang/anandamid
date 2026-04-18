@@ -8,38 +8,89 @@ import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 export default function GroupingProductSlider() {
   const [groupings, setGroupings] = useState<any[]>([]);
 
-  const allowedGroupingNames = ["Gaming", "Dekstop & PC", "Laptop"];
-
   useEffect(() => {
     fetchGroupings();
   }, []);
 
   const fetchGroupings = async () => {
     try {
-      const res = await getGroupings();
+      const allGroupings = await getGroupings();
 
-      const filtered = res.filter((g: any) =>
-        allowedGroupingNames.includes(g.name)
-      );
+      // Helper untuk ngambil ID kategori berdasarkan nama grouping
+      const getGroupCatIds = (groupName: string) => {
+        const group = allGroupings.find((g: any) => g.name === groupName);
+        return group ? group.children.map((c: any) => c.id) : [];
+      };
 
-      // ambil produk per grouping
+      // Helper untuk nyari ID kategori spesifik (kayak SSD & HDD)
+      const getCatIdByName = (catName: string) => {
+        for (const g of allGroupings) {
+          const cat = g.children.find((c: any) => c.name === catName);
+          if (cat) return cat.id;
+        }
+        return null;
+      };
+
+      const ssdId = getCatIdByName("SSD");
+      const hddId = getCatIdByName("HDD");
+
+      const komponenPeripheralIds = [
+        ...getGroupCatIds("Komponen Komputer"),
+        ...getGroupCatIds("Peripheral & I/O"),
+        ssdId,
+        hddId,
+      ].filter(Boolean); 
+
+      const sectionsData = [
+        {
+          id: "komponen",
+          title: "Komponen & Peripheral",
+          queryGroup: "Komponen & Peripheral", 
+          catIds: [...new Set(komponenPeripheralIds)], 
+        },
+        {
+          id: "monitor",
+          title: "Monitor Display",
+          queryGroup: "Monitor & Display",
+          catIds: getGroupCatIds("Monitor & Display"),
+        },
+        {
+          id: "laptop",
+          title: "Laptop",
+          queryGroup: "Laptop",
+          catIds: getGroupCatIds("Laptop"),
+        },
+        {
+          id: "printer",
+          title: "Printer & Scanner",
+          queryGroup: "Printer & Scanner",
+          catIds: getGroupCatIds("Printer & Scanner"),
+        },
+        {
+          id: "pc",
+          title: "PC Desktop & AIO",
+          queryGroup: "Dekstop & PC", 
+          catIds: getGroupCatIds("Dekstop & PC"),
+        },
+      ];
+
       const result = await Promise.all(
-        filtered.map(async (group: any) => {
-          const categoryIds = group.children.map((c: any) => c.id);
+        sectionsData.map(async (section) => {
+          if (section.catIds.length === 0) return { ...section, products: [] };
 
           const productsRes = await getProducts({
-            category_ids: categoryIds.join(","),
+            category_ids: section.catIds.join(","),
             limit: 10,
           });
 
           return {
-            ...group,
+            ...section,
             products: productsRes.data || [],
           };
         })
       );
 
-      setGroupings(result);
+      setGroupings(result.filter((s) => s.products.length > 0));
     } catch (err) {
       console.error("Gagal fetch grouping", err);
     }
@@ -48,14 +99,19 @@ export default function GroupingProductSlider() {
   return (
     <>
       {groupings.map((group) => (
-        <SliderSection key={group.id} title={group.name} products={group.products} />
+        <SliderSection 
+          key={group.id} 
+          title={group.title} 
+          queryGroup={group.queryGroup} 
+          products={group.products} 
+        />
       ))}
     </>
   );
 }
 
 /* ================= SLIDER PER GROUP ================= */
-function SliderSection({ title, products }: any) {
+function SliderSection({ title, queryGroup, products }: any) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -69,7 +125,7 @@ function SliderSection({ title, products }: any) {
   const navigate = useNavigate();
 
   const handleNavigate = () => {
-    navigate(`/product-grouping?grouping=${encodeURIComponent(title)}`);
+    navigate(`/product-grouping?grouping=${encodeURIComponent(queryGroup)}`);
   };
 
   const getScrollAmount = () => {
@@ -167,7 +223,7 @@ function SliderSection({ title, products }: any) {
   if (!products || products.length === 0) return null;
 
   return (
-    <section className="py-6 md:py-10 bg-white border-y border-gray-200 mt-4">
+    <section className="py-4 md:py-6 bg-white">
       <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0">
         <div 
           className="relative"
@@ -175,9 +231,13 @@ function SliderSection({ title, products }: any) {
           onMouseLeave={() => setIsHovered(false)}
         >
 
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-left mb-4">
-            {title}
-          </h2>
+          <div className="mb-6">
+            <div className="inline-flex bg-primary px-8 py-3 rounded-2xl shadow-lg transform">
+              <h2 className="text-xl md:text-2xl lg:text-2xl font-bold text-white">
+                {title}
+              </h2>
+            </div>
+          </div>
 
           {/* LEFT BUTTON */}
           <button
@@ -220,7 +280,6 @@ function SliderSection({ title, products }: any) {
             onTouchMove={handleDragMove}
             onTouchEnd={handleDragEnd}
             onClickCapture={handleClickCapture}
-            // Class dinamis untuk menonaktifkan smooth/snap saat nge-drag
             className={`
               flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide pb-4
               cursor-grab active:cursor-grabbing touch-pan-y
@@ -241,7 +300,6 @@ function SliderSection({ title, products }: any) {
                   2xl:w-[246px] 
                 "
               >
-                {/* Pointer events dimatikan sementara saat digeser biar gak nahan kursor/gambar */}
                 <div className={isSwiping ? "pointer-events-none select-none" : ""}>
                   <ProductCard product={product} />
                 </div>

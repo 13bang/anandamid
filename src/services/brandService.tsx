@@ -8,6 +8,11 @@ export const getBrands = async () => {
   return res.data;
 };
 
+export const getActiveBrands = async () => {
+  const res = await api.get(`${BASE}?is_active=true`);
+  return res.data;
+};
+
 // GET BY ID
 export const getBrandById = async (id: string) => {
   const res = await api.get(`${BASE}/${id}`);
@@ -43,12 +48,17 @@ export const updateBrand = async (
   data: {
     name?: string;
     image?: File | null;
+  is_active?: boolean;
   }
 ) => {
   const formData = new FormData();
 
   if (data.name) formData.append("name", data.name);
   if (data.image) formData.append("image", data.image);
+
+  if (data.is_active !== undefined) {
+    formData.append("is_active", String(data.is_active)); 
+  }
 
   return api.put(`${BASE}/${id}`, formData);
 };

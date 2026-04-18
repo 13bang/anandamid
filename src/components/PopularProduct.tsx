@@ -105,16 +105,21 @@ export default function PopularProduct({ popularProducts }: PopularProductSlider
   if (popularProducts.length === 0) return null;
 
   return (
-    <section className="py-6 md:py-10 bg-white border-y border-gray-200 mt-4">
+    <section className="py-6 md:py-10 bg-white border-y border-gray-200 my-4">
       <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0">
         <div
           className="relative"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <h2 className="text-xl md:text-3xl lg:text-4xl font-semibold font-cocogoose text-center bg-gray-800 text-transparent bg-clip-text inline-block mb-6">
-            Produk Populer
-          </h2>
+
+          <div className="mb-6">
+            <div className="inline-flex bg-primary px-8 py-3 rounded-2xl shadow-lg transform">
+              <h2 className="text-xl md:text-2xl lg:text-2xl font-bold text-white">
+                Produk Populer
+              </h2>
+            </div>
+          </div>
 
           {/* BUTTON LEFT */}
           <button

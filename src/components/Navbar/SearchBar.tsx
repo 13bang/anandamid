@@ -2,9 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import { Search, Layers } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import type { Product } from "../types/product";
-import { getProducts } from "../services/productService";
-import { getCategories } from "../services/adminCategoryService";
+import type { Product } from "../../types/product";
+import { getProducts } from "../../services/productService";
+import { getCategories } from "../../services/adminCategoryService";
 
 interface Category {
   id: string;

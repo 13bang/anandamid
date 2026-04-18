@@ -15,6 +15,7 @@ import { getGroupings } from "../../services/groupingService";
 import GroupingProductSlider from "../../components/GroupingProduct";
 import PopularProduct from "../../components/PopularProduct";
 import { getTikTokLiveStatus } from "../../services/tiktokService";
+import PromoProductSlider from "../../components/PromoProduct";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -92,6 +93,20 @@ const scrollLeft = () => {
   const [popularProducts, setPopularProducts] = useState<any[]>([]);
   const [searchProducts, setSearchProducts] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+
+  const [promoProducts, setPromoProducts] = useState<any[]>([]);
+
+  const fetchPromoProducts = async () => {
+    try {
+      const res = await getProducts({
+        is_promo: true,
+        limit: 10,
+      });
+      setPromoProducts(res.data || []);
+    } catch (err) {
+      console.error("Gagal fetch promo products", err);
+    }
+  };
 
   const fetchPopularProducts = async () => {
     try {
@@ -299,6 +314,7 @@ const scrollLeft = () => {
     fetchPopularProducts();
     fetchCategories();
     fetchBanners();
+    fetchPromoProducts();
   }, []);
 
   // reset ketika search berubah
@@ -307,10 +323,7 @@ const scrollLeft = () => {
     setProducts([]);
   }, [activeSearch]);
 
-  useEffect(() => {
-    fetchProducts(currentPage);
-  }, [currentPage, activeSearch]);
-
+  
   useEffect(() => {
     const stopDragging = () => {
       isDragging.current = false;
@@ -362,17 +375,17 @@ const scrollLeft = () => {
 
   const handleBannerDragMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (dragStartX.current === 0) return;
-
+    
     let currentX = 0;
     if ('touches' in e) {
       currentX = e.touches[0].clientX;
     } else {
       currentX = e.pageX;
     }
-
+    
     const diff = currentX - dragStartX.current;
     dragOffsetRef.current = diff; 
-
+    
     // 3. MANIPULASI DOM LANGSUNG: Ubah posisi gambar tanpa re-render React
     if (sliderTrackRef.current) {
       const basePct = isMobile ? 70 : 80;
@@ -386,30 +399,29 @@ const scrollLeft = () => {
 
     setIsCenterTransitioning(true); 
 
-    // Ambil nilai dari ref
     const diff = dragOffsetRef.current; 
-
+    
     if (diff < -50) {
       moveCenter(currentCenter + 1);
     } else if (diff > 50) {
       moveCenter(currentCenter - 1);
     }
-
-    // Reset nilai
+    
     dragStartX.current = 0;
     dragOffsetRef.current = 0; 
     
     startCenterAutoSlide();
   };
-
+  
   const fetchProducts = async (page = 1) => {
     try {
       setLoading(true);
-
+      
       const params: any = {
         page,
-        limit: isMobile ? 16 : 15,
+        limit: isMobile ? 32 : 30, 
         sort: 'recommend', 
+        exclude_category_ids: excludedCategoryIds.join(',') 
       };
 
       if (activeSearch) {
@@ -425,7 +437,7 @@ const scrollLeft = () => {
       } else {
         setProducts((prev) => [...prev, ...newProducts]);
       }
-
+      
       setTotalPages(res.last_page || 1);
     } catch (err) {
       console.error("Gagal fetch products", err);
@@ -433,13 +445,49 @@ const scrollLeft = () => {
       setLoading(false);
     }
   };
+  
+  const [groupings, setGroupings] = useState<any[]>([]);
+  const [isGroupingLoaded, setIsGroupingLoaded] = useState(false);
 
-  const displayedProducts =
-    currentPage === 1
-      ? isMobile
-        ? products.slice(0, 16)
-        : products.slice(0, 15)
-      : products;
+  useEffect(() => {
+    if (isGroupingLoaded) {
+      fetchProducts(currentPage);
+    }
+  }, [currentPage, activeSearch, isGroupingLoaded]);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const data = await getGroupings();
+      setGroupings(data);
+      setIsGroupingLoaded(true); 
+    };
+
+    fetch();
+  }, []);
+
+  const excludedCategoryIds = useMemo(() => {
+    const targetGroups = [
+      "Komponen & Peripheral",
+      "Monitor & Display",
+      "Laptop",
+      "Printer & Scanner",
+      "Dekstop & PC"
+    ];
+
+    const ids: string[] = [];
+    
+    groupings.forEach((group: any) => {
+      if (targetGroups.includes(group.name)) {
+        if (group.children && Array.isArray(group.children)) {
+          group.children.forEach((child: any) => ids.push(child.id));
+        }
+      }
+    });
+    
+    return ids;
+  }, [groupings]);
+
+  const displayedProducts = products;
 
   const fetchProductsByParent = async (parentSlug: string) => {
     try {
@@ -459,7 +507,6 @@ const scrollLeft = () => {
     [key: string]: any[];
   }>({});
 
-  const [groupings, setGroupings] = useState([]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -749,15 +796,19 @@ const scrollLeft = () => {
         </div>
       </section>
 
-      <PopularProduct popularProducts={popularProducts} />
+      <PromoProductSlider 
+        products={promoProducts}
+        promoImageUrl="/promo1.svg"
+      />
 
-      <OfficialBrandSection />
+      <PopularProduct popularProducts={popularProducts} />
 
       <GroupingProductSlider/>
 
-      {/* ================= PRODUCT ================= */}
+      <OfficialBrandSection />
+
+      {/* ================= PRODUCT LAINNYA ================= */}
       <section className="w-full bg-white mt-4 border-gray-200 border-y pt-6">
-        {/* Ubah max-w-7xl jadi bisa melar ke screen-2xl (1536px) di layar gede */}
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0 pb-10">
 
           <h2
@@ -765,25 +816,25 @@ const scrollLeft = () => {
                       font-semibold font-cocogoose
                       bg-gray-800
                       text-transparent bg-clip-text
-                      text-center">
-            Rekomendasi
+                      text-center"
+          >
+            Produk Lainnya
           </h2>
 
           <div className="
-          grid
-          grid-cols-2
-          sm:grid-cols-3
-          md:grid-cols-4
-          lg:grid-cols-5
-          2xl:grid-cols-6 
-          gap-3 sm:gap-4
+            grid
+            grid-cols-2
+            sm:grid-cols-3
+            md:grid-cols-4
+            lg:grid-cols-5
+            2xl:grid-cols-6 
+            gap-3 sm:gap-4
           ">
             {displayedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
 
             {loading &&
-              // Update skeleton limitnya juga biar rapi
               Array.from({ length: isMobile ? 16 : 18 }).map((_, i) => (
                 <ProductCardSkeleton key={`skeleton-${i}`} />
               ))}

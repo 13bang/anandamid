@@ -1,15 +1,18 @@
-import { Search, Check } from "lucide-react";
+import { useState, useEffect } from "react";
 import type { Category } from "../types/category";
+import { Search, ChevronDown, ChevronRight, Check } from "lucide-react";
+import { getBrands } from "../services/brandService";
 
-interface Brand {
+export interface Grouping {
   id: string;
   name: string;
-  image?: string;
+  children?: Category[];
 }
 
 interface Props {
-  categories?: Category[]; // Sekarang langsung pakai categories, ga pakai groupings lagi
+  groupings?: Grouping[];
   groupingParam?: string | null;
+  categoryParam?: string | null;
   categoryIdsParam?: string | null; 
 
   searchCategory: string;
@@ -31,15 +34,25 @@ interface Props {
   STEP: number;
 
   isPriceFiltered: boolean;
+
   resetProducts: () => void;
+
   setSearchParams: any;
+
   showCategory?: boolean;
 }
 
-export default function FilteringSidebar(props: Props) {
+interface Brand {
+  id: string;
+  name: string;
+  image?: string;
+}
+
+export default function FilteringSidebarKatalog(props: Props) {
   const {
-    categories = [],
+    groupings = [],
     groupingParam,
+    categoryParam,
     categoryIdsParam,
     searchCategory,
     setSearchCategory,
@@ -61,15 +74,63 @@ export default function FilteringSidebar(props: Props) {
     showCategory = true,
   } = props;
 
-  const handleCategoryClick = (catId: string) => {
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
+  // Buka dropdown secara otomatis jika grouping param ada di URL
+  useEffect(() => {
+    if (groupingParam) {
+      const activeGroup = groupings.find((g) => g.name === groupingParam);
+      if (activeGroup && !expandedGroups.includes(activeGroup.id)) {
+        setExpandedGroups((prev) => [...prev, activeGroup.id]);
+      }
+    }
+  }, [groupingParam, groupings]);
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups((prev) =>
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
+  const handleCategoryClick = (groupName: string, catId: string) => {
     setSearchParams((prev: URLSearchParams) => {
       const newParams = new URLSearchParams(prev);
-      
-      // Jika diklik lagi, jangan ngapa-ngapain
-      if (newParams.get("category_ids") === catId) return prev;
 
+      // kalau klik kategori yang sama → skip (biar ga refetch useless)
+      if (
+        newParams.get("grouping") === groupName &&
+        newParams.get("category_ids") === catId
+      ) {
+        return prev;
+      }
+
+      newParams.set("grouping", groupName);
       newParams.set("category_ids", catId);
-      newParams.delete("category"); // Hapus param category lama jika ada
+      newParams.delete("category");
+
+      return newParams;
+    });
+  };
+
+  const handleGroupClick = (e: React.MouseEvent, groupName: string) => {
+    e.stopPropagation();
+
+    setSearchParams((prev: URLSearchParams) => {
+      const newParams = new URLSearchParams(prev);
+
+      if (
+        newParams.get("grouping") === groupName &&
+        !newParams.get("category_ids")
+      ) {
+        return prev;
+      }
+
+      newParams.set("grouping", groupName);
+      newParams.delete("category_ids");
+      newParams.delete("category");
+
       return newParams;
     });
   };
@@ -77,8 +138,19 @@ export default function FilteringSidebar(props: Props) {
   const handleAllClick = () => {
     setSearchParams((prev: URLSearchParams) => {
       const newParams = new URLSearchParams(prev);
+
+      if (
+        !newParams.get("grouping") &&
+        !newParams.get("category_ids") &&
+        !newParams.get("category")
+      ) {
+        return prev;
+      }
+
+      newParams.delete("grouping");
       newParams.delete("category_ids");
       newParams.delete("category");
+
       return newParams;
     });
   };
@@ -98,7 +170,7 @@ export default function FilteringSidebar(props: Props) {
   return (
     <div className="col-span-3 px-6 py-6 border border-gray-200 h-fit space-y-8 rounded-2xl bg-white shadow-sm">
       
-      {/* ================= CATEGORY (FLAT LIST) ================= */}
+      {/* ================= CATEGORY / GROUPING ================= */}
       {showCategory && (
         <div>
           <h2 className="mb-4 text-lg font-bold text-gray-800">Kategori</h2>
@@ -114,42 +186,97 @@ export default function FilteringSidebar(props: Props) {
             />
           </div>
 
-          <ul className="overflow-y-auto text-sm max-h-[320px] pr-2 space-y-1.5 scrollbar-thin scrollbar-thumb-gray-200">
+          <ul className="overflow-y-auto text-sm max-h-[320px] pr-2 space-y-1 scrollbar-thin scrollbar-thumb-gray-200">
             <li
               onClick={handleAllClick}
               className={`px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                !categoryIdsParam
+                !categoryParam && !groupingParam && !categoryIdsParam
                   ? "bg-primary/10 text-primary font-bold"
                   : "text-gray-600 hover:bg-gray-50 hover:text-primary"
               }`}
             >
-              Semua di {groupingParam || "Kategori"}
+              Semua Kategori
             </li>
 
-            {categories
-              .filter((cat) => cat.name.toLowerCase().includes(searchCategory.toLowerCase()))
-              .map((cat) => {
-                const isActive = categoryIdsParam === cat.id;
-                
-                return (
-                  <li
-                    key={cat.id}
-                    onClick={() => handleCategoryClick(cat.id)}
-                    className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors rounded-lg ${
-                      isActive
-                        ? "bg-primary/5 text-primary font-semibold"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-primary"
+            {groupings.map((group) => {
+              const searchLower = searchCategory.toLowerCase();
+              const isGroupMatch = group.name.toLowerCase().includes(searchLower);
+              const matchedChildren =
+                group.children?.filter((cat) =>
+                  cat.name.toLowerCase().includes(searchLower)
+                ) || [];
+
+              if (searchCategory && !isGroupMatch && matchedChildren.length === 0) {
+                return null;
+              }
+
+              const displayChildren =
+                searchCategory && !isGroupMatch ? matchedChildren : group.children || [];
+
+              const isExpanded =
+                expandedGroups.includes(group.id) ||
+                (searchCategory && matchedChildren.length > 0);
+              
+              const isActiveGroup = groupingParam === group.name && !categoryIdsParam;
+
+              return (
+                <li key={group.id} className="flex flex-col mb-1">
+                  <div
+                    className="flex items-center justify-between w-full py-2 px-3 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 group"
+                    onClick={() => toggleGroup(group.id)}
+                  >
+                    <span
+                      onClick={(e) => handleGroupClick(e, group.name)}
+                      className={`flex-1 ${
+                        isActiveGroup
+                          ? "text-primary font-bold"
+                          : "text-gray-700 group-hover:text-primary"
+                      }`}
+                    >
+                      {group.name}
+                    </span>
+                    <button className="text-gray-400 p-0.5 rounded-md hover:bg-gray-200 transition-colors">
+                      <ChevronRight 
+                        className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`} 
+                      />
+                    </button>
+                  </div>
+
+                  {/* DROPDOWN CHILDREN */}
+                  <div
+                    className={`grid transition-all duration-200 ease-in-out ${
+                      isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                     }`}
                   >
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full transition-colors flex-shrink-0 ${
-                        isActive ? "bg-primary" : "bg-transparent"
-                      }`}
-                    />
-                    <span className="truncate">{cat.name}</span>
-                  </li>
-                );
-              })}
+                    <ul className="overflow-hidden pl-5 ml-4 border-l-2 border-gray-100 space-y-1">
+                      <div className="pt-1 pb-2">
+                        {displayChildren.map((cat) => {
+                          const isActiveChild = categoryIdsParam === cat.id;
+                          return (
+                            <li
+                              key={cat.id}
+                              onClick={() => handleCategoryClick(group.name, cat.id)}
+                              className={`flex items-center gap-2 px-3 py-1.5 mt-1 cursor-pointer transition-colors rounded-lg ${
+                                isActiveChild
+                                  ? "bg-primary/5 text-primary font-semibold"
+                                  : "text-gray-500 hover:bg-gray-50 hover:text-primary"
+                              }`}
+                            >
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                                  isActiveChild ? "bg-primary" : "bg-transparent"
+                                }`}
+                              />
+                              {cat.name}
+                            </li>
+                          );
+                        })}
+                      </div>
+                    </ul>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -186,6 +313,7 @@ export default function FilteringSidebar(props: Props) {
                       ? prev.filter((id) => id !== brand.id)
                       : [...prev, brand.id]
                   );
+
                   resetProducts();
                 }}
                 className="flex items-center gap-3 px-2 py-1 cursor-pointer group"
@@ -241,6 +369,7 @@ export default function FilteringSidebar(props: Props) {
             }}
           />
           
+          {/* Input untuk Harga Minimal */}
           <input
             type="range"
             min={MIN}
@@ -266,6 +395,7 @@ export default function FilteringSidebar(props: Props) {
               [&::-moz-range-thumb]:outline [&::-moz-range-thumb]:outline-1 [&::-moz-range-thumb]:outline-primary"
           />
 
+          {/* Input untuk Harga Maksimal */}
           <input
             type="range"
             min={MIN}

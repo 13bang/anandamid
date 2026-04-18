@@ -34,6 +34,8 @@ import PublicPricelistPage from "./pages/landing_page/PricelistPage";
 import ServerBusyPage from "./pages/ServerBusyPage";
 import TiktokPage from "./pages/admin_panel/TiktokPage";
 import { GlobalImportProvider } from "./components/admin/NotificationUpdateUpload";
+import ProfilePage from "./pages/landing_page/ProfilePage";
+import CartPage from "./pages/landing_page/CartPage";
 
 
 // ================= ROUTES =================
@@ -59,6 +61,8 @@ function AppRoutes() {
         <Route path="/search" element={<SearchResultPage />} />
         <Route path="/pc-builder" element={<PCBuilderPage />} />
         <Route path="/price-list" element={<PublicPricelistPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/cart" element={<CartPage />} />
       </Route>
 
       <Route path="/ayamgoreng/login" element={<LoginPage />} />

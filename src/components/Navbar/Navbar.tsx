@@ -1,0 +1,530 @@
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu as MenuIcon, LogOut, User, ShoppingCart, ChevronDown, ShoppingBag } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { logoutUser } from "../../services/userAuthService";
+import { getProducts } from "../../services/productService";
+import { getCategories } from "../../services/adminCategoryService";
+import { getGroupings } from "../../services/groupingService";
+import type { Product } from "../../types/product";
+import { getMyCart } from "../../services/cartService";
+
+import AuthModal from "./AuthModal";
+import SearchBar from "./SearchBar";
+import TopInfoBar from "./TopInfoBar";
+import OrderFlowModal from "./OrderFlowModal";
+import DesktopNavLinks from "./DesktopNavLinks";
+import MobileSidebar from "./MobileSidebar";
+
+interface Category {
+  id: string;
+  name: string;
+  code: string;
+  parent_id: string | null;
+}
+
+interface Grouping {
+  id: string;
+  name: string;
+  children: Category[];
+}
+
+export default function Navbar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // State Global & Data
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [groupings, setGroupings] = useState<Grouping[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // State UI Controls
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+
+  // Search Logic States
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<Product[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [categorySuggestions, setCategorySuggestions] = useState<Category[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const cache = useRef<Record<string, Product[]>>({});
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [cartCount, setCartCount] = useState(0);
+  const [showCartPreview, setShowCartPreview] = useState(false);
+  const [cartPreviewItems, setCartPreviewItems] = useState<any[]>([]);
+
+  const fetchCartPreview = async () => {
+    if (!localStorage.getItem("user_token")) return; 
+
+    try {
+      const data = await getMyCart();
+      setCartPreviewItems(data.slice(0, 3));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("user_token");
+
+    if (!token) {
+      setCartCount(0);
+      setCartPreviewItems([]);
+      return;
+    }
+
+    const fetchCartCount = async () => {
+      try {
+        const data = await getMyCart();
+        const total = data.reduce((acc: number, item: any) => acc + item.quantity, 0);
+        setCartCount(total);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchCartCount();
+  }, [currentUser]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const loadUserData = () => {
+    const userDataStr = localStorage.getItem("user_data");
+    if (userDataStr) {
+      try { setCurrentUser(JSON.parse(userDataStr)); } 
+      catch (e) { console.error("Failed to parse user data"); }
+    }
+  };
+
+  useEffect(() => {
+    loadUserData();
+    window.addEventListener("storage", loadUserData);
+    return () => window.removeEventListener("storage", loadUserData);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [groupingData, categoryData] = await Promise.all([
+          getGroupings(),
+          getCategories(),
+        ]);
+        setGroupings(groupingData);
+        setCategories(categoryData);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const shortenName = (name: string) => name.split(" ").slice(0, Math.random() > 0.5 ? 2 : 3).join(" ");
+  const shuffleArray = <T,>(array: T[]): T[] => [...array].sort(() => Math.random() - 0.5);
+
+  useEffect(() => {
+    if (!search.trim() || search.length < 2) {
+      setResults([]); setSuggestions([]); setCategorySuggestions([]); setShowDropdown(false);
+      return;
+    }
+    setShowDropdown(true);
+    setLoadingSearch(true);
+
+    const delay = setTimeout(async () => {
+      if (cache.current[search]) {
+        setResults(cache.current[search]);
+        setShowDropdown(true);
+        setLoadingSearch(false);
+        return;
+      }
+      try {
+        const res = await getProducts({ search: search, page: 1, limit: 10 });
+        const products: Product[] = res.data;
+        cache.current[search] = products;
+
+        setResults(products);
+        setFeaturedProducts(shuffleArray(products).slice(0, 5));
+        
+        const normalizedSearch = search.trim().toLowerCase();
+        const nameSuggestions = Array.from(new Set(shuffleArray(products).map((p) => shortenName(p.name))))
+          .filter((name) => name.toLowerCase() !== normalizedSearch)
+          .slice(0, 5);
+        setSuggestions(nameSuggestions);
+
+        const uniqueCategories = Array.from(new Map(products.filter((p: Product) => p.category).map((p: Product) => [p.category!.id, p.category])).values()) as Category[];
+        setCategorySuggestions(uniqueCategories);
+        setShowDropdown(true);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingSearch(false);
+      }
+    }, 150);
+
+    return () => clearTimeout(delay);
+  }, [search]);
+
+  const handleLogout = async () => {
+    try { await logoutUser(); } 
+    catch (e) { console.error(e); } 
+    finally {
+      setCurrentUser(null);
+      setCartCount(0);
+      setCartPreviewItems([]);
+      setUserDropdownOpen(false);
+      navigate("/");
+    }
+  };
+
+  const openAuth = (mode: "login" | "register") => {
+    setAuthMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
+  const getAvatarUrl = (url: string) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `${import.meta.env.VITE_API_BASE}${url}`;
+  };
+
+  return (
+    <>
+      {/* --- CUSTOM ANIMATION STYLES UNTUK RAKITAN PC --- */}
+      <style>{`
+        @keyframes rakitanImgSequence {
+          /* 1. AWAL: Transisi dari posisi kecil (akhir loop) ke Pop & Shake */
+          0% { transform: scale(0.8) translateY(-8px); }
+          5% { transform: scale(1.1) translateY(0); }
+          7% { transform: scale(1.1) rotate(-8deg); }
+          9% { transform: scale(1.1) rotate(8deg); }
+          12% { transform: scale(1) rotate(0deg); }
+          
+          /* 2. DIAM: Posisi normal selama ~2 detik */
+          35% { transform: scale(1) translateY(0); }
+          
+          /* 3. MENGECIL: Gambar naik ke atas untuk ngasih ruang ke teks */
+          40% { transform: scale(0.8) translateY(-8px); }
+          
+          /* 4. TAHAN: Tahan posisi kecil selama teks muncul (~3.5 detik) */
+          90% { transform: scale(0.8) translateY(-8px); }
+          
+          /* Akhir loop, siap-siap melompat lagi ke 0% */
+          100% { transform: scale(0.8) translateY(-8px); }
+        }
+
+        @keyframes rakitanTextSequence {
+          /* Sembunyi selama gambar pop dan diam */
+          0%, 35% { opacity: 0; transform: translateY(5px); }
+          
+          /* Muncul bersamaan saat gambar mengecil */
+          40%, 85% { opacity: 1; transform: translateY(0); }
+          
+          /* Teks hilang perlahan sebelum gambar kembali zoom & shake */
+          90%, 100% { opacity: 0; transform: translateY(5px); }
+        }
+
+        .animate-rakitan-img {
+          /* Durasi 8s pas banget buat bagi waktu 2s diam + 3.5s teks */
+          animation: rakitanImgSequence 8s infinite cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        
+        .animate-rakitan-text {
+          animation: rakitanTextSequence 8s infinite ease-out;
+        }
+      `}</style>
+
+      <TopInfoBar onOpenOrderModal={() => setIsOrderModalOpen(true)} />
+
+      <div className={`sticky top-0 z-[1000] w-full bg-white border-b border-gray-200 transition-shadow ${isScrolled ? "shadow-md" : ""}`}>
+        <div className="w-full">
+          {/* CONTAINER UTAMA NAVBAR (1 BARIS DESKTOP) */}
+          <div className="flex items-center justify-between max-w-7xl mx-auto w-full h-16 lg:h-20 px-4 md:px-6 gap-4">
+            
+            {/* 1. BAGIAN KIRI: Logo & Desktop Links */}
+            <div className="flex items-center gap-4 lg:gap-8 flex-shrink-0">
+              <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden mr-1 text-gray-700">
+                <MenuIcon size={24} />
+              </button>
+              <Link to="/" className="flex-shrink-0">
+                <img src="/anandam-logo-blue.svg" alt="Anandam Logo" className="h-8 sm:h-10 lg:h-12 w-auto object-contain" />
+              </Link>
+
+              <DesktopNavLinks groupings={groupings} />
+            </div>
+
+            {/* 2. BAGIAN TENGAH: Search Bar */}
+            <div className="hidden md:flex flex-1 justify-center min-w-0 px-2 lg:px-4">
+              <SearchBar className="w-full max-w-xl" dropdownWidth="w-full max-w-xl" />
+            </div>
+
+            {/* 3. BAGIAN KANAN: Rakitan, Cart, User Profile */}
+            <div className="flex items-center justify-end flex-shrink-0 gap-1 sm:gap-2 lg:gap-4">
+              
+              {/* === RAKITAN ICON === */}
+              <Link 
+                to="/pc-builder" 
+                className="hidden sm:flex relative w-16 h-16 items-center justify-center rounded-xl transition-all duration-300 group"
+                title="Rakitan PC"
+              >
+                <div className="relative flex flex-col items-center justify-center w-full h-full pointer-events-none">
+                  {/* Gambar Icon (Ganti src-nya dengan nama file gambar kamu di folder public) */}
+                  <img 
+                    src="/pc.svg" 
+                    alt="Rakitan" 
+                    className="w-9 h-9 object-contain animate-rakitan-img drop-shadow-md"
+                  />
+                  {/* Teks Animasi */}
+                  <span className="absolute bottom-1.5 text-[9px] font-extrabold text-blue-700 tracking-wider animate-rakitan-text whitespace-nowrap">
+                    PC BUILDER
+                  </span>
+                </div>
+              </Link>
+
+              {/* SHOPPING CART SECTION */}
+              <div 
+                className="relative flex justify-center group"
+                onMouseEnter={() => {
+                  setShowCartPreview(true);
+                  fetchCartPreview();
+                }}
+                onMouseLeave={() => setShowCartPreview(false)}
+              >
+                <button
+                  onClick={() => navigate("/cart")}
+                  className="relative p-2.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-primary transition-all duration-300 z-10"
+                >
+                  <ShoppingCart size={22} strokeWidth={2} />
+                  {cartCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full font-bold border-2 border-white shadow-sm animate-in zoom-in">
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* DROPDOWN CART PREVIEW */}
+                <div
+                  className={`absolute right-0 lg:left-1/2 lg:-translate-x-1/2 top-full pt-3 w-80 z-50
+                    transition-all duration-300 ease-out origin-top-right lg:origin-top
+                    ${showCartPreview 
+                      ? "opacity-100 translate-y-0 scale-100 pointer-events-auto" 
+                      : "opacity-0 -translate-y-2 scale-95 pointer-events-none"}
+                  `}
+                >
+                  <div className="relative bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden z-10">
+                    <div className="px-5 py-4 border-b bg-gray-50/50 flex justify-between items-center">
+                      <h3 className="text-sm font-bold text-gray-900">Keranjang</h3>
+                      <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                        {cartCount} Item
+                      </span>
+                    </div>
+
+                    <div className="max-h-[320px] overflow-y-auto divide-y divide-gray-50 scrollbar-hide">
+                      {cartPreviewItems.length > 0 ? (
+                        cartPreviewItems.map((item) => {
+                          const product = item.product;
+                          const priceNormal = Number(product?.price_normal || 0);
+                          const priceDiscount = Number(product?.price_discount || 0);
+                          const finalPrice = priceDiscount > 0 ? priceNormal - priceDiscount : priceNormal;
+                          const imageUrl = product?.thumbnail?.startsWith("http")
+                            ? product.thumbnail
+                            : `${import.meta.env.VITE_API_BASE}${product?.thumbnail}`;
+
+                          return (
+                            <div key={item.id} className="flex gap-4 p-4 hover:bg-gray-50 transition group/item">
+                              <div className="w-14 h-14 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 p-1 border border-gray-100">
+                                <img src={imageUrl} className="w-full h-full object-contain" alt={product?.name} />
+                              </div>
+                              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                <p className="text-sm font-bold text-gray-800 truncate hover:text-primary">{product?.name}</p>
+                                <p className="text-[11px] text-gray-400 mt-0.5">
+                                  {item.quantity} x <span className="font-medium text-black">Rp {finalPrice.toLocaleString()}</span>
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="py-12 flex flex-col items-center justify-center text-center px-6 text-gray-400">
+                          <ShoppingCart size={32} className="opacity-20 mb-2" />
+                          <p className="text-sm font-medium">Keranjang kosong</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {cartPreviewItems.length > 0 && (
+                      <div className="p-4 bg-gray-50/50 border-t">
+                        <button
+                          onClick={() => navigate("/cart")}
+                          className="w-full bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20"
+                        >
+                          Lihat Selengkapnya
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* USER SECTION */}
+              <div className="relative" ref={dropdownRef}>
+                {currentUser ? (
+                  <div 
+                    className={`flex items-center gap-3 cursor-pointer py-1.5 pl-1.5 pr-3 rounded-full transition-all duration-300 border ${
+                      userDropdownOpen ? "bg-white border-gray-200 shadow-md" : "border-transparent hover:bg-gray-100"
+                    }`}
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  >
+                    <div className="relative flex-shrink-0">
+                      {currentUser.avatar_url ? (
+                        <img 
+                          src={getAvatarUrl(currentUser.avatar_url)} 
+                          alt="Profile" 
+                          className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-full flex items-center justify-center font-semibold text-sm border-2 border-white shadow-sm">
+                          {currentUser.full_name?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      
+                      {(!currentUser.phone_number || currentUser.phone_number.trim() === "") && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-orange-500 border-2 border-white"></span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="hidden lg:flex flex-col items-start leading-none">
+                      <span className="text-sm font-bold text-gray-800 max-w-[90px] truncate">
+                        {currentUser.full_name.split(' ')[0]}
+                      </span>
+                    </div>
+
+                    <ChevronDown 
+                      size={16} 
+                      className={`text-gray-400 hidden lg:block transition-transform duration-300 ${userDropdownOpen ? "rotate-180" : ""}`} 
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => openAuth('login')} 
+                      className="px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-bold text-gray-700 hover:text-primary transition-colors"
+                    >
+                      Masuk
+                    </button>
+                    <button 
+                      onClick={() => openAuth('register')} 
+                      className="px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-black bg-primary text-white rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95"
+                    >
+                      Daftar
+                    </button>
+                  </div>
+                )}
+
+                {/* USER DROPDOWN MENU */}
+                {currentUser && (
+                  <div
+                    className={`absolute right-0 top-full pt-2 w-60 z-50
+                      transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+                      ${userDropdownOpen 
+                        ? "opacity-100 translate-y-0 scale-100 pointer-events-auto" 
+                        : "opacity-0 -translate-y-2 scale-95 pointer-events-none"}
+                    `}
+                  >
+                    <div className="bg-white border border-gray-100 rounded-2xl shadow-2xl py-2 overflow-hidden duration-300 ease-out origin-top-right">
+                      <div className="px-5 py-4 bg-gray-50/50 border-b border-gray-100 mb-2">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{currentUser.full_name}</p>
+                        <p className="text-xs text-gray-500 truncate mt-0.5">{currentUser.email}</p>
+                      </div>
+                      
+                      <Link 
+                        to="/profile" 
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-primary flex items-center justify-between transition"
+                      >
+                        <div className="flex items-center gap-3 font-semibold">
+                          <User size={18} className="text-gray-400" /> Profil Saya
+                        </div>
+                      </Link>
+
+                      <Link 
+                        to="/orders" 
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-primary flex items-center gap-3 transition"
+                      >
+                        <ShoppingBag size={18} className="text-gray-400" />
+                        <span className="font-semibold">Pesanan Saya</span>
+                      </Link>
+
+                      <div className="h-px bg-gray-100 my-2 mx-4" />
+
+                      <button 
+                        onClick={handleLogout} 
+                        className="w-full px-4 py-3 text-sm text-red-500 font-bold hover:bg-red-50 flex items-center gap-3 transition"
+                      >
+                        <LogOut size={18} /> Keluar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SEARCH BAR MOBILE (Tampil di bawah Header pada layar HP) */}
+        <div className="md:hidden px-4 pb-3 max-w-7xl mx-auto w-full">
+          <SearchBar className="w-full" dropdownWidth="w-full" />
+        </div>
+      </div>
+
+      <MobileSidebar 
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onOpenAuth={openAuth}
+        groupings={groupings}
+      />
+
+      <OrderFlowModal 
+        isOpen={isOrderModalOpen} 
+        onClose={() => setIsOrderModalOpen(false)} 
+      />
+
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        initialMode={authMode}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={(userData) => {
+          setCurrentUser(userData);
+          setIsAuthModalOpen(false);
+        }}
+      />
+    </>
+  );
+}
