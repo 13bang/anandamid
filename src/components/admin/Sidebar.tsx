@@ -24,6 +24,7 @@ export default function Sidebar() {
 
   const menu = [
     { name: "Dashboard", path: "/ayamgoreng/dashboard", icon: House },
+    { name: "Orders", path: "/ayamgoreng/orders", icon: Package },
     { name: "Kategori", path: "/ayamgoreng/category", icon: Layers },
     { name: "Brand", path: "/ayamgoreng/brand", icon: Tag },
     { name: "Produk", path: "/ayamgoreng/product", icon: Package },

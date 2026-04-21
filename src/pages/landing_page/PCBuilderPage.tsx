@@ -319,19 +319,17 @@ export default function PCBuilderPage() {
     <div>
         {/* ================= BREADCRUMB BAR ================= */}
         <div className="w-full bg-white">
-            <div className="h-14 flex items-center px-8">
-                <div className="w-ful items-center">
-                    <Breadcrumb
-                        items={[
-                            { label: "Home", path: "/" },
-                            { label: "Rakit PC" },
-                        ]}
-                    />
-                </div>
+            <div className="max-w-7xl w-full mx-auto h-14 flex items-center px-4 sm:px-6 lg:px-8">
+                <Breadcrumb
+                    items={[
+                        { label: "Home", path: "/" },
+                        { label: "Rakit PC" },
+                    ]}
+                />
             </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 py-8 md:py-12 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 py-8 md:py-2 min-h-screen">
             {/* HEADER */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
                 <div>
@@ -411,7 +409,7 @@ export default function PCBuilderPage() {
                         </div>
 
                         <div className="pt-6 border-t border-gray-100">
-                            <span className="block text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">Total Estimasi</span>
+                            <span className="block text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Total Estimasi</span>
                             <div className="text-2xl md:text-3xl font-bold text-gray-900">
                                 Rp {grandTotal.toLocaleString("id-ID")}
                             </div>

@@ -36,6 +36,8 @@ import TiktokPage from "./pages/admin_panel/TiktokPage";
 import { GlobalImportProvider } from "./components/admin/NotificationUpdateUpload";
 import ProfilePage from "./pages/landing_page/ProfilePage";
 import CartPage from "./pages/landing_page/CartPage";
+import OrderListPage from "./pages/admin_panel/OrderListPage";
+import UserOrderHistory from "./pages/landing_page/UserOrderHistory";
 
 
 // ================= ROUTES =================
@@ -63,6 +65,7 @@ function AppRoutes() {
         <Route path="/price-list" element={<PublicPricelistPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/cart" element={<CartPage />} />
+        <Route path="/orders_history" element={<UserOrderHistory />} />
       </Route>
 
       <Route path="/ayamgoreng/login" element={<LoginPage />} />
@@ -84,6 +87,7 @@ function AppRoutes() {
           <Route path="certificate" element={<CertificatePage />} />
           <Route path="brand" element={<BrandSection />} />
           <Route path="tiktok" element={<TiktokPage />} />
+          <Route path="orders" element={<OrderListPage />} />
         </Route>
       </Route>
 

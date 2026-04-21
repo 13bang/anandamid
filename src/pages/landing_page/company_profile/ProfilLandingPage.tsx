@@ -180,15 +180,13 @@ const prevImage = (e: React.MouseEvent) => {
         <div className="bg-white overflow-x-hidden md:overflow-visible">
             {/* ================= BREADCRUMB BAR ================= */}
             <div className="w-full bg-white">
-                <div className="h-14 flex items-center px-4 md:px-8 2xl:px-32 2xl:max-w-[1536px] 2xl:mx-auto w-full">
-                    <div className="w-ful items-center">
-                        <Breadcrumb
+                <div className="max-w-7xl w-full mx-auto h-14 flex items-center px-4 sm:px-6 lg:px-8">
+                    <Breadcrumb
                         items={[
                             { label: "Home", path: "/" },
                             { label: "Profile Perusahaan" },
                         ]}
-                        />
-                    </div>
+                    />
                 </div>
             </div>
 

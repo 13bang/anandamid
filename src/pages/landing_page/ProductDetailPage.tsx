@@ -2,12 +2,13 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProductById, getProductsByCategory, getProducts } from "../../services/productService";
 import { FaWhatsapp, FaSearchPlus, FaBan, FaCheckCircle } from "react-icons/fa";
-import { ChevronLeft, ChevronRight, Truck, ShieldCheck, ShoppingCart, X, Check, ShoppingBag, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Truck, ShieldCheck, ShoppingCart, X, Check, ShoppingBag } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
 import Breadcrumb from "../../components/Breadcrumb";
 import ProductCardSkeleton from "../../components/ProductCardSkeleton";
 import { addToCart } from "../../services/cartService";
+import { checkoutDirect } from "../../services/orderSevice"; 
 import Swal from "sweetalert2";
 import AuthModal from "../../components/Navbar/AuthModal";
 
@@ -35,6 +36,8 @@ export default function ProductDetailPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   
+  const [pendingAction, setPendingAction] = useState<"cart" | "wa" | null>(null);
+
   useEffect(() => {
     if (id) fetchProduct();
   }, [id]);
@@ -102,12 +105,17 @@ export default function ProductDetailPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    window.location.reload(); 
+  };
+
   const handleAddToCart = async () => {
     if (!product) return;
 
-    // CEK LOGIN DULU
     const token = localStorage.getItem("user_token");
     if (!token) {
+      setPendingAction("cart"); 
       setIsAuthModalOpen(true);
       return;
     }
@@ -119,6 +127,9 @@ export default function ProductDetailPage() {
         variasi: selectedVariasi || undefined,
       });
       setShowSuccessModal(true); 
+      
+      window.dispatchEvent(new Event('cartUpdated'));
+      
     } catch (err: any) {
       console.error(err);
       Swal.fire({
@@ -129,8 +140,37 @@ export default function ProductDetailPage() {
     }
   };
 
+  const handleWaCheckout = async () => {
+    if (!product) return;
+
+    const token = localStorage.getItem("user_token");
+    if (!token) {
+      setPendingAction("wa"); 
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    try {
+      await checkoutDirect({
+        product_id: product.id,
+        quantity,
+        variasi: selectedVariasi || undefined,
+      });
+
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Checkout",
+        text: err?.response?.data?.message || "Gagal memproses pesanan ke server",
+      });
+    }
+  };
+
   // ==========================================
-  // SKELETON LOADING UI DIMULAI DI SINI
+  // SKELETON LOADING
   // ==========================================
   if (loading) {
     return (
@@ -226,9 +266,7 @@ export default function ProductDetailPage() {
       </div>
     );
   }
-  // ==========================================
-  // AKHIR DARI SKELETON LOADING UI
-  // ==========================================
+
   if (!product) return <div className="p-10 text-center font-semibold text-gray-500">Product not found</div>;
 
   const normalPrice = Number(product.price_normal) || 0;
@@ -326,35 +364,35 @@ export default function ProductDetailPage() {
 
           {/* ================= 2. SECTION INFO PRODUK ================= */}
           <div className="lg:col-span-5 order-2 lg:row-span-2">
-            <div className="lg:sticky lg:top-36 bg-white py-2 lg:py-0">
+            <div className="lg:sticky lg:top-36 bg-white py-2 lg:p-6 lg:border lg:border-gray-200 lg:rounded-2xl lg:shadow-sm">
               
               {/* BADGES & CATEGORY */}
-              <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
                 {product.category?.name && (
-                  <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider rounded-full">
+                  <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider rounded-full">
                     {product.category.name}
                   </span>
                 )}
                 {product.brand?.name && (
-                  <span className="px-2.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                  <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-wider rounded-full">
                     {product.brand.name}
                   </span>
                 )}
                 {/* Stock Status Badge */}
                 {isOutOfStock ? (
-                  <span className="flex items-center gap-1 px-2.5 py-0.5 bg-red-50 text-red-600 text-[10px] font-bold uppercase rounded-full border border-red-100">
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-bold uppercase rounded-full border border-red-100">
                     <FaBan size={10} /> Stok Habis
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 px-2.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold uppercase rounded-full border border-green-100">
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold uppercase rounded-full border border-green-100">
                     <FaCheckCircle size={10} /> Tersedia
                   </span>
                 )}
               </div>
 
               {/* TITLE & PRICE SECTION */}
-              <div className="space-y-3 mb-8">
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900 leading-tight">
+              <div className="space-y-2 mb-6">
+                <h1 className="text-xl lg:text-xl font-bold text-gray-900 leading-tight">
                   {product.name}
                 </h1>
                 
@@ -362,16 +400,16 @@ export default function ProductDetailPage() {
                   {discountPrice > 0 ? (
                     <div className="space-y-1">
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl lg:text-3xl font-bold text-primary">
+                        <span className="text-2xl lg:text-2xl font-bold text-primary">
                           Rp {finalPrice.toLocaleString()}
                         </span>
                       </div>
-                      <span className="text-lg text-gray-400 line-through">
+                      <span className="text-sm lg:text-sm text-gray-400 line-through">
                         Rp {normalPrice.toLocaleString()}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-2xl lg:text-3xl font-bold text-primary">
+                    <span className="text-2xl lg:text-2xl font-bold text-primary">
                       Rp {normalPrice.toLocaleString()}
                     </span>
                   )}
@@ -379,7 +417,7 @@ export default function ProductDetailPage() {
               </div>
 
               {/* QUICK SPECS */}
-              <div className="mb-6 space-y-3 text-xs lg:text-sm">
+              <div className="mb-5 space-y-2.5 text-xs lg:text-[13px]">
                 <div className="flex justify-between border-b border-gray-100 pb-2">
                   <span className="text-gray-500">SKU</span>
                   <span className="font-medium text-gray-900">
@@ -395,20 +433,24 @@ export default function ProductDetailPage() {
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Sisa Stok</span>
+                  <span className="text-gray-500">Stok</span>
                   <span className={`font-semibold ${
                     Number(product.stock) < 5 ? "text-orange-500" : "text-gray-900"
                   }`}>
-                    {product.stock} Unit
+                    {/* OPSI 1 (Aktif): Menampilkan "20+ Unit" */}
+                    {Number(product.stock) > 20 ? "20+" : product.stock} Unit
+                    
+                    {/* OPSI 2: Menampilkan ">20 Unit"                     */}
+                    {/* {Number(product.stock) > 20 ? ">20" : product.stock} Unit */}
                   </span>
                 </div>
               </div>
 
               {/* VARIATIONS */}
               {product.variasi && product.variasi.length > 0 && (
-                <div className="mb-8">
-                  <div className="flex justify-between items-center mb-3">
-                    <p className="text-sm font-bold text-gray-900">Pilih Variasi</p>
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2.5">
+                    <p className="text-xs lg:text-[13px] font-bold text-gray-900">Pilih Variasi</p>
                     <p className="text-[10px] text-gray-400 italic">*Wajib dipilih</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -416,7 +458,7 @@ export default function ProductDetailPage() {
                       <button
                         key={idx}
                         onClick={() => setSelectedVariasi(v)}
-                        className={`min-w-[70px] lg:min-w-[80px] px-3 py-2 lg:px-4 lg:py-2.5 text-xs font-bold rounded-xl border-2 transition-all duration-200 ${
+                        className={`px-3 py-1.5 lg:px-3 lg:py-2 text-[11px] lg:text-xs font-bold rounded-xl border-2 transition-all duration-200 ${
                           selectedVariasi === v 
                           ? "bg-primary/5 border-primary text-primary shadow-sm" 
                           : "bg-white border-gray-100 text-gray-500 hover:border-gray-300 hover:text-gray-700"
@@ -430,84 +472,92 @@ export default function ProductDetailPage() {
               )}
 
               {/* ACTION AREA */}
-              <div className="space-y-4 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between gap-3 lg:gap-4">
+              <div className="space-y-3 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between gap-3 lg:gap-3">
                   
-                  {/* Counter - disesuaikan di HP agar tak makan banyak space */}
+                  {/* Counter */}
                   <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden flex-shrink-0">
                     <button 
                       onClick={() => setQuantity(q => q > 1 ? q - 1 : 1)} 
                       disabled={quantity <= 1 || isOutOfStock}
-                      className="w-8 h-10 lg:w-9 lg:h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition"
+                      className="w-8 h-9 lg:w-8 lg:h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition"
                     >
                       -
                     </button>
 
-                    <span className="w-8 lg:w-10 text-center text-xs lg:text-sm font-semibold text-gray-900">
+                    <span className="w-8 lg:w-8 text-center text-xs lg:text-[13px] font-semibold text-gray-900">
                       {isOutOfStock ? 0 : quantity}
                     </span>
 
                     <button 
                       onClick={() => setQuantity(q => q < Number(product.stock) ? q + 1 : q)} 
                       disabled={quantity >= Number(product.stock) || isOutOfStock}
-                      className="w-8 h-10 lg:w-9 lg:h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition"
+                      className="w-8 h-9 lg:w-8 lg:h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition"
                     >
                       +
                     </button>
                   </div>
 
-                  {/* Add To Cart - text dipertahankan tampil, tp ukurannya responsive */}
+                  {/* Add To Cart */}
                   <button
                     onClick={handleAddToCart}
                     disabled={isOutOfStock}
-                    className={`flex-1 h-10 lg:h-12 font-bold rounded-xl lg:rounded-2xl flex items-center justify-center gap-2 transition-all duration-300 ${
+                    className={`flex-1 h-10 lg:h-11 font-bold rounded-xl lg:rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${
                       isOutOfStock
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                         : "bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-sm active:scale-95"
                     }`}
                   >
-                    <ShoppingCart size={18} />
-                    <span className="text-[13px] lg:text-base whitespace-nowrap">Tambah Keranjang</span>
+                    <ShoppingCart size={16} />
+                    <span className="text-[12px] lg:text-[13px] whitespace-nowrap">Tambah Keranjang</span>
                   </button>
                 </div>
 
-                {/* WA BUTTON */}
+                {/* WA BUTTON (ANIMATED LIKE CART CHECKOUT) */}
                 {isOutOfStock ? (
-                  <button className="w-full h-12 lg:h-14 bg-gray-100 text-gray-400 text-xs lg:text-base font-bold rounded-xl lg:rounded-2xl border border-gray-200 cursor-not-allowed uppercase tracking-wider">
+                  <button className="w-full h-11 lg:h-12 bg-gray-100 text-gray-400 text-xs lg:text-sm font-bold rounded-xl lg:rounded-xl border border-gray-200 cursor-not-allowed uppercase tracking-wider">
                     Produk Tidak Tersedia
                   </button>
                 ) : (
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group w-full h-12 lg:h-14 text-xs lg:text-base bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-xl lg:rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] uppercase tracking-wider
-                              hover:brightness-110 hover:shadow-md hover:shadow-green-500/20"
+                  // 4. Ubah <a> tag menjadi <button> dan arahkan onClick ke handleWaCheckout
+                  <button
+                    onClick={handleWaCheckout}
+                    className="relative block w-full h-11 lg:h-12 group overflow-hidden rounded-xl bg-primary transition-all duration-500 active:scale-[0.98]"
                   >
-                    <FaWhatsapp size={20} className="transition-transform duration-300 group-hover:scale-110 lg:w-[22px] lg:h-[22px]" />
-                    Checkout via WhatsApp
-                  </a>
+                    {/* Layer 1: Default State (Primary) */}
+                    <div className="absolute inset-0 flex items-center justify-center gap-2 text-white text-xs lg:text-[13px] font-bold uppercase tracking-wider transition-all duration-500 group-hover:-translate-y-full">
+                      Checkout Sekarang
+                      <ChevronRight size={16} />
+                    </div>
+
+                    {/* Layer 2: Hover State (WhatsApp Green) */}
+                    <div className="absolute inset-0 flex items-center justify-center gap-2 bg-green-500 text-white text-xs lg:text-[13px] font-bold uppercase tracking-wider translate-y-full transition-all duration-500 group-hover:translate-y-0">
+                      <FaWhatsapp size={18} className="animate-bounce" />
+                      Checkout via WhatsApp
+                    </div>
+                  </button>
                 )}
               </div>
 
-              {/* TRUST BADGES - grid cols menyesuaikan agar tidak kegencet di HP */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 mt-6 lg:mt-8">
-                <div className="flex items-center gap-4 p-3 lg:p-4 bg-white border border-gray-100 rounded-xl sm:border-transparent sm:rounded-none">
-                  <Truck className="text-primary flex-shrink-0" size={22} />
+              {/* TRUST BADGES */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3 mt-5 lg:mt-6">
+                <div className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl sm:border-transparent sm:bg-transparent sm:p-0 lg:border-transparent lg:p-0">
+                  <Truck className="text-primary flex-shrink-0" size={20} />
                   <div>
-                    <p className="text-xs lg:text-sm font-semibold text-gray-900">Gratis Ongkir</p>
-                    <p className="text-[10px] lg:text-xs text-gray-500">Area DIY & Sekitarnya</p>
+                    <p className="text-xs lg:text-[13px] font-semibold text-gray-900 leading-tight">Gratis Ongkir</p>
+                    <p className="text-[10px] lg:text-[11px] text-gray-500">Area DIY & Sekitarnya</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 p-3 lg:p-4 rounded-xl border border-gray-100 bg-white">
-                  <ShieldCheck className="text-primary flex-shrink-0" size={22} />
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white sm:border-transparent sm:bg-transparent sm:p-0 lg:border-transparent lg:p-0">
+                  <ShieldCheck className="text-primary flex-shrink-0" size={20} />
                   <div>
-                    <p className="text-xs lg:text-sm font-semibold text-gray-900">100% Original</p>
-                    <p className="text-[10px] lg:text-xs text-gray-500">Garansi Resmi</p>
+                    <p className="text-xs lg:text-[13px] font-semibold text-gray-900 leading-tight">100% Original</p>
+                    <p className="text-[10px] lg:text-[11px] text-gray-500">Garansi Resmi</p>
                   </div>
                 </div>
               </div>
+              
             </div>
           </div>
 
@@ -671,76 +721,91 @@ export default function ProductDetailPage() {
         </div>
       )}
 
-      {/* MODAL BERHASIL TAMBAH KERANJANG */}
+      {/* ======================================================== */}
+      {/* MODAL BERHASIL TAMBAH KERANJANG (FIXED ANIMATION)        */}
+      {/* ======================================================== */}
+      <style>{`
+        @keyframes fadeInBackdrop {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes popInModal {
+          from { opacity: 0; transform: scale(0.85) translateY(15px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        /* Definisikan sebagai class, bukan ditaruh di style inline */
+        .animate-fade-in-backdrop {
+          animation: fadeInBackdrop 0.2s ease-out forwards;
+        }
+        .animate-pop-in-modal {
+          animation: popInModal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards;
+        }
+      `}</style>
+
       {showSuccessModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+        <div 
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-backdrop"
+          onClick={handleCloseSuccessModal} 
+        >
           <div 
-            className="bg-white w-[calc(100%-2rem)] sm:w-full max-w-lg rounded-2xl lg:rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+            className="bg-white w-full max-w-md rounded-[28px] shadow-2xl overflow-hidden animate-pop-in-modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative p-5 lg:p-8">
+            {/* Header / Icon Area */}
+            <div className="p-6 pb-4 flex flex-col items-center text-center relative mt-2">
               <button 
-                onClick={() => setShowSuccessModal(false)}
-                className="absolute top-4 right-4 lg:top-6 lg:right-6 text-gray-400 hover:text-gray-900 transition-colors"
+                onClick={handleCloseSuccessModal}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X size={24} />
+                <X size={18} />
               </button>
-
-              <div className="flex items-center gap-3 mb-4 lg:mb-6 mt-1 lg:mt-0">
-                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Check size={20} className="lg:hidden" strokeWidth={3} />
-                  <Check size={24} className="hidden lg:block" strokeWidth={3} />
-                </div>
-                <h3 className="text-lg lg:text-xl font-black text-gray-900">Berhasil ditambahkan</h3>
+              
+              <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                <Check size={32} strokeWidth={3} />
               </div>
+              
+              <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">Masuk Keranjang!</h3>
+              <p className="text-sm text-gray-500 mt-1.5 px-4">Produk berhasil ditambahkan ke keranjang belanja kamu.</p>
+            </div>
 
-              {/* Info Produk Card */}
-              <div className="flex gap-4 lg:gap-5 p-4 lg:p-5 bg-gray-50 rounded-2xl border border-gray-100 mb-6 lg:mb-8">
-                <div className="w-20 h-20 lg:w-24 lg:h-24 bg-white rounded-xl border border-gray-200 overflow-hidden flex-shrink-0 p-2">
-                  <img 
-                    src={product.images[0]?.image_url?.startsWith("http") 
-                      ? product.images[0]?.image_url 
-                      : `${import.meta.env.VITE_API_BASE}${product.images[0]?.image_url}`} 
-                    alt={product.name}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                
-                <div className="flex flex-col justify-center">
-                  <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Item baru</p>
-                  <h4 className="text-sm lg:text-base font-bold text-gray-900 leading-tight mb-2 line-clamp-2">
-                    {product.name}
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-x-2 lg:gap-x-3 gap-y-1 text-[11px] lg:text-xs text-gray-500">
-                    {selectedVariasi && (
-                      <span className="flex items-center gap-1">
-                        Variasi: <span className="font-semibold text-gray-700">{selectedVariasi}</span>
-                      </span>
-                    )}
-                    <span className="w-1 h-1 bg-gray-300 rounded-full hidden sm:block"></span>
-                    <span className="flex items-center gap-1">
-                      Kuantitas: <span className="font-semibold text-gray-700">{quantity}x</span>
-                    </span>
-                  </div>
-                </div>
+            {/* Product Snippet Area (Clean UI) */}
+            <div className="px-6 py-4 bg-gray-50/80 border-y border-gray-100 flex gap-4 items-center">
+              <div className="w-16 h-16 bg-white rounded-2xl border border-gray-200 p-1.5 flex-shrink-0 shadow-sm">
+                <img 
+                  src={product.images[0]?.image_url?.startsWith("http") 
+                    ? product.images[0]?.image_url 
+                    : `${import.meta.env.VITE_API_BASE}${product.images[0]?.image_url}`} 
+                  alt={product.name}
+                  className="w-full h-full object-contain"
+                />
               </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-bold text-gray-900 truncate">{product.name}</h4>
+                <p className="text-xs text-gray-500 mt-1 font-medium">
+                  {selectedVariasi && <span className="text-gray-700">{selectedVariasi} &bull; </span>} 
+                  {quantity} Barang
+                </p>
+              </div>
+            </div>
 
-              <div className="flex flex-col sm:flex-row gap-2 lg:gap-3">
-                <button
-                  onClick={() => navigate("/cart")} 
-                  className="flex-1 h-12 lg:h-14 bg-primary text-white text-sm lg:text-base font-bold rounded-xl lg:rounded-2xl flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 order-2 sm:order-1"
-                >
-                  <ShoppingBag size={18} />
-                  Lihat Keranjang
-                </button>
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="flex-1 h-12 lg:h-14 bg-white text-gray-600 text-sm lg:text-base font-bold rounded-xl lg:rounded-2xl flex items-center justify-center gap-2 border-2 border-gray-100 hover:bg-gray-50 hover:border-gray-200 transition-all order-1 sm:order-2"
-                >
-                  Lanjut Belanja
-                  <ArrowRight size={18} />
-                </button>
-              </div>
+            {/* Action Buttons */}
+            <div className="p-6 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleCloseSuccessModal} 
+                className="flex-1 h-12 bg-white text-gray-600 text-sm font-bold rounded-xl border-2 border-gray-100 hover:bg-gray-50 hover:border-gray-300 transition-all order-2 sm:order-1"
+              >
+                Lanjut Belanja
+              </button>
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  window.location.href = "/cart"; 
+                }} 
+                className="flex-1 h-12 bg-primary text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 order-1 sm:order-2 active:scale-95"
+              >
+                <ShoppingBag size={18} />
+                Lihat Keranjang
+              </button>
             </div>
           </div>
         </div>
@@ -751,7 +816,12 @@ export default function ProductDetailPage() {
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={(userData) => {
           setIsAuthModalOpen(false);
-          handleAddToCart();
+          if (pendingAction === "wa") {
+            handleWaCheckout();
+          } else {
+            handleAddToCart();
+          }
+          setPendingAction(null);
         }}
       />
 

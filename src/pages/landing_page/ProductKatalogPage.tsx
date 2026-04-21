@@ -272,23 +272,21 @@ export default function ProductKatalogPage() {
     <div>
         {/* ================= BREADCRUMB BAR ================= */}
         <div className="w-full bg-white">
-            <div className="h-14 flex items-center px-8">
-                <div className="w-ful items-center">
-                    <Breadcrumb
-                        items={[
-                            { label: "Home", path: "/" },
-                            { label: "Produk Katalog", path: "/product-katalog" },
-                            ...(categoryParam
-                            ? [
-                                {
-                                    label: categoryParam,
-                                    path: `/categories?category=${categoryParam}`,
-                                },
-                                ]
-                            : []),
-                        ]}
-                    />
-                </div>
+            <div className="max-w-7xl w-full mx-auto h-14 flex items-center px-4 sm:px-6 lg:px-8">
+                <Breadcrumb
+                    items={[
+                        { label: "Home", path: "/" },
+                        { label: "Produk Katalog", path: "/product-katalog" },
+                        ...(categoryParam
+                        ? [
+                            {
+                                label: categoryParam,
+                                path: `/categories?category=${categoryParam}`,
+                            },
+                            ]
+                        : []),
+                    ]}
+                />
             </div>
         </div>
 

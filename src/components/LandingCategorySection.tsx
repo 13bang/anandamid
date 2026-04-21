@@ -31,11 +31,11 @@ export default function LandingCategorySection({
       <div className="relative z-10 max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0 py-6 sm:py-10">
         
         {/* HEADER */}
-        <div className="mb-6 sm:mb-8">
+        {/* <div className="mb-6 sm:mb-8">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold font-cocogoose text-left text-gray-800">
             Kategori
           </h2>
-        </div>
+        </div> */}
 
         {/* GRID - Diubah ke grid-cols-4 untuk mobile */}
         <div className="grid grid-cols-4 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-x-2 sm:gap-x-4 gap-y-6 sm:gap-y-8">
@@ -56,10 +56,7 @@ export default function LandingCategorySection({
                   rounded-xl
                   overflow-hidden
                   bg-white
-                  border border-gray-200
                   transition-all duration-300
-                  group-hover:shadow-md
-                  group-hover:border-blue-200
                 "
               >
                 {group.image_url ? (

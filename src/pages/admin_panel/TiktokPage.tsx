@@ -77,14 +77,14 @@ export default function TiktokPage() {
                         <Activity className="w-8 h-8 text-white" />
                       </div>
                     </div>
-                    <span className="text-xs font-black tracking-[0.2em] text-red-500 uppercase">Streaming Now</span>
+                    <span className="text-xs font-bold tracking-[0.2em] text-red-500 uppercase">Streaming Now</span>
                   </>
                 ) : (
                   <>
                     <div className="p-4 mb-4 bg-gray-700 rounded-full">
                       <Power className="w-8 h-8 text-gray-400" />
                     </div>
-                    <span className="text-xs font-black tracking-[0.2em] text-gray-500 uppercase">System Offline</span>
+                    <span className="text-xs font-bold tracking-[0.2em] text-gray-500 uppercase">System Offline</span>
                   </>
                 )}
               </motion.div>

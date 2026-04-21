@@ -54,7 +54,7 @@ export default function LandingPage() {
 
   const [categories, setCategories] = useState<any[]>([]);
 
-const scrollLeft = () => {
+  const scrollLeft = () => {
     if (!scrollRef.current) return;
 
     const container = scrollRef.current;
@@ -62,7 +62,6 @@ const scrollLeft = () => {
 
     if (!card) return;
 
-    // Ubah gap jadi 24 karena menggunakan gap-6
     const gap = 24; 
     const cardWidth = card.offsetWidth + gap;
 
@@ -80,7 +79,6 @@ const scrollLeft = () => {
 
     if (!card) return;
 
-    // Ubah gap jadi 24 karena menggunakan gap-6
     const gap = 24; 
     const cardWidth = card.offsetWidth + gap;
 
@@ -164,128 +162,79 @@ const scrollLeft = () => {
   const heroBanners = banners.filter((b) => b.slot === "hero");
   const bannerPromoMobile = banners.find((b) => b.slot === "banner-after-category-mobile")
   const bannerPromoDesktop = banners.find((b) => b.slot === "banner-after-category")
-
-  // const bannerAfterKategori = banners.find((b) => b.slot === "banner-after-kategori");
-  // const bannerAfterPopularLeft = banners.find((b) => b.slot === "banner-after-popular-left");
-  const bannerAfterPopularCenters = banners.filter(
+  const bannerAfterPopularCenters = banners.find(
     (b) => b.slot === "banner-after-popular-center"
   );
-  // const bannerAfterPopularRight = banners.find((b) => b.slot === "banner-after-popular-right");
-  // const bannerAfterPopularMobileTop = banners.find((b) => b.slot === "banner-after-popular-mobile-top");
-  // const bannerAfterPopularMobileBottom = banners.find((b) => b.slot === "banner-after-popular-mobile-bottom");
-
-  const [currentHero, setCurrentHero] = useState(0);
-  const autoSlideRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(true);
 
   const [isHovered, setIsHovered] = useState(false);
 
-  const startAutoSlide = () => {
-    if (autoSlideRef.current) clearInterval(autoSlideRef.current);
+  // ==========================================
+  // LOGIKA INFINITE CAROUSEL HERO BANNER
+  // ==========================================
+  const displayHeroBanners = useMemo(() => {
+    if (heroBanners.length <= 1) return heroBanners;
+    return [
+      heroBanners[heroBanners.length - 1], // Kloning elemen terakhir di depan
+      ...heroBanners,
+      heroBanners[0]                       // Kloning elemen pertama di belakang
+    ];
+  }, [heroBanners]);
 
+  const [currentHero, setCurrentHero] = useState(1); // Mulai dari index 1 (karena 0 adalah kloningan)
+  const autoSlideRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(true);
+
+  const startAutoSlide = useCallback(() => {
+    if (autoSlideRef.current) clearInterval(autoSlideRef.current);
     if (heroBanners.length <= 1) return;
 
     autoSlideRef.current = setInterval(() => {
+      setIsTransitioning(true);
       setCurrentHero((prev) => prev + 1);
     }, 4000);
-  };
+  }, [heroBanners.length]);
 
   useEffect(() => {
     startAutoSlide();
-
     return () => {
       if (autoSlideRef.current) clearInterval(autoSlideRef.current);
     };
-  }, [heroBanners]);
+  }, [startAutoSlide]);
 
   const nextHero = () => {
-    setCurrentHero((prev) => (prev + 1) % heroBanners.length);
-    startAutoSlide(); // reset timer
+    setIsTransitioning(true);
+    setCurrentHero((prev) => prev + 1);
+    startAutoSlide();
   };
 
   const prevHero = () => {
-    setCurrentHero(
-      (prev) => (prev === 0 ? heroBanners.length - 1 : prev - 1)
-    );
-    startAutoSlide(); // reset timer
+    setIsTransitioning(true);
+    setCurrentHero((prev) => prev - 1);
+    startAutoSlide();
   };
 
+  // Logika Teleportasi (Bypass animasi)
   useEffect(() => {
-    if (currentHero === heroBanners.length) {
-      setTimeout(() => {
+    if (heroBanners.length <= 1) return;
+
+    if (currentHero === displayHeroBanners.length - 1) {
+      const timer = setTimeout(() => {
         setIsTransitioning(false);
-        setCurrentHero(0);
-      }, 700);
-    } else {
-      setIsTransitioning(true);
-    }
-  }, [currentHero]);
-
-  // 1. Array untuk render
-  const displayBanners = useMemo(() => {
-    if (bannerAfterPopularCenters.length > 1) {
-      return [
-        bannerAfterPopularCenters[bannerAfterPopularCenters.length - 1],
-        ...bannerAfterPopularCenters,
-        bannerAfterPopularCenters[0]
-      ];
-    }
-    return bannerAfterPopularCenters;
-  }, [bannerAfterPopularCenters]);
-
-  // 2. State & Ref
-  const [currentCenter, setCurrentCenter] = useState(1);
-  const [isCenterTransitioning, setIsCenterTransitioning] = useState(true);
-  const autoCenterRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // 3. Fungsi Navigasi
-  const moveCenter = useCallback((index: number) => {
-    setIsCenterTransitioning(true);
-    setCurrentCenter(index);
-  }, []);
-
-  // 4. Logic Auto Slide
-  const stopCenterAutoSlide = useCallback(() => {
-    if (autoCenterRef.current) {
-      clearInterval(autoCenterRef.current);
-      autoCenterRef.current = null;
-    }
-  }, []);
-
-  const startCenterAutoSlide = useCallback(() => {
-    stopCenterAutoSlide();
-    if (bannerAfterPopularCenters.length <= 1) return;
-
-    autoCenterRef.current = setInterval(() => {
-      moveCenter(currentCenter + 1);
-    }, 4000);
-  }, [currentCenter, bannerAfterPopularCenters.length, moveCenter, stopCenterAutoSlide]);
-
-  useEffect(() => {
-    startCenterAutoSlide();
-    return () => stopCenterAutoSlide();
-  }, [startCenterAutoSlide, stopCenterAutoSlide]);
-
-  // 5. Logika Teleportasi
-  useEffect(() => {
-    if (bannerAfterPopularCenters.length <= 1) return;
-
-    if (currentCenter === displayBanners.length - 1) {
-      const timer = setTimeout(() => {
-        setIsCenterTransitioning(false);
-        setCurrentCenter(1);
-      }, 500);
+        setCurrentHero(1);
+      }, 500); 
       return () => clearTimeout(timer);
     }
 
-    if (currentCenter === 0) {
+    if (currentHero === 0) {
       const timer = setTimeout(() => {
-        setIsCenterTransitioning(false);
-        setCurrentCenter(displayBanners.length - 2);
+        setIsTransitioning(false);
+        setCurrentHero(displayHeroBanners.length - 2);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [currentCenter, displayBanners.length, bannerAfterPopularCenters.length]);
+  }, [currentHero, heroBanners.length, displayHeroBanners.length]);
+
+  // ==========================================
 
   const getImageUrl = (url?: string) => {
     if (!url) return "";
@@ -317,7 +266,6 @@ const scrollLeft = () => {
     fetchPromoProducts();
   }, []);
 
-  // reset ketika search berubah
   useEffect(() => {
     setCurrentPage(1);
     setProducts([]);
@@ -357,14 +305,15 @@ const scrollLeft = () => {
   };
 
   const dragStartX = useRef<number>(0);
-  // 1. Ganti useState menjadi useRef agar tidak memicu re-render
   const dragOffsetRef = useRef<number>(0); 
-  // 2. Tambahkan ref untuk menangkap elemen div pembungkus banner
   const sliderTrackRef = useRef<HTMLDivElement>(null); 
 
   const handleBannerDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    stopCenterAutoSlide(); 
-    setIsCenterTransitioning(false); 
+    if (e.type === 'mousedown') {
+      e.preventDefault();
+    }
+
+    setIsTransitioning(false);
 
     if ('touches' in e) {
       dragStartX.current = e.touches[0].clientX;
@@ -386,74 +335,36 @@ const scrollLeft = () => {
     const diff = currentX - dragStartX.current;
     dragOffsetRef.current = diff; 
     
-    // 3. MANIPULASI DOM LANGSUNG: Ubah posisi gambar tanpa re-render React
     if (sliderTrackRef.current) {
-      const basePct = isMobile ? 70 : 80;
-      const offsetPct = isMobile ? 15 : 10;
-      sliderTrackRef.current.style.transform = `translateX(calc(-${currentCenter * basePct}% + ${offsetPct}% + ${diff}px))`;
+      sliderTrackRef.current.style.transform = `translateX(calc(-${currentHero * 100}% + ${diff}px))`;
     }
   };
 
   const handleBannerDragEnd = () => {
     if (dragStartX.current === 0) return;
 
-    setIsCenterTransitioning(true); 
+    setIsTransitioning(true); 
 
     const diff = dragOffsetRef.current; 
     
     if (diff < -50) {
-      moveCenter(currentCenter + 1);
+      nextHero();
     } else if (diff > 50) {
-      moveCenter(currentCenter - 1);
+      prevHero();
+    } else {
+       if (sliderTrackRef.current) {
+         sliderTrackRef.current.style.transform = `translateX(-${currentHero * 100}%)`;
+       }
     }
     
     dragStartX.current = 0;
     dragOffsetRef.current = 0; 
     
-    startCenterAutoSlide();
-  };
-  
-  const fetchProducts = async (page = 1) => {
-    try {
-      setLoading(true);
-      
-      const params: any = {
-        page,
-        limit: isMobile ? 32 : 30, 
-        sort: 'recommend', 
-        exclude_category_ids: excludedCategoryIds.join(',') 
-      };
-
-      if (activeSearch) {
-        params.search = activeSearch;
-        delete params.sort; 
-      }
-
-      const res = await getProducts(params);
-      const newProducts = res.data || [];
-
-      if (page === 1) {
-        setProducts(newProducts);
-      } else {
-        setProducts((prev) => [...prev, ...newProducts]);
-      }
-      
-      setTotalPages(res.last_page || 1);
-    } catch (err) {
-      console.error("Gagal fetch products", err);
-    } finally {
-      setLoading(false);
-    }
+    startAutoSlide();
   };
   
   const [groupings, setGroupings] = useState<any[]>([]);
   const [isGroupingLoaded, setIsGroupingLoaded] = useState(false);
-
-  useEffect(() => {
-    if (isGroupingLoaded) {
-      fetchProducts(currentPage);
-    }
-  }, [currentPage, activeSearch, isGroupingLoaded]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -487,6 +398,47 @@ const scrollLeft = () => {
     return ids;
   }, [groupings]);
 
+
+  const fetchProducts = async (page = 1) => {
+    try {
+      setLoading(true);
+      
+      const params: any = {
+        page,
+        limit: isMobile ? 32 : 30, 
+        sort: 'recommend', 
+        exclude_category_ids: excludedCategoryIds.join(',') 
+      };
+
+      if (activeSearch) {
+        params.search = activeSearch;
+        delete params.sort; 
+      }
+
+      const res = await getProducts(params);
+      const newProducts = res.data || [];
+
+      if (page === 1) {
+        setProducts(newProducts);
+      } else {
+        setProducts((prev) => [...prev, ...newProducts]);
+      }
+      
+      setTotalPages(res.last_page || 1);
+    } catch (err) {
+      console.error("Gagal fetch products", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isGroupingLoaded) {
+      fetchProducts(currentPage);
+    }
+  }, [currentPage, activeSearch, isGroupingLoaded, excludedCategoryIds]);
+
+
   const displayedProducts = products;
 
   const fetchProductsByParent = async (parentSlug: string) => {
@@ -506,16 +458,6 @@ const scrollLeft = () => {
   const [parentProducts, setParentProducts] = useState<{
     [key: string]: any[];
   }>({});
-
-
-  useEffect(() => {
-    const fetch = async () => {
-      const data = await getGroupings();
-      setGroupings(data);
-    };
-
-    fetch();
-  }, []);
 
   const [showLiveModal, setShowLiveModal] = useState(true);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -569,7 +511,6 @@ const scrollLeft = () => {
     }
   };
 
-  // State untuk status live sesungguhnya
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
@@ -594,75 +535,79 @@ const scrollLeft = () => {
     <div className="min-h-screen bg-blue-50">
       {/* ================= HERO BANNER ================= */}
       <section className="w-full bg-white">
-
         {loadingBanners ? (
-
           <div className="w-full aspect-[16/5] shimmer"></div>
-
         ) : heroBanners.length > 0 && (
-
-          <div className="relative w-full overflow-hidden group">
-
-            <div className="relative w-full aspect-[16/5] overflow-hidden">
-
+          <div 
+            className="relative w-full overflow-hidden group"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            <div 
+              className="relative w-full aspect-[16/5] overflow-hidden cursor-grab active:cursor-grabbing touch-pan-y"
+              onMouseDown={handleBannerDragStart}
+              onMouseMove={handleBannerDragMove}
+              onMouseUp={handleBannerDragEnd}
+              onMouseLeave={handleBannerDragEnd}
+              onTouchStart={handleBannerDragStart}
+              onTouchMove={handleBannerDragMove}
+              onTouchEnd={handleBannerDragEnd}
+              onDragStart={(e) => e.preventDefault()}
+            >
               {/* SLIDER TRACK */}
               <div
                 className="flex w-full h-full"
+                ref={sliderTrackRef}
                 style={{
                   transform: `translateX(-${currentHero * 100}%)`,
-                  transition: isTransitioning ? "transform 700ms ease-in-out" : "none"
+                  transition: isTransitioning ? "transform 500ms ease-in-out" : "none"
                 }}
               >
-                {[...heroBanners, heroBanners[0]].map((banner, i) => (
+                {displayHeroBanners.map((banner, i) => (
                   <img
-                    key={i}
+                    key={`${banner.id}-${i}`}
                     src={getImageUrl(banner.image_url)}
-                    className="w-full h-full flex-shrink-0 object-cover object-top"
+                    className="w-full h-full flex-shrink-0 object-cover object-top select-none pointer-events-none"
                     alt="Hero Banner"
+                    draggable={false}
                   />
                 ))}
               </div>
 
               {/* CHEVRON LEFT */}
-              <button
-                onClick={prevHero}
-                className="
-                  absolute left-3 md:left-6 top-1/2 -translate-y-1/2
-                  bg-black/40 hover:bg-black/60
-                  text-white
-                  p-2 md:p-3
-                  rounded-full backdrop-blur
-                  transition-all duration-300
-                  opacity-0 -translate-x-4
-                  group-hover:opacity-100 group-hover:translate-x-0
-                "
-              >
-                <ChevronLeft size={20} className="md:w-[26px] md:h-[26px]" />
-              </button>
+              {heroBanners.length > 1 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); prevHero(); }}
+                  className={`
+                    absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-10
+                    bg-black/40 hover:bg-black/60 text-white
+                    p-2 md:p-3 rounded-full backdrop-blur
+                    transition-all duration-300
+                    ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}
+                  `}
+                >
+                  <ChevronLeft size={20} className="md:w-[26px] md:h-[26px]" />
+                </button>
+              )}
 
               {/* CHEVRON RIGHT */}
-              <button
-                onClick={nextHero}
-                className="
-                  absolute right-3 md:right-6 top-1/2 -translate-y-1/2
-                  bg-black/40 hover:bg-black/60
-                  text-white
-                  p-2 md:p-3
-                  rounded-full backdrop-blur
-                  transition-all duration-300
-                  opacity-0 translate-x-4
-                  group-hover:opacity-100 group-hover:translate-x-0
-                "
-              >
-                <ChevronRight size={20} className="md:w-[26px] md:h-[26px]" />
-              </button>
-
+              {heroBanners.length > 1 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); nextHero(); }}
+                  className={`
+                    absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-10
+                    bg-black/40 hover:bg-black/60 text-white
+                    p-2 md:p-3 rounded-full backdrop-blur
+                    transition-all duration-300
+                    ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"}
+                  `}
+                >
+                  <ChevronRight size={20} className="md:w-[26px] md:h-[26px]" />
+                </button>
+              )}
             </div>
-
           </div>
-
         )}
-
       </section>
 
       {/* ================= CATEGORY ================= */}
@@ -671,125 +616,23 @@ const scrollLeft = () => {
         getImageUrl={getImageUrl}
       />
 
-      {/* ================= PROMO BANNER ================= */}
-      {/* <section className="w-full bg-white py-8 border-gray-200 border-b-[1px]">
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-0"> */}
-
-          {/* DESKTOP / TABLET */}
-          {/* {bannerPromoDesktop && (
-            <div className="hidden sm:block overflow-hidden">
-              <img
-                src={getImageUrl(bannerPromoDesktop.image_url)}
-                className="w-full h-auto object-cover"
-                alt="Promo Banner"
-              />
-            </div>
-          )} */}
-
-          {/* MOBILE */}
-          {/* {bannerPromoMobile && (
-            <div className="sm:hidden overflow-hidden">
-              <img
-                src={getImageUrl(bannerPromoMobile.image_url)}
-                className="w-full h-auto object-cover"
-                alt="Promo Banner Mobile"
-              />
-            </div>
-          )}
-        </div>
-      </section> */}
-
       {/* ================= BANNER BRAND ================= */}
       <section className="w-full pb-10 pt-10 bg-white border-gray-200 border-b-[1px] relative overflow-hidden"> 
         <div className="flex justify-center w-full">
-          {/* Ubah max-w-6xl menjadi 2xl:max-w-screen-2xl agar bisa melebar sampai 1600px */}
-          <div 
-            className="relative w-full max-w-7xl 2xl:max-w-screen-2xl group"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-
-            {/* VIEWPORT */}
-            <div 
-              className="overflow-hidden w-full cursor-grab active:cursor-grabbing touch-pan-y"
-              onMouseDown={handleBannerDragStart}
-              onMouseMove={handleBannerDragMove}
-              onMouseUp={handleBannerDragEnd}
-              onMouseLeave={handleBannerDragEnd}
-              onTouchStart={handleBannerDragStart}
-              onTouchMove={handleBannerDragMove}
-              onTouchEnd={handleBannerDragEnd}
-            >
-              <div
-                className="flex"
-                ref={sliderTrackRef}
-                style={{
-                  transition: isCenterTransitioning ? "transform 500ms ease-in-out" : "none",
-                  transform: isMobile 
-                    ? `translateX(calc(-${currentCenter * 70}% + 15%))` 
-                    : `translateX(calc(-${currentCenter * 80}% + 10%))`
-                }}
+          <div className="relative w-full max-w-7xl 2xl:max-w-screen-2xl px-4 sm:px-6 lg:px-0">
+            
+            {bannerAfterPopularCenters && bannerAfterPopularCenters.image_url && (
+              <div 
+                className="w-full h-[180px] sm:h-[240px] md:h-[350px] lg:h-[450px] 2xl:h-[550px]
+                           rounded-xl overflow-hidden mx-auto"
               >
-                {displayBanners.map((banner, i) => {
-                  const isActive = i === currentCenter;
-
-                  return (
-                    <div key={`${banner.id}-${i}`} className="flex-shrink-0 w-[70%] md:w-[80%] px-2 sm:px-4">
-                      <div 
-                        className={`
-                          w-full h-[180px] sm:h-[240px] md:h-[350px] lg:h-[450px] 2xl:h-[550px]
-                          rounded-xl overflow-hidden shadow-lg 
-                          ${isCenterTransitioning ? "transition-all duration-500" : "transition-none"}
-                          ${isActive ? "scale-100 opacity-100" : "scale-90 opacity-40"} 
-                        `}
-                      >
-                        <img
-                          src={getImageUrl(banner.image_url)}
-                          className="w-full h-full object-cover select-none pointer-events-none"
-                          alt="Banner Brand"
-                          draggable={false}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                <img
+                  src={getImageUrl(bannerAfterPopularCenters.image_url)}
+                  className="w-full h-full object-cover select-none pointer-events-none"
+                  alt="Banner Brand"
+                  draggable={false}
+                />
               </div>
-            </div>
-
-            {/* BUTTONS - Disesuaikan posisinya agar tidak tertutup gambar yang membesar */}
-            {bannerAfterPopularCenters.length > 1 && (
-              <>
-                {/* LEFT BUTTON */}
-                <button
-                  onClick={() => moveCenter(currentCenter - 1)}
-                  className={`hidden md:flex absolute left-4 2xl:left-10 top-1/2 -translate-y-1/2 z-[100] 
-                  w-12 h-12 items-center justify-center 
-                  bg-white/80 backdrop-blur-md border border-gray-200 
-                  shadow-[0_8px_30px_rgb(0,0,0,0.12)] 
-                  rounded-full text-gray-800 
-                  transition-all duration-500 ease-out
-                  ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}
-                  hover:bg-primary hover:text-white hover:scale-110 hover:shadow-primary/20 active:scale-90`}
-                >
-                  <ChevronLeft size={24} strokeWidth={2.5} />
-                </button>
-
-                {/* RIGHT BUTTON */}
-                <button
-                  onClick={() => moveCenter(currentCenter + 1)}
-                  className={`hidden md:flex absolute right-4 2xl:right-10 top-1/2 -translate-y-1/2 z-[100] 
-                  w-12 h-12 items-center justify-center 
-                  bg-white/80 backdrop-blur-md border border-gray-200 
-                  shadow-[0_8px_30px_rgb(0,0,0,0.12)] 
-                  rounded-full text-gray-800 
-                  transition-all duration-500 ease-out
-                  ${isHovered ? "opacity-100 translate-x-0 delay-75" : "opacity-0 translate-x-12"}
-                  hover:bg-primary hover:text-white hover:scale-110 hover:shadow-primary/20 active:scale-90`}
-                >
-                  <ChevronRight size={24} strokeWidth={2.5} />
-                </button>
-              </>
             )}
 
           </div>
@@ -868,7 +711,7 @@ const scrollLeft = () => {
           {/* CLOSE BUTTON */}
           <button
             onClick={(e) => {
-              e.stopPropagation(); // Biar gak memicu klik ke parent
+              e.stopPropagation(); 
               setShowLiveModal(false);
             }}
             className="absolute top-1 right-1 z-10 bg-black/60 text-white text-xs px-2 py-1 rounded"

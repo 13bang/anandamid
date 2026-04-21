@@ -114,7 +114,7 @@ export default function PopularProduct({ popularProducts }: PopularProductSlider
         >
 
           <div className="mb-6">
-            <div className="inline-flex bg-primary px-8 py-3 rounded-2xl shadow-lg transform">
+            <div className="inline-flex bg-primary6 px-8 py-3 rounded-2xl shadow-lg transform">
               <h2 className="text-xl md:text-2xl lg:text-2xl font-bold text-white">
                 Produk Populer
               </h2>

@@ -19,7 +19,7 @@ export default {
         primary3: "#f8f7f3",
         primary4: "#fafafa",
         primary5: "#f2f1ed",
-        primary6: "#0033b2",
+        primary6: "#0511a8",
       },
 
       screens: {

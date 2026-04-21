@@ -55,42 +55,46 @@ export default function Navbar() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const cache = useRef<Record<string, Product[]>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Cart States
   const [cartCount, setCartCount] = useState(0);
   const [showCartPreview, setShowCartPreview] = useState(false);
   const [cartPreviewItems, setCartPreviewItems] = useState<any[]>([]);
 
-  const fetchCartPreview = async () => {
-    if (!localStorage.getItem("user_token")) return; 
-
-    try {
-      const data = await getMyCart();
-      setCartPreviewItems(data.slice(0, 3));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    const token = localStorage.getItem("user_token");
-
-    if (!token) {
+  const fetchCartData = async () => {
+    if (!localStorage.getItem("user_token")) {
       setCartCount(0);
       setCartPreviewItems([]);
       return;
     }
 
-    const fetchCartCount = async () => {
-      try {
-        const data = await getMyCart();
-        const total = data.reduce((acc: number, item: any) => acc + item.quantity, 0);
-        setCartCount(total);
-      } catch (err) {
-        console.error(err);
-      }
+    try {
+      const data = await getMyCart();
+      const total = data.reduce((acc: number, item: any) => acc + item.quantity, 0);
+      setCartCount(total);
+      setCartPreviewItems(data.slice(0, 3)); 
+    } catch (err) {
+      console.error("Gagal fetch cart data", err);
+    }
+  };
+
+  useEffect(() => {
+    // 1. Fetch saat komponen di-load atau saat user berubah
+    fetchCartData();
+
+    // 2. Fungsi listener
+    const handleCartUpdate = () => {
+      fetchCartData();
     };
 
-    fetchCartCount();
-  }, [currentUser]);
+    // 3. Pasang telinga untuk event 'cartUpdated'
+    window.addEventListener("cartUpdated", handleCartUpdate);
+
+    // 4. Bersihkan listener saat komponen di-unmount
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+    };
+  }, [currentUser]); // Trigger ulang kalau currentUser (login/logout) berubah
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -289,15 +293,13 @@ export default function Navbar() {
                 title="Rakitan PC"
               >
                 <div className="relative flex flex-col items-center justify-center w-full h-full pointer-events-none">
-                  {/* Gambar Icon (Ganti src-nya dengan nama file gambar kamu di folder public) */}
                   <img 
                     src="/pc.svg" 
                     alt="Rakitan" 
                     className="w-9 h-9 object-contain animate-rakitan-img drop-shadow-md"
                   />
-                  {/* Teks Animasi */}
                   <span className="absolute bottom-1.5 text-[9px] font-extrabold text-blue-700 tracking-wider animate-rakitan-text whitespace-nowrap">
-                    PC BUILDER
+                    RAKIT PC
                   </span>
                 </div>
               </Link>
@@ -305,10 +307,7 @@ export default function Navbar() {
               {/* SHOPPING CART SECTION */}
               <div 
                 className="relative flex justify-center group"
-                onMouseEnter={() => {
-                  setShowCartPreview(true);
-                  fetchCartPreview();
-                }}
+                onMouseEnter={() => setShowCartPreview(true)} // Cukup show true, data udah selalu update
                 onMouseLeave={() => setShowCartPreview(false)}
               >
                 <button
@@ -438,7 +437,7 @@ export default function Navbar() {
                     </button>
                     <button 
                       onClick={() => openAuth('register')} 
-                      className="px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-black bg-primary text-white rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95"
+                      className="px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-bold bg-primary text-white rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95"
                     >
                       Daftar
                     </button>
@@ -472,7 +471,7 @@ export default function Navbar() {
                       </Link>
 
                       <Link 
-                        to="/orders" 
+                        to="/orders_history" 
                         onClick={() => setUserDropdownOpen(false)}
                         className="w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-primary flex items-center gap-3 transition"
                       >
@@ -496,7 +495,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* SEARCH BAR MOBILE (Tampil di bawah Header pada layar HP) */}
+        {/* SEARCH BAR MOBILE*/}
         <div className="md:hidden px-4 pb-3 max-w-7xl mx-auto w-full">
           <SearchBar className="w-full" dropdownWidth="w-full" />
         </div>
