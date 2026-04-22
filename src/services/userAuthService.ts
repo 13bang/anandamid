@@ -20,6 +20,10 @@ export interface AuthResponse {
     id: string;
     full_name: string;
     email: string;
+    phone_number?: string;
+    avatar_url?: string;
+    gender?: string;
+    date_of_birth?: string;
   };
 }
 
@@ -31,7 +35,45 @@ export interface UpdateProfileDto {
   full_name?: string;
   phone_number?: string;
   avatar_url?: string;
+  gender?: string;       
+  date_of_birth?: string; 
 }
+
+export interface AddressDto {
+  id?: string;
+  label: string; 
+  recipient_name: string;
+  phone_number: string;
+  full_address: string;
+  is_default: boolean;
+}
+
+// ================= ADDRESS MANAGEMENT =================
+
+export const getMyAddresses = async (): Promise<AddressDto[]> => {
+  const res = await userApi.get("/user/auth/addresses"); // Sesuaikan endpoint backend
+  return res.data;
+};
+
+export const addAddress = async (data: AddressDto) => {
+  const res = await userApi.post("/user/auth/addresses", data);
+  return res.data;
+};
+
+export const updateAddress = async (id: string, data: AddressDto) => {
+  const res = await userApi.put(`/user/auth/addresses/${id}`, data);
+  return res.data;
+};
+
+export const deleteAddress = async (id: string) => {
+  const res = await userApi.delete(`/user/auth/addresses/${id}`);
+  return res.data;
+};
+
+export const setDefaultAddress = async (id: string) => {
+  const res = await userApi.patch(`/user/auth/addresses/${id}/default`);
+  return res.data;
+};
 
 // ================= REGISTER =================
 export const registerUser = async (data: RegisterDto) => {
@@ -90,5 +132,35 @@ export const updateUserProfile = async (data: UpdateProfileDto) => {
   const updatedData = { ...currentUserData, ...res.data };
   localStorage.setItem("user_data", JSON.stringify(updatedData));
   
+  window.dispatchEvent(new Event("storage"));
+  
+  return res.data;
+};
+
+export const uploadAvatar = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await userApi.post("/user/auth/profile/avatar", formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return res.data;
+};
+
+export const changePasswordUser = async (data: any) => {
+  const res = await userApi.put("/user/auth/change-password", data);
+  return res.data;
+};
+
+// ================= FORGOT & RESET PASSWORD =================
+
+export const forgotPasswordUser = async (email: string) => {
+  const res = await userApi.post("/user/auth/forgot-password", { email });
+  return res.data;
+};
+
+export const resetPasswordUser = async (data: any) => {
+  const res = await userApi.post("/user/auth/reset-password", data);
   return res.data;
 };

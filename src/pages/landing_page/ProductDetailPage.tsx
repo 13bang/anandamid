@@ -150,6 +150,24 @@ export default function ProductDetailPage() {
       return;
     }
 
+    const userDataString = localStorage.getItem("user_data");
+    const userData = userDataString ? JSON.parse(userDataString) : null;
+
+    if (!userData || !userData.phone_number) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Data Belum Lengkap!',
+            text: 'Harap lengkapi nomor WhatsApp Anda di halaman profil sebelum melakukan checkout.',
+            confirmButtonText: 'Lengkapi Sekarang',
+            confirmButtonColor: '#2563eb'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                navigate('/user/account/profile', { state: { requirePhone: true } }); 
+            }
+        });
+        return; 
+    }
+
     try {
       await checkoutDirect({
         product_id: product.id,
@@ -288,7 +306,6 @@ export default function ProductDetailPage() {
   return (
     <>
       <div className="max-w-7xl mx-auto bg-white">
-        {/* Supaya di HP kalau breadcrumbnya panjang bisa digeser tanpa ngerusak layout */}
         <div className="max-w-7xl px-4 lg:px-2 py-3 overflow-x-auto whitespace-nowrap scrollbar-hide">
           <Breadcrumb
             items={[
@@ -306,7 +323,6 @@ export default function ProductDetailPage() {
           {/* ================= 1. SECTION GAMBAR ================= */}
           <div className="lg:col-span-7 order-1">
             <div className="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6 lg:items-start">
-              {/* THUMBNAILS - Tambah properti snap agar di scroll di HP lebih enak/berhenti per gambar */}
               <div className="
                 flex lg:flex-col gap-3 
                 overflow-x-auto lg:overflow-y-auto 
@@ -440,7 +456,7 @@ export default function ProductDetailPage() {
                     {/* OPSI 1 (Aktif): Menampilkan "20+ Unit" */}
                     {Number(product.stock) > 20 ? "20+" : product.stock} Unit
                     
-                    {/* OPSI 2: Menampilkan ">20 Unit"                     */}
+                    {/* OPSI 2: Menampilkan ">20 Unit"                   */}
                     {/* {Number(product.stock) > 20 ? ">20" : product.stock} Unit */}
                   </span>
                 </div>
@@ -513,13 +529,12 @@ export default function ProductDetailPage() {
                   </button>
                 </div>
 
-                {/* WA BUTTON (ANIMATED LIKE CART CHECKOUT) */}
+                {/* WA BUTTON */}
                 {isOutOfStock ? (
                   <button className="w-full h-11 lg:h-12 bg-gray-100 text-gray-400 text-xs lg:text-sm font-bold rounded-xl lg:rounded-xl border border-gray-200 cursor-not-allowed uppercase tracking-wider">
                     Produk Tidak Tersedia
                   </button>
                 ) : (
-                  // 4. Ubah <a> tag menjadi <button> dan arahkan onClick ke handleWaCheckout
                   <button
                     onClick={handleWaCheckout}
                     className="relative block w-full h-11 lg:h-12 group overflow-hidden rounded-xl bg-primary transition-all duration-500 active:scale-[0.98]"
@@ -667,7 +682,7 @@ export default function ProductDetailPage() {
         </div>
       </section>
 
-      {/* MODAL ZOOM (Sudah Diupdate ala Shopee) */}
+      {/* MODAL ZOOM*/}
       {showModal && (
         <div 
           className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black/95 p-4" 
@@ -684,7 +699,7 @@ export default function ProductDetailPage() {
           {/* Gambar Utama */}
           <div 
             className="w-full max-w-4xl h-[50vh] lg:h-[65vh] flex items-center justify-center mb-6"
-            onClick={(e) => e.stopPropagation()} // Supaya klik gambar tidak nutup modal
+            onClick={(e) => e.stopPropagation()}
           >
             <img
               src={
@@ -700,7 +715,7 @@ export default function ProductDetailPage() {
           {/* List Thumbnail */}
           <div 
             className="flex gap-4 overflow-x-auto max-w-4xl w-full px-4 pb-4 scrollbar-hide justify-center"
-            onClick={(e) => e.stopPropagation()} // Supaya klik area thumbnail tidak nutup modal
+            onClick={(e) => e.stopPropagation()}
           >
             {product.images.map((img, index) => (
               <img
@@ -721,9 +736,9 @@ export default function ProductDetailPage() {
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* MODAL BERHASIL TAMBAH KERANJANG (FIXED ANIMATION)        */}
-      {/* ======================================================== */}
+      {/* ==================================== */}
+      {/* MODAL BERHASIL TAMBAH KERANJANG */}
+      {/* ==================================== */}
       <style>{`
         @keyframes fadeInBackdrop {
           from { opacity: 0; }

@@ -1,7 +1,11 @@
 import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom"; 
 import { getCompatibility, getProducts } from "../../services/productService";
 import type { Product } from "../../types/product";
 import Breadcrumb from "../../components/Breadcrumb";
+import Swal from "sweetalert2";
+import AuthModal from "../../components/Navbar/AuthModal";
+import { ChevronRight } from "lucide-react";
 
 const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: any) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -38,14 +42,11 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
                     <span className="truncate pr-4 text-gray-700 font-medium">
                         {value ? value.name : `Pilih ${label}`}
                     </span>
-                    {/* Icon Chevron */}
                     <svg className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
 
-                {/* AREA DROPDOWN */}
                 {isOpen && (
                     <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden flex flex-col">
-                        {/* SEARCH INPUT */}
                         <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0">
                             <input
                                 type="text"
@@ -54,11 +55,10 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
                                 placeholder={`Cari ${label}...`}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                onClick={(e) => e.stopPropagation()} // Mencegah dropdown tertutup saat mengetik
+                                onClick={(e) => e.stopPropagation()}
                             />
                         </div>
 
-                        {/* LIST PRODUK (FIXED HEIGHT) */}
                         <div className="max-h-60 overflow-y-auto">
                             <div
                                 className="px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 cursor-pointer border-b border-gray-50"
@@ -117,12 +117,13 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
 };
 
 export default function PCBuilderPage() {
-    // --- State Komponen Utama ---
+    const navigate = useNavigate();
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
     const [selectedCPU, setSelectedCPU] = useState<Product | null>(null);
     const [selectedMobo, setSelectedMobo] = useState<Product | null>(null);
     const [selectedRAM, setSelectedRAM] = useState<Product | null>(null);
 
-    // --- State Komponen Pendukung ---
     const [selectedVGA1, setSelectedVGA1] = useState<Product | null>(null);
     const [selectedVGA2, setSelectedVGA2] = useState<Product | null>(null);
     const [selectedPSU, setSelectedPSU] = useState<Product | null>(null);
@@ -140,7 +141,6 @@ export default function PCBuilderPage() {
     const [selectedMonitor3, setSelectedMonitor3] = useState<Product | null>(null);
     const [selectedOS, setSelectedOS] = useState<Product | null>(null);
 
-    // --- State List Produk per Kategori ---
     const [list, setList] = useState<{ [key: string]: Product[] }>({
         processors: [], motherboards: [], rams: [],
         vgas: [], psus: [], 
@@ -151,7 +151,6 @@ export default function PCBuilderPage() {
     const [constraints, setConstraints] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
-    // 1. Fetch Komponen Utama (Berdasarkan Kompatibilitas)
     const fetchCoreParts = async () => {
         setLoading(true);
         try {
@@ -161,35 +160,14 @@ export default function PCBuilderPage() {
                 ram_id: selectedRAM?.id,
             });
 
-            const processors = res.available_processors || [];
-            const motherboards = res.available_motherboards || [];
-            const rams = res.available_rams || [];
-
             setList(prev => ({
                 ...prev,
-                processors,
-                motherboards,
-                rams
+                processors: res.available_processors || [],
+                motherboards: res.available_motherboards || [],
+                rams: res.available_rams || []
             }));
 
             setConstraints(res.active_constraints);
-
-            if (res.active_constraints) {
-                const { socket, ram_type } = res.active_constraints;
-
-                if (selectedCPU && motherboards.length === 0) {
-                    console.warn(`❌ Tidak ada motherboard yang cocok dengan CPU (${socket})`);
-                }
-                if (selectedMobo && processors.length === 0) {
-                    console.warn(`❌ Tidak ada CPU yang cocok dengan motherboard (${socket})`);
-                }
-                if (selectedMobo && rams.length === 0) {
-                    console.warn(`❌ Tidak ada RAM ${ram_type} yang cocok dengan motherboard`);
-                }
-                if (selectedRAM && motherboards.length === 0) {
-                    console.warn(`❌ Tidak ada motherboard yang support RAM ${ram_type}`);
-                }
-            }
         } catch (err) {
             console.error("Gagal load komponen utama", err);
         } finally { 
@@ -197,7 +175,6 @@ export default function PCBuilderPage() {
         }
     };
 
-    // 2. Fetch Komponen Pendukung menggunakan getProducts
     const fetchSupportParts = async () => {
         const categories = [
             { key: 'vgas', name: 'VGA' },
@@ -210,11 +187,7 @@ export default function PCBuilderPage() {
             { key: 'oss', name: 'Operating System' }
         ];
 
-        const monitorCategories = [
-            "Monitor LED",
-            "Monitor Gaming",
-            "Monitor Professional"
-        ];
+        const monitorCategories = ["Monitor LED", "Monitor Gaming", "Monitor Professional"];
 
         try {
             const results = await Promise.all(
@@ -240,7 +213,6 @@ export default function PCBuilderPage() {
 
             newList["monitors"] = mergedMonitors;
             setList(prev => ({ ...prev, ...newList }));
-
         } catch (err) {
             console.error("Gagal load komponen pendukung", err);
         }
@@ -291,6 +263,30 @@ export default function PCBuilderPage() {
     const WHATSAPP_NUMBER = "6281228134747";
 
     const handleCheckout = () => {
+        const token = localStorage.getItem("user_token");
+        if (!token) {
+            setIsAuthModalOpen(true);
+            return;
+        }
+
+        const userDataString = localStorage.getItem("user_data");
+        const userData = userDataString ? JSON.parse(userDataString) : null;
+
+        if (!userData || !userData.phone_number) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Data Belum Lengkap!',
+                text: 'Harap lengkapi nomor WhatsApp Anda di halaman profil sebelum melakukan checkout rakitan.',
+                confirmButtonText: 'Lengkapi Sekarang',
+                confirmButtonColor: '#2563eb'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    navigate('/user/account/profile', { state: { requirePhone: true } }); 
+                }
+            });
+            return;
+        }
+
         const items = [
             { item: selectedCPU, key: "cpu" }, { item: selectedMobo, key: "mobo" }, { item: selectedRAM, key: "ram" },
             { item: selectedVGA1, key: "vga1" }, { item: selectedVGA2, key: "vga2" }, { item: selectedPSU, key: "psu" },
@@ -317,7 +313,6 @@ export default function PCBuilderPage() {
 
     return (
     <div>
-        {/* ================= BREADCRUMB BAR ================= */}
         <div className="w-full bg-white">
             <div className="max-w-7xl w-full mx-auto h-14 flex items-center px-4 sm:px-6 lg:px-8">
                 <Breadcrumb
@@ -330,7 +325,6 @@ export default function PCBuilderPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 py-8 md:py-2 min-h-screen">
-            {/* HEADER */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
@@ -345,12 +339,8 @@ export default function PCBuilderPage() {
                 </button>
             </div>
 
-            {/* MAIN LAYOUT */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                
-                {/* BAGIAN KIRI (KOMPONEN) */}
                 <div className="lg:col-span-3 space-y-6">
-                    {/* SECTION 1: CORE */}
                     <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
                         <div className="flex justify-between items-center mb-4 md:mb-6">
                             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400">Komponen Utama</h2>
@@ -361,7 +351,6 @@ export default function PCBuilderPage() {
                         <Row label="RAM" value={selectedRAM} onChange={setSelectedRAM} options={filterValidProducts(list.rams, "ram")} price={getPrice(selectedRAM, "ram")} qtyKey="ram" qty={qty} setQty={setQty} />
                     </div>
 
-                    {/* SECTION 2: HARDWARE */}
                     <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 md:mb-6">Hardware Tambahan</h2>
                         <Row label="VGA 1" value={selectedVGA1} onChange={setSelectedVGA1} options={list.vgas} price={getPrice(selectedVGA1, "vga1")} qtyKey="vga1" qty={qty} setQty={setQty} />
@@ -374,7 +363,6 @@ export default function PCBuilderPage() {
                         <Row label="Casing PC" value={selectedCasing} onChange={setSelectedCasing} options={list.casings} price={getPrice(selectedCasing, "casing")} qtyKey="casing" qty={qty} setQty={setQty} />
                     </div>
 
-                    {/* SECTION 3: STORAGE & DISPLAY */}
                     <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 md:mb-6">Penyimpanan & Layar</h2>
                         <Row label="SSD 1" value={selectedSSD1} onChange={setSelectedSSD1} options={list.ssds} price={getPrice(selectedSSD1, "ssd1")} qtyKey="ssd1" qty={qty} setQty={setQty} />
@@ -388,7 +376,6 @@ export default function PCBuilderPage() {
                     </div>
                 </div>
 
-                {/* BAGIAN KANAN (SIDEBAR SUMMARY) */}
                 <div className="space-y-6">
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:sticky lg:top-36">
                         <h2 className="text-lg font-bold text-gray-900 mb-6">Ringkasan Biaya</h2>
@@ -397,13 +384,15 @@ export default function PCBuilderPage() {
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-500 font-medium">Socket</span>
                                 <span className={`font-semibold ${isCoreComplete ? "text-green-600" : "text-gray-800"}`}>
-                                    {constraints?.socket || "-"}
+                                    {/*  Uppercase Socket */}
+                                    {constraints?.socket?.toUpperCase() || "-"}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-500 font-medium">Tipe RAM</span>
                                 <span className={`font-semibold ${isCoreComplete ? "text-green-600" : "text-gray-800"}`}>
-                                    {constraints?.ram_type || "-"}
+                                    {/*  Uppercase RAM Type */}
+                                    {constraints?.ram_type?.toUpperCase() || "-"}
                                 </span>
                             </div>
                         </div>
@@ -418,20 +407,28 @@ export default function PCBuilderPage() {
                         <button 
                             disabled={!isCoreComplete}
                             onClick={handleCheckout}
-                            className="w-full mt-8 bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-lg shadow-gray-200"
+                            className="w-full mt-8 bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary/90 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
                         >
                             Checkout Rakitan
+                            <ChevronRight 
+                                size={20} 
+                                className="transition-transform duration-300 group-hover:translate-x-1.5" 
+                            />
                         </button>
                     </div>
                 </div>
             </div>
-
-            {/* {loading && (
-                <div className="fixed bottom-8 right-8 bg-black/80 text-white px-5 py-2.5 rounded-full shadow-2xl text-[11px] font-bold tracking-widest uppercase z-50">
-                    Syncing...
-                </div>
-            )} */}
         </div>
+
+        {/*  Modal Auth untuk Login */}
+        <AuthModal 
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+            onSuccess={() => {
+                setIsAuthModalOpen(false);
+                handleCheckout(); 
+            }}
+        />
     </div>
     );
 }

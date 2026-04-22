@@ -4,7 +4,6 @@ import AOS from "aos"
 import "aos/dist/aos.css"
 
 import LoginPage from "./pages/admin_panel/LoginPage";
-import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin_panel/Dashboard";
 import CategoryPage from "./pages/admin_panel/CategoryPage";
@@ -34,10 +33,16 @@ import PublicPricelistPage from "./pages/landing_page/PricelistPage";
 import ServerBusyPage from "./pages/ServerBusyPage";
 import TiktokPage from "./pages/admin_panel/TiktokPage";
 import { GlobalImportProvider } from "./components/admin/NotificationUpdateUpload";
-import ProfilePage from "./pages/landing_page/ProfilePage";
-import CartPage from "./pages/landing_page/CartPage";
+import ProfilePage from "./pages/landing_page/User/ProfilePage";
+import CartPage from "./pages/landing_page/User/CartPage";
 import OrderListPage from "./pages/admin_panel/OrderListPage";
-import UserOrderHistory from "./pages/landing_page/UserOrderHistory";
+import UserOrderHistory from "./pages/landing_page/User/UserOrderHistory";
+import UserLayout from "./components/UserLayout";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import UserProtectedRoute from "./components/UserProtectedRoute";
+import UserAddressPage from "./pages/landing_page/User/UserAddressPage";
+import ChangePasswordPage from "./pages/landing_page/User/ChangePasswordPage";
+import ResetPasswordPage from "./pages/landing_page/User/ResetPasswordPage";
 
 
 // ================= ROUTES =================
@@ -46,15 +51,14 @@ function AppRoutes() {
 
   return (
     <Routes>
-
       <Route path="/server-busy" element={<ServerBusyPage />} />
 
+      {/* ================= PUBLIC ROUTES (Ada Header/Footer) ================= */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/product-katalog" element={<ProductKatalogPage />} />
         <Route path="/product-categories" element={<CategoriesPage />} />
         <Route path="/product-katalog/:id" element={<ProductDetailPage />} />
-        {/* <Route path="/categories" element={<CategoriesPage />} /> */}
         <Route path="/product-grouping" element={<GroupingPage />} />
         <Route path="/company-profile" element={<CompanyProfile />} />
         <Route path="/terms" element={<TermsPage />} />
@@ -63,14 +67,26 @@ function AppRoutes() {
         <Route path="/search" element={<SearchResultPage />} />
         <Route path="/pc-builder" element={<PCBuilderPage />} />
         <Route path="/price-list" element={<PublicPricelistPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/cart" element={<CartPage />} />
-        <Route path="/orders_history" element={<UserOrderHistory />} />
+
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+        {/* NESTED ROUTING USER */}
+        <Route element={<UserProtectedRoute />}>
+          <Route path="/user" element={<UserLayout />}>
+            <Route index element={<Navigate to="account/profile" replace />} />
+            <Route path="account/profile" element={<ProfilePage />} />
+            <Route path="account/addresses" element={<UserAddressPage />} />
+            <Route path="account/change-password" element={<ChangePasswordPage />} />
+            <Route path="purchase" element={<UserOrderHistory />} />
+          </Route>
+        </Route>
       </Route>
 
+      {/* ================= ADMIN ROUTES (AyamGoreng) ================= */}
       <Route path="/ayamgoreng/login" element={<LoginPage />} />
 
-      <Route path="/ayamgoreng" element={<ProtectedRoute />}>
+      <Route path="/ayamgoreng" element={<AdminProtectedRoute role="admin" />}>
         <Route element={
           <GlobalImportProvider>
             <AdminLayout />
@@ -92,7 +108,6 @@ function AppRoutes() {
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
-
     </Routes>
   )
 }

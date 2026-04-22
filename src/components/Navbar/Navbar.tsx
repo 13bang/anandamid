@@ -307,7 +307,10 @@ export default function Navbar() {
               {/* SHOPPING CART SECTION */}
               <div 
                 className="relative flex justify-center group"
-                onMouseEnter={() => setShowCartPreview(true)} // Cukup show true, data udah selalu update
+                onMouseEnter={() => {
+                  // Hanya aktifkan preview jika layar di atas breakpoint desktop (lg = 1024px)
+                  if (window.innerWidth >= 1024) setShowCartPreview(true);
+                }} 
                 onMouseLeave={() => setShowCartPreview(false)}
               >
                 <button
@@ -324,7 +327,7 @@ export default function Navbar() {
 
                 {/* DROPDOWN CART PREVIEW */}
                 <div
-                  className={`absolute right-0 lg:left-1/2 lg:-translate-x-1/2 top-full pt-3 w-80 z-50
+                  className={`hidden lg:block absolute right-0 lg:left-1/2 lg:-translate-x-1/2 top-full pt-3 w-80 z-50
                     transition-all duration-300 ease-out origin-top-right lg:origin-top
                     ${showCartPreview 
                       ? "opacity-100 translate-y-0 scale-100 pointer-events-auto" 
@@ -387,7 +390,7 @@ export default function Navbar() {
               </div>
 
               {/* USER SECTION */}
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative hidden lg:block" ref={dropdownRef}>
                 {currentUser ? (
                   <div 
                     className={`flex items-center gap-3 cursor-pointer py-1.5 pl-1.5 pr-3 rounded-full transition-all duration-300 border ${
@@ -461,7 +464,7 @@ export default function Navbar() {
                       </div>
                       
                       <Link 
-                        to="/profile" 
+                        to="/user/account/profile" 
                         onClick={() => setUserDropdownOpen(false)}
                         className="w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-primary flex items-center justify-between transition"
                       >
@@ -471,7 +474,7 @@ export default function Navbar() {
                       </Link>
 
                       <Link 
-                        to="/orders_history" 
+                        to="/user/purchase" 
                         onClick={() => setUserDropdownOpen(false)}
                         className="w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-primary flex items-center gap-3 transition"
                       >

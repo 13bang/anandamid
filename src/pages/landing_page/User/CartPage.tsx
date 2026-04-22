@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom"; 
+import { Link, useNavigate } from "react-router-dom"; 
 import { Trash2, Plus, Minus, ShoppingBag, ChevronRight, Check } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
-import { getMyCart, removeFromCart, updateCartQuantity } from "../../services/cartService";
-import { checkoutFromCart } from "../../services/orderSevice"; 
+import { getMyCart, removeFromCart, updateCartQuantity } from "../../../services/cartService";
+import { checkoutFromCart } from "../../../services/orderSevice"; 
 import Swal from "sweetalert2";
 
 export default function CartPage() {
     const [cartItems, setCartItems] = useState<any[]>([]);
     const [selectedItems, setSelectedItems] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    const navigate = useNavigate();
 
     const WHATSAPP_NUMBER = "6281228134747";
 
@@ -97,71 +99,89 @@ export default function CartPage() {
 
     const handleCheckoutWA = async () => {
         if (selectedItems.length === 0) {
-        Swal.fire({ icon: 'info', title: 'Opps!', text: 'Pilih minimal 1 produk untuk checkout' });
-        return;
+            Swal.fire({ icon: 'info', title: 'Opps!', text: 'Pilih minimal 1 produk untuk checkout' });
+            return;
+        }
+
+        const userDataString = localStorage.getItem("user_data");
+        const userData = userDataString ? JSON.parse(userDataString) : null;
+
+        if (!userData || !userData.phone_number) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Data Belum Lengkap!',
+                text: 'Harap lengkapi nomor WhatsApp Anda di halaman profil sebelum melakukan checkout.',
+                confirmButtonText: 'Lengkapi Sekarang',
+                confirmButtonColor: '#2563eb'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    navigate('/user/account/profile', { state: { requirePhone: true } }); 
+                }
+            });
+            return; 
         }
 
         try {
-        Swal.fire({
-            title: 'Memproses Pesanan...',
-            text: 'Mohon tunggu sebentar',
-            allowOutsideClick: false,
-            didOpen: () => {
-            Swal.showLoading();
-            }
-        });
+            Swal.fire({
+                title: 'Memproses Pesanan...',
+                text: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                Swal.showLoading();
+                }
+            });
 
-        const response = await checkoutFromCart(selectedItems, "Checkout via WhatsApp");
-        const invoiceNumber = response?.data?.invoice_number || response?.invoice_number || "Tunggu Konfirmasi";
+            const response = await checkoutFromCart(selectedItems, "Checkout via WhatsApp");
+            const invoiceNumber = response?.data?.invoice_number || response?.invoice_number || "Tunggu Konfirmasi";
 
-        Swal.close();
+            Swal.close();
 
-        let message = `*Halo Anandam Computer, saya ingin memproses pesanan dengan Invoice: ${invoiceNumber}*\n\n`;
-        message += `*Detail Pesanan:*\n`;
-        
-        selectedCartItems.forEach((item, index) => {
-            const priceNormal = Number(item.product?.price_normal || 0);
-            const priceDiscount = Number(item.product?.price_discount || 0);
-            const finalPrice = priceDiscount > 0 ? priceNormal - priceDiscount : priceNormal;
+            let message = `*Halo Anandam Computer, saya ingin memproses pesanan dengan Invoice: ${invoiceNumber}*\n\n`;
+            message += `*Detail Pesanan:*\n`;
             
-            message += `${index + 1}. *${item.product.name}*\n`;
-            if (item.selected_variasi) message += `   - Variasi: ${item.selected_variasi}\n`;
-            message += `   - Jumlah: ${item.quantity}x\n`;
-            message += `   - Harga: Rp ${finalPrice.toLocaleString()}\n\n`;
-        });
+            selectedCartItems.forEach((item, index) => {
+                const priceNormal = Number(item.product?.price_normal || 0);
+                const priceDiscount = Number(item.product?.price_discount || 0);
+                const finalPrice = priceDiscount > 0 ? priceNormal - priceDiscount : priceNormal;
+                
+                message += `${index + 1}. *${item.product.name}*\n`;
+                if (item.selected_variasi) message += `   - Variasi: ${item.selected_variasi}\n`;
+                message += `   - Jumlah: ${item.quantity}x\n`;
+                message += `   - Harga: Rp ${finalPrice.toLocaleString()}\n\n`;
+            });
 
-        message += `*Total Tagihan: Rp ${subtotal.toLocaleString()}*\n\n`;
-        message += `Mohon segera diproses untuk pembayaran, terima kasih!`;
+            message += `*Total Tagihan: Rp ${subtotal.toLocaleString()}*\n\n`;
+            message += `Mohon segera diproses untuk pembayaran, terima kasih!`;
 
-        setCartItems(prev => prev.filter(item => !selectedItems.includes(item.id)));
-        setSelectedItems([]);
+            setCartItems(prev => prev.filter(item => !selectedItems.includes(item.id)));
+            setSelectedItems([]);
 
-        const encodedMsg = encodeURIComponent(message);
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMsg}`, '_blank');
+            const encodedMsg = encodeURIComponent(message);
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMsg}`, '_blank');
 
-        Swal.fire({
-            icon: 'success',
-            title: 'Pesanan Dibuat!',
-            text: 'Silakan lanjutkan percakapan di WhatsApp.',
-            timer: 3000,
-            showConfirmButton: false
-        });
+            Swal.fire({
+                icon: 'success',
+                title: 'Pesanan Dibuat!',
+                text: 'Silakan lanjutkan percakapan di WhatsApp.',
+                timer: 3000,
+                showConfirmButton: false
+            });
 
         } catch (err: any) {
-        Swal.close();
-        console.error("Checkout Error:", err);
-        Swal.fire({
-            icon: 'error',
-            title: 'Gagal Memproses',
-            text: err.response?.data?.message || 'Terjadi kesalahan saat membuat pesanan.'
-        });
+            Swal.close();
+            console.error("Checkout Error:", err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Memproses',
+                text: err.response?.data?.message || 'Terjadi kesalahan saat membuat pesanan.'
+            });
         }
     };
 
     if (loading) return <div className="min-h-screen flex items-center justify-center text-primary font-bold animate-pulse">Memuat Keranjang...</div>;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 animate-fadeIn">
+        <div className="min-h-screen bg-white pb-20 animate-fadeIn">
             <div className="max-w-7xl mx-auto px-4 lg:px-8 pt-6">
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
                     <div>
@@ -235,7 +255,7 @@ export default function CartPage() {
 
                                     {/* ACTION (TETAP SAMA) */}
                                     <div className="flex flex-row sm:flex-col items-center justify-between sm:justify-center gap-4 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-t-0 sm:border-l border-gray-100 sm:pl-6">
-                                        <div className="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-100">
+                                        <div className="flex items-center bg-gray-50 rounded-md p-1 border border-gray-100">
                                             <button
                                                 onClick={() => handleUpdateQty(item.id, item.quantity - 1, product?.stock || 0)}
                                                 disabled={item.quantity <= 1}
@@ -256,7 +276,7 @@ export default function CartPage() {
                                         </div>
                                         <button
                                             onClick={() => handleDelete(item.id)}
-                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
                                         >
                                             <Trash2 size={20} />
                                         </button>
@@ -265,20 +285,20 @@ export default function CartPage() {
                                 );
                             })
                         ) : (
-                        <div className="bg-white rounded-[40px] py-20 px-8 text-center border-2 border-dashed border-gray-200">
-                            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-primary/30">
-                                <ShoppingBag size={48} />
+                            <div className="bg-white rounded-[40px] py-20 px-8 text-center border-2 border-dashed border-gray-200">
+                                <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-primary/30">
+                                    <ShoppingBag size={48} />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-2">Wah, Keranjang Kosong!</h3>
+                                <p className="text-gray-500 mb-10 max-w-xs mx-auto">Yuk, cari barang impianmu dan mulai isi keranjangmu sekarang.</p>
+                                <Link to="/product-katalog" className="inline-flex items-center gap-3 bg-primary text-white px-10 py-4 rounded-2xl font-bold hover:bg-primary/90 transition-all shadow-xl shadow-primary/30 active:scale-95">
+                                    Mulai Belanja <ChevronRight size={20} />
+                                </Link>
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">Wah, Keranjang Kosong!</h3>
-                            <p className="text-gray-500 mb-10 max-w-xs mx-auto">Yuk, cari rakitan impianmu dan mulai isi keranjangmu sekarang.</p>
-                            <Link to="/product-katalog" className="inline-flex items-center gap-3 bg-primary text-white px-10 py-4 rounded-2xl font-bold hover:bg-primary/90 transition-all shadow-xl shadow-primary/30 active:scale-95">
-                                Mulai Belanja <ChevronRight size={20} />
-                            </Link>
-                        </div>
                         )}
                     </div>
 
-                    {/* RINGKASAN TAGIHAN (TETAP SAMA) */}
+                    {/* RINGKASAN TAGIHAN */}
                     <div className="lg:col-span-4">
                         <div className="bg-white p-6 lg:p-8 rounded-[32px] border border-gray-200 shadow-sm sticky top-28">
                         <h2 className="text-xl font-bold text-gray-900 mb-6">Ringkasan</h2>
@@ -311,19 +331,16 @@ export default function CartPage() {
                             </div>
                         </div>
 
-                        {/* CHECKOUT BUTTON WITH WA HOVER ANIMATION */}
                         <button 
                             onClick={handleCheckoutWA}
                             className="relative w-full h-14 group overflow-hidden rounded-2xl bg-primary transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={cartItems.length === 0}
                         >
-                            {/* Layer 1: Default State (Primary) */}
                             <div className="absolute inset-0 flex items-center justify-center gap-2 text-white font-bold transition-all duration-500 group-hover:-translate-y-full">
                             Checkout Sekarang
                             <ChevronRight size={20} />
                             </div>
 
-                            {/* Layer 2: Hover State (WhatsApp Green) */}
                             <div className="absolute inset-0 flex items-center justify-center gap-3 bg-green-500 text-white font-bold translate-y-full transition-all duration-500 group-hover:translate-y-0">
                             <FaWhatsapp size={22} className="animate-bounce" />
                             Checkout via WhatsApp
