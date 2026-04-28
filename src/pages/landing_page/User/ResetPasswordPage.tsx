@@ -11,7 +11,7 @@ export default function ResetPasswordPage() {
 
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [showConfirmPass, setShowConfirmPass] = useState(false); // 🔥 Tambahan toggle konfirmasi
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   
   const [formData, setFormData] = useState({ password: "", confirm_password: "" });
 
@@ -36,13 +36,13 @@ export default function ResetPasswordPage() {
       
       await Swal.fire({
         icon: "success",
-        title: "Password Diperbarui",
-        text: "Sekarang Anda bisa login dengan password baru.",
-        timer: 3000,
+        title: "Berhasil",
+        text: "Password Anda telah diperbarui.",
+        timer: 2000,
         showConfirmButton: false
       });
       
-      navigate("/"); // Arahkan ke halaman utama/login
+      navigate("/"); 
     } catch (err: any) {
       Swal.fire("Gagal", err.response?.data?.message || "Token expired atau tidak valid", "error");
     } finally {
@@ -51,64 +51,81 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-gray-100 animate-fadeIn">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+      <div className="max-w-md w-full bg-white p-6 sm:p-8 rounded-md border border-gray-200 animate-fadeIn">
+        
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck size={32} />
+          <div className="w-14 h-14 bg-gray-50 text-primary rounded-md flex items-center justify-center mx-auto mb-4 border border-gray-100">
+            <ShieldCheck size={28} />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Buat Password Baru</h2>
-          <p className="text-sm text-gray-500 mt-2">Silakan masukkan password baru yang kuat untuk akun Anda.</p>
+          <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">Atur Ulang Password</h2>
+          <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+            Masukkan password baru yang kuat untuk mengamankan akun Anda kembali.
+          </p>
         </div>
 
-        <form onSubmit={handleReset} className="space-y-5">
-            {/* Kolom Password Baru */}
+        <form onSubmit={handleReset} className="space-y-4">
+          {/* Kolom Password Baru */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-600 ml-1">Password Baru</label>
             <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                    required
-                    type={showPass ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Password Baru (Min. 6 Karakter)"
-                    className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-                <button 
-                    type="button" 
-                    onClick={() => setShowPass(!showPass)} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                required
+                type={showPass ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Minimal 6 karakter"
+                className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-md outline-none focus:border-primary transition-colors text-sm"
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPass(!showPass)} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
+          </div>
 
-            {/* Kolom Konfirmasi Password */}
+          {/* Kolom Konfirmasi Password */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-600 ml-1">Konfirmasi Password</label>
             <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                    required
-                    type={showConfirmPass ? "text" : "password"}
-                    value={formData.confirm_password}
-                    onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
-                    placeholder="Konfirmasi Password Baru"
-                    className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-                <button 
-                    type="button" 
-                    onClick={() => setShowConfirmPass(!showConfirmPass)} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                    {showConfirmPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                required
+                type={showConfirmPass ? "text" : "password"}
+                value={formData.confirm_password}
+                onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
+                placeholder="Ulangi password baru"
+                className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-md outline-none focus:border-primary transition-colors text-sm"
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowConfirmPass(!showConfirmPass)} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
+          </div>
 
-            <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-70 mt-2"
-            >
-                {loading ? <Loader2 className="animate-spin" /> : "Simpan Password Baru"}
-            </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-primary text-white font-bold rounded-md hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 disabled:opacity-70 mt-4 text-sm uppercase tracking-wider"
+          >
+            {loading ? <Loader2 className="animate-spin" size={18} /> : "Simpan Password"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="w-full text-xs text-gray-500 font-medium hover:text-primary transition-colors py-2"
+          >
+            Batal & Kembali ke Beranda
+          </button>
         </form>
       </div>
     </div>

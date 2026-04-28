@@ -16,13 +16,11 @@ export default function GroupingProductSlider() {
     try {
       const allGroupings = await getGroupings();
 
-      // Helper untuk ngambil ID kategori berdasarkan nama grouping
       const getGroupCatIds = (groupName: string) => {
         const group = allGroupings.find((g: any) => g.name === groupName);
         return group ? group.children.map((c: any) => c.id) : [];
       };
 
-      // Helper untuk nyari ID kategori spesifik (kayak SSD & HDD)
       const getCatIdByName = (catName: string) => {
         for (const g of allGroupings) {
           const cat = g.children.find((c: any) => c.name === catName);
@@ -69,8 +67,8 @@ export default function GroupingProductSlider() {
         {
           id: "pc",
           title: "PC Desktop & AIO",
-          queryGroup: "Dekstop & PC", 
-          catIds: getGroupCatIds("Dekstop & PC"),
+          queryGroup: "Desktop & PC", 
+          catIds: getGroupCatIds("Desktop & PC"),
         },
       ];
 
@@ -80,7 +78,7 @@ export default function GroupingProductSlider() {
 
           const productsRes = await getProducts({
             category_ids: section.catIds.join(","),
-            limit: 10,
+            limit: 20,
           });
 
           return {
@@ -115,8 +113,9 @@ function SliderSection({ title, queryGroup, products }: any) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
 
-  // --- STATE & REF UNTUK DRAG LOGIC ---
+  // --- STATE & REF UNTUK DRAG & ANIMASI ---
   const [isSwiping, setIsSwiping] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false); 
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollLeftStart = useRef(0);
@@ -128,6 +127,32 @@ function SliderSection({ title, queryGroup, products }: any) {
     navigate(`/product-grouping?grouping=${encodeURIComponent(queryGroup)}`);
   };
 
+  // --- Fungsi custom scroll dengan durasi smooth ---
+  const animateScroll = (container: HTMLDivElement, targetPosition: number, duration: number) => {
+    setIsAnimating(true);
+    const startPosition = container.scrollLeft;
+    const distance = targetPosition - startPosition;
+    let startTime: number | null = null;
+
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+    const animation = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime;
+      const timeElapsed = currentTime - startTime;
+      const progress = Math.min(timeElapsed / duration, 1);
+
+      container.scrollLeft = startPosition + distance * ease(progress);
+
+      if (timeElapsed < duration) {
+        requestAnimationFrame(animation);
+      } else {
+        setIsAnimating(false);
+      }
+    };
+
+    requestAnimationFrame(animation);
+  };
+
   const getScrollAmount = () => {
     if (!scrollRef.current) return 0;
     const card = scrollRef.current.querySelector(".product-slide") as HTMLElement;
@@ -136,32 +161,32 @@ function SliderSection({ title, queryGroup, products }: any) {
   };
 
   const scrollLeftAction = () => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || isAnimating) return;
     const container = scrollRef.current;
     const isStart = container.scrollLeft <= 5;
 
     if (isStart) {
-      container.scrollTo({ left: container.scrollWidth, behavior: "smooth" });
+      animateScroll(container, container.scrollWidth, 800); 
     } else {
-      container.scrollBy({ left: -getScrollAmount(), behavior: "smooth" });
+      animateScroll(container, container.scrollLeft - getScrollAmount(), 800);
     }
   };
 
   const scrollRightAction = () => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || isAnimating) return;
     const container = scrollRef.current;
     const isEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
 
     if (isEnd) {
-      container.scrollTo({ left: 0, behavior: "smooth" });
+      animateScroll(container, 0, 800); 
     } else {
-      container.scrollBy({ left: getScrollAmount(), behavior: "smooth" });
+      animateScroll(container, container.scrollLeft + getScrollAmount(), 800);
     }
   };
 
   // --- FUNGSI DRAG ---
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || isAnimating) return; 
     isDragging.current = true;
     
     dragDistance.current = 0;
@@ -187,7 +212,28 @@ function SliderSection({ title, queryGroup, products }: any) {
   };
 
   const handleDragEnd = () => { 
+    if (!isDragging.current) return;
     isDragging.current = false; 
+
+    // Jika user habis nge-swipe/drag, kita cari posisi snap terdekat biar smooth
+    if (isSwiping && scrollRef.current) {
+      const container = scrollRef.current;
+      const scrollAmount = getScrollAmount();
+      const currentScroll = container.scrollLeft;
+
+      // Hitung indeks card terdekat yang harus di-snap
+      const targetIndex = Math.round(currentScroll / scrollAmount);
+      let targetScroll = targetIndex * scrollAmount;
+
+      // Pastikan target tidak melewati batas maksimal scroll
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (targetScroll > maxScroll) targetScroll = maxScroll;
+      if (targetScroll < 0) targetScroll = 0;
+
+      // Panggil animasi (400ms agar snap kembalinya terasa pas & responsif)
+      animateScroll(container, targetScroll, 400); 
+    }
+
     setIsSwiping(false); 
   };
 
@@ -199,25 +245,16 @@ function SliderSection({ title, queryGroup, products }: any) {
     }
   };
 
-  // --- Efek Auto-Slide (Dimatikan saat hover atau swiping) ---
+  // --- Efek Auto-Slide ---
   useEffect(() => {
-    if (isHovered || isSwiping || !products || products.length === 0) return; 
+    if (isHovered || isSwiping || isAnimating || !products || products.length === 0) return; 
 
     const timer = setInterval(() => {
-      if (!scrollRef.current) return;
-      const container = scrollRef.current;
-
-      const isEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
-
-      if (isEnd) {
-        container.scrollTo({ left: 0, behavior: "smooth" });
-      } else {
-        container.scrollBy({ left: getScrollAmount(), behavior: "smooth" });
-      }
-    }, 3000); 
+      scrollRightAction(); 
+    }, 4000); 
 
     return () => clearInterval(timer);
-  }, [isHovered, isSwiping, products]);
+  }, [isHovered, isSwiping, isAnimating, products]);
 
   // Jika produk kosong, jangan render slider-nya
   if (!products || products.length === 0) return null;
@@ -231,9 +268,9 @@ function SliderSection({ title, queryGroup, products }: any) {
           onMouseLeave={() => setIsHovered(false)}
         >
 
-          <div className="mb-6">
-            <div className="inline-flex bg-primary6 px-8 py-3 rounded-2xl shadow-lg transform">
-              <h2 className="text-xl md:text-2xl lg:text-2xl font-bold text-white">
+          <div className="mb-8">
+            <div className="inline-block border-l-4 border-primary pl-4 py-1">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">
                 {title}
               </h2>
             </div>
@@ -283,7 +320,7 @@ function SliderSection({ title, queryGroup, products }: any) {
             className={`
               flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide pb-4
               cursor-grab active:cursor-grabbing touch-pan-y
-              ${isSwiping ? "scroll-auto snap-none" : "scroll-smooth snap-x snap-mandatory"}
+              ${isSwiping || isAnimating ? "snap-none" : "snap-x snap-mandatory"}
             `}
           >
             {/* DAFTAR PRODUK */}
@@ -292,7 +329,7 @@ function SliderSection({ title, queryGroup, products }: any) {
                 key={product.id}
                 className="
                   product-slide flex-shrink-0 snap-start select-none
-                  w-[calc(50%-8px)]     /* <-- Ngepas 2 card di Mobile */
+                  w-[calc(50%-8px)]     
                   sm:w-[180px]
                   md:w-[210px]
                   lg:w-[230px]

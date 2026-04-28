@@ -7,10 +7,9 @@ const api = axios.create({
 
 // ================= GLOBAL STATE =================
 let isRedirecting = false;
-let isRefreshing = false; // Penanda apakah sedang proses refresh
-let failedQueue: any[] = []; // Antrean untuk request yang nunggu token baru
+let isRefreshing = false; 
+let failedQueue: any[] = []; 
 
-// Fungsi untuk memproses antrean request setelah token berhasil/gagal di-refresh
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {

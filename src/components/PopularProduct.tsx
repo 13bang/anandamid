@@ -11,15 +11,42 @@ export default function PopularProduct({ popularProducts }: PopularProductSlider
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   
-  // State untuk mematikan class CSS "scroll-smooth" saat drag berlangsung
+  // State untuk drag & animasi
   const [isSwiping, setIsSwiping] = useState(false); 
+  const [isAnimating, setIsAnimating] = useState(false); // Tambahan state animasi
   
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollLeftStart = useRef(0);
-  const dragDistance = useRef(0); // Untuk membedakan antara klik biasa dan drag
+  const dragDistance = useRef(0);
 
-  // Fungsi kalkulasi jarak scroll
+  // Fungsi custom scroll dengan pengaturan durasi yang smooth
+  const animateScroll = (container: HTMLDivElement, targetPosition: number, duration: number) => {
+    setIsAnimating(true);
+    const startPosition = container.scrollLeft;
+    const distance = targetPosition - startPosition;
+    let startTime: number | null = null;
+
+    // Easing function (easeInOutCubic) agar mulus di awal dan akhir
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+    const animation = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime;
+      const timeElapsed = currentTime - startTime;
+      const progress = Math.min(timeElapsed / duration, 1);
+
+      container.scrollLeft = startPosition + distance * ease(progress);
+
+      if (timeElapsed < duration) {
+        requestAnimationFrame(animation);
+      } else {
+        setIsAnimating(false);
+      }
+    };
+
+    requestAnimationFrame(animation);
+  };
+
   const getScrollAmount = () => {
     if (!scrollRef.current) return 0;
     const card = scrollRef.current.querySelector(".product-slide") as HTMLElement;
@@ -28,23 +55,23 @@ export default function PopularProduct({ popularProducts }: PopularProductSlider
   };
 
   const scrollLeft = () => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || isAnimating) return;
     const container = scrollRef.current;
     if (container.scrollLeft <= 5) {
-      container.scrollTo({ left: container.scrollWidth, behavior: "smooth" });
+      animateScroll(container, container.scrollWidth, 800); // 800ms
     } else {
-      container.scrollBy({ left: -getScrollAmount(), behavior: "smooth" });
+      animateScroll(container, container.scrollLeft - getScrollAmount(), 800);
     }
   };
 
   const scrollRight = () => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || isAnimating) return;
     const container = scrollRef.current;
     const isEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
     if (isEnd) {
-      container.scrollTo({ left: 0, behavior: "smooth" });
+      animateScroll(container, 0, 800); // 800ms
     } else {
-      container.scrollBy({ left: getScrollAmount(), behavior: "smooth" });
+      animateScroll(container, container.scrollLeft + getScrollAmount(), 800);
     }
   };
 
@@ -54,19 +81,19 @@ export default function PopularProduct({ popularProducts }: PopularProductSlider
     navigate("/product-katalog?sort=popular");
   };
 
-  // Auto Slide Logic - Ditambah pengecekan isSwiping agar tidak jalan saat didrag
+  // Auto Slide Logic 
   useEffect(() => {
-    if (isHovered || isSwiping || popularProducts.length === 0) return;
+    if (isHovered || isSwiping || isAnimating || popularProducts.length === 0) return;
 
     const interval = setInterval(() => {
       scrollRight();
-    }, 3000);
+    }, 4000); // 4 detik 
 
     return () => clearInterval(interval);
-  }, [isHovered, isSwiping, popularProducts]);
+  }, [isHovered, isSwiping, isAnimating, popularProducts]);
 
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || isAnimating) return;
     isDragging.current = true;
     dragDistance.current = 0;
 
@@ -91,7 +118,28 @@ export default function PopularProduct({ popularProducts }: PopularProductSlider
   };
 
   const handleDragEnd = () => { 
+    if (!isDragging.current) return;
     isDragging.current = false; 
+
+    // Logika perhitungan posisi Snap agar mulus setelah Drag selesai
+    if (isSwiping && scrollRef.current) {
+      const container = scrollRef.current;
+      const scrollAmount = getScrollAmount();
+      const currentScroll = container.scrollLeft;
+
+      // Hitung posisi card terdekat
+      const targetIndex = Math.round(currentScroll / scrollAmount);
+      let targetScroll = targetIndex * scrollAmount;
+
+      // Pastikan target tidak melewati batas scroll maksimal
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (targetScroll > maxScroll) targetScroll = maxScroll;
+      if (targetScroll < 0) targetScroll = 0;
+
+      // Jalankan animasi snap selama 400ms agar smooth
+      animateScroll(container, targetScroll, 400);
+    }
+
     setIsSwiping(false); 
   };
 
@@ -113,9 +161,9 @@ export default function PopularProduct({ popularProducts }: PopularProductSlider
           onMouseLeave={() => setIsHovered(false)}
         >
 
-          <div className="mb-6">
-            <div className="inline-flex bg-primary6 px-8 py-3 rounded-2xl shadow-lg transform">
-              <h2 className="text-xl md:text-2xl lg:text-2xl font-bold text-white">
+          <div className="mb-8">
+            <div className="inline-block border-l-4 border-primary pl-4 py-1">
+              <h2 className="text-2xl md:text-3xl font-bold">
                 Produk Populer
               </h2>
             </div>
@@ -155,9 +203,10 @@ export default function PopularProduct({ popularProducts }: PopularProductSlider
             onTouchMove={handleDragMove}
             onTouchEnd={handleDragEnd}
             onClickCapture={handleClickCapture}
-            // Logic pergantian class: Jika sedang di-drag, matikan animasi smooth dan efek snap
+            // Logic diperbarui: Matikan snap saat swipe ATAU saat animasi JS berjalan.
+            // Buang class 'scroll-smooth' agar tidak bentrok dengan JS Animation
             className={`flex gap-6 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing touch-pan-y ${
-              isSwiping ? "scroll-auto snap-none" : "scroll-smooth snap-x snap-mandatory"
+              isSwiping || isAnimating ? "snap-none" : "snap-x snap-mandatory"
             }`}
           >
             {popularProducts.map((product) => (
@@ -165,7 +214,6 @@ export default function PopularProduct({ popularProducts }: PopularProductSlider
                     key={product.id}
                     className="product-slide flex-shrink-0 snap-start py-4 select-none w-[47%] sm:w-[180px] md:w-[210px] lg:w-[230px] xl:w-[236px] 2xl:w-[246px]"
                 >
-                    {/* Tambahkan class pointer-events-none saat drag agar tidak muncul ghost image / memblok teks */}
                     <div className={isSwiping ? "pointer-events-none select-none" : ""}>
                       <ProductCard product={product} />
                     </div>

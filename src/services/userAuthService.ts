@@ -46,6 +46,8 @@ export interface AddressDto {
   phone_number: string;
   full_address: string;
   is_default: boolean;
+  latitude?: number; 
+  longitude?: number;
 }
 
 // ================= ADDRESS MANAGEMENT =================

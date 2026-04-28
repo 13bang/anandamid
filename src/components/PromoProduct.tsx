@@ -12,8 +12,10 @@ export default function PromoProductSlider({ products, promoImageUrl }: PromoPro
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   
+  // State untuk drag & animasi
   const [isSwiping, setIsSwiping] = useState(false); 
-  
+  const [isAnimating, setIsAnimating] = useState(false); 
+
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollLeftStart = useRef(0);
@@ -24,6 +26,35 @@ export default function PromoProductSlider({ products, promoImageUrl }: PromoPro
     (p) => p.discount > 0 || p.discount_price > 0 || p.is_promo === true
   );
 
+  // ==========================================
+  // 🔥 FUNGSI ANIMASI SMOOTH & PELAN (CUSTOM)
+  // ==========================================
+  const animateScroll = (container: HTMLDivElement, targetPosition: number, duration: number) => {
+    setIsAnimating(true);
+    const startPosition = container.scrollLeft;
+    const distance = targetPosition - startPosition;
+    let startTime: number | null = null;
+
+    // Easing function (easeInOutCubic) agar mulus di awal dan akhir
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+    const animation = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime;
+      const timeElapsed = currentTime - startTime;
+      const progress = Math.min(timeElapsed / duration, 1);
+
+      container.scrollLeft = startPosition + distance * ease(progress);
+
+      if (timeElapsed < duration) {
+        requestAnimationFrame(animation);
+      } else {
+        setIsAnimating(false);
+      }
+    };
+
+    requestAnimationFrame(animation);
+  };
+
   const getScrollAmount = () => {
     if (!scrollRef.current) return 0;
     const card = scrollRef.current.querySelector(".product-slide") as HTMLElement;
@@ -32,23 +63,24 @@ export default function PromoProductSlider({ products, promoImageUrl }: PromoPro
   };
 
   const scrollLeft = () => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || isAnimating) return;
     const container = scrollRef.current;
     if (container.scrollLeft <= 5) {
-      container.scrollTo({ left: container.scrollWidth, behavior: "smooth" });
+      animateScroll(container, container.scrollWidth, 800); // 800ms
     } else {
-      container.scrollBy({ left: -getScrollAmount(), behavior: "smooth" });
+      animateScroll(container, container.scrollLeft - getScrollAmount(), 800);
     }
   };
 
   const scrollRight = () => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || isAnimating) return;
     const container = scrollRef.current;
     const isEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
+    
     if (isEnd) {
-      container.scrollTo({ left: 0, behavior: "smooth" });
+      animateScroll(container, 0, 800); // 800ms
     } else {
-      container.scrollBy({ left: getScrollAmount(), behavior: "smooth" });
+      animateScroll(container, container.scrollLeft + getScrollAmount(), 800);
     }
   };
 
@@ -58,19 +90,24 @@ export default function PromoProductSlider({ products, promoImageUrl }: PromoPro
     navigate("/product-katalog?promo=true");
   };
 
+  // ==========================================
+  // 🔥 AUTO SCROLL BERHASIL DIPERBAIKI
+  // ==========================================
   useEffect(() => {
-    if (isHovered || isSwiping || discountedProducts.length === 0) return;
+    // Kalau kursor ada di atas slider, lagi drag, atau animasi jalan -> matikan auto slide sementara
+    if (isHovered || isSwiping || isAnimating || discountedProducts.length === 0) return;
 
     const interval = setInterval(() => {
       scrollRight();
-    }, 3000);
+    }, 4000); // Slide otomatis tiap 4 detik
 
     return () => clearInterval(interval);
-  }, [isHovered, isSwiping, discountedProducts]);
+    // 🔥 PENTING: Gunakan .length agar re-render tidak me-reset timer terus-terusan
+  }, [isHovered, isSwiping, isAnimating, discountedProducts.length]); 
 
   // --- FUNGSI DRAG ---
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || isAnimating) return;
     isDragging.current = true;
     dragDistance.current = 0;
 
@@ -95,7 +132,28 @@ export default function PromoProductSlider({ products, promoImageUrl }: PromoPro
   };
 
   const handleDragEnd = () => { 
+    if (!isDragging.current) return;
     isDragging.current = false; 
+
+    // 🔥 Logika perhitungan Snap halus setelah Drag selesai
+    if (isSwiping && scrollRef.current) {
+      const container = scrollRef.current;
+      const scrollAmount = getScrollAmount();
+      const currentScroll = container.scrollLeft;
+
+      // Hitung posisi card terdekat
+      const targetIndex = Math.round(currentScroll / scrollAmount);
+      let targetScroll = targetIndex * scrollAmount;
+
+      // Pastikan target tidak melewati batas scroll
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (targetScroll > maxScroll) targetScroll = maxScroll;
+      if (targetScroll < 0) targetScroll = 0;
+
+      // Animasi Snap 400ms biar nge-pas ke tengah dengan mulus
+      animateScroll(container, targetScroll, 400);
+    }
+
     setIsSwiping(false); 
   };
 
@@ -109,7 +167,7 @@ export default function PromoProductSlider({ products, promoImageUrl }: PromoPro
   if (discountedProducts.length === 0) return null;
 
   return (
-    <section className="py-6 md:py-10 bg-white mb-4">
+    <section className="py-6 md:py-10 bg-white mb-4 mt-4 border-y">
       <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0">
         
         <div className="bg-blue-700 border border-primary6/20 rounded-2xl p-4 sm:p-6 md:p-6 shadow-sm overflow-hidden">
@@ -119,7 +177,7 @@ export default function PromoProductSlider({ products, promoImageUrl }: PromoPro
               <img 
                 src={promoImageUrl} 
                 alt="Promo Special" 
-                className="mx-auto w-full max-w-3xl h-auto object-contain max-h-[120px] rounded-xl"
+                className="mx-auto w-full max-w-3xl h-auto object-contain max-h-[120px] rounded-md"
               />
             ) : (
               <div className="w-full h-32 md:h-48 bg-gradient-to-r from-primary6/80 to-primary6 flex items-center justify-center rounded-2xl">
@@ -167,8 +225,9 @@ export default function PromoProductSlider({ products, promoImageUrl }: PromoPro
               onTouchMove={handleDragMove}
               onTouchEnd={handleDragEnd}
               onClickCapture={handleClickCapture}
+              // 🔥 Snap dimatikan saat swiping/animating agar tidak kaku
               className={`flex gap-6 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing touch-pan-y ${
-                isSwiping ? "scroll-auto snap-none" : "scroll-smooth snap-x snap-mandatory"
+                isSwiping || isAnimating ? "snap-none" : "snap-x snap-mandatory"
               }`}
             >
               {discountedProducts.map((product) => (
@@ -213,7 +272,6 @@ export default function PromoProductSlider({ products, promoImageUrl }: PromoPro
                                 e.stopPropagation();
                                 handleNavigate();
                             }}
-                            // Ganti warna tombol agar kontras di atas background biru
                             className="px-5 py-2 bg-white text-primary text-sm font-bold rounded-full w-full mt-auto transition-all duration-300 hover:bg-blue-50 border border-transparent"
                         >
                             Cek Semua

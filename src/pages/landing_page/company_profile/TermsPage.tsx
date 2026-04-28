@@ -55,61 +55,73 @@ export default function TermsPage() {
   ];
 
   return (
-    <>
+    <div className="min-h-screen bg-white pb-10">
       {/* ================= BREADCRUMB BAR ================= */}
-      <div className="w-full bg-white">
-          <div className="h-14 flex items-center px-8">
-              <div className="w-ful items-center">
-                  <Breadcrumb
-                  items={[
-                      { label: "Home", path: "/" },
-                      { label: "Syarat & Ketentuan" },
-                  ]}
-                  />
-              </div>
-          </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <h1 className="text-3xl font-bold mb-6">
-          Syarat & Ketentuan Penggunaan
-        </h1>
-
-        <p className="text-gray-600 mb-6 leading-relaxed">
-          Selamat datang di Anandam ID. Halaman ini berisi ketentuan penggunaan
-          situs Anandam ID yang mengatur cara pengguna mengakses informasi produk
-          serta layanan yang tersedia pada website ini.
-        </p>
-
-        <p className="text-gray-600 mb-10 leading-relaxed">
-          Dengan mengakses dan menggunakan situs Anandam ID, pengguna dianggap
-          telah membaca, memahami, dan menyetujui seluruh isi dari syarat dan
-          ketentuan yang berlaku pada halaman ini. Apabila pengguna tidak
-          menyetujui sebagian atau seluruh ketentuan yang tercantum, maka pengguna
-          disarankan untuk tidak melanjutkan penggunaan situs ini.
-        </p>
-
-        <p className="text-gray-700 bg-gray-100 border border-gray-200 p-4 rounded-lg mb-10">
-          Website ini berfungsi sebagai katalog produk. Seluruh transaksi
-          pembelian dilakukan melalui komunikasi langsung dengan pihak Anandam
-          ID, seperti melalui WhatsApp atau dengan mengunjungi toko secara
-          langsung.
-        </p>
-
-        <div className="space-y-8">
-          {sections.map((item, index) => (
-            <div key={index}>
-              <h2 className="text-xl font-semibold mb-2">
-                {index + 1}. {item.title}
-              </h2>
-
-              <p className="text-gray-600 leading-relaxed">
-                {item.content}
-              </p>
-            </div>
-          ))}
+      <div className="w-full border-b border-gray-100"> 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <Breadcrumb
+            items={[
+              { label: "Home", path: "/" },
+              { label: "Syarat & Ketentuan" },
+            ]}
+          />
         </div>
       </div>
-    </>
+
+      {/* ================= CONTENT AREA ================= */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12">
+        <header className="mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight uppercase tracking-tight">
+            Syarat & Ketentuan <span className="text-primary block sm:inline">Penggunaan</span>
+          </h1>
+          <div className="h-1 w-20 bg-primary mt-4"></div>
+        </header>
+
+        <section className="prose prose-sm sm:prose-base max-w-none">
+          <p className="text-gray-600 mb-4 leading-relaxed font-medium">
+            Selamat datang di Anandam ID. Halaman ini berisi ketentuan penggunaan
+            situs Anandam ID yang mengatur cara pengguna mengakses informasi produk
+            serta layanan yang tersedia pada website ini.
+          </p>
+
+          <p className="text-gray-500 mb-8 leading-relaxed text-sm sm:text-base">
+            Dengan mengakses dan menggunakan situs Anandam ID, pengguna dianggap
+            telah membaca, memahami, dan menyetujui seluruh isi dari syarat dan
+            ketentuan yang berlaku pada halaman ini. Apabila pengguna tidak
+            menyetujui sebagian atau seluruh ketentuan yang tercantum, maka pengguna
+            disarankan untuk tidak melanjutkan penggunaan situs ini.
+          </p>
+
+          {/* Alert Box - Simpel & Clean */}
+          <div className="text-gray-700 bg-gray-50 border-l-4 border-primary p-4 sm:p-5 rounded-md mb-12 flex gap-4 items-start shadow-sm">
+             <div className="text-primary mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+             </div>
+             <p className="text-sm sm:text-base font-medium">
+                Website ini berfungsi sebagai katalog produk. Seluruh transaksi
+                pembelian dilakukan melalui komunikasi langsung dengan pihak Anandam
+                ID, seperti melalui WhatsApp atau dengan mengunjungi toko secara
+                langsung.
+             </p>
+          </div>
+
+          <div className="space-y-10">
+            {sections.map((item, index) => (
+              <article key={index} className="group">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 flex gap-3 items-start">
+                  <span className="text-primary font-mono">{String(index + 1).padStart(2, '0')}.</span>
+                  <span className="group-hover:text-primary transition-colors">{item.title}</span>
+                </h2>
+
+                <p className="text-gray-600 leading-relaxed text-sm sm:text-base pl-0 sm:pl-10">
+                  {item.content}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+      </div>
+    </div>
   );
 }

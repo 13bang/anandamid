@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getOriginalUrl } from "../../imageHelper";
 import { deleteProductImage } from "../../../services/adminProductImageService";
+import { ChevronLeft, ChevronRight } from "lucide-react"; // Pastikan lucide-react terinstall
 
 interface ProductWizardProps {
   mode: "create" | "edit";
@@ -41,11 +42,13 @@ export default function ProductWizard({
     is_popular: initialData?.is_popular ?? false,
 
     images:
-      initialData?.images?.map((img: any) => ({
-        id: img.id,
-        image_url: img.image_url,
-        file: null,
-      })) || [],
+      initialData?.images
+        ?.sort((a: any, b: any) => a.sort_order - b.sort_order) // Pastikan terurut saat awal load
+        .map((img: any) => ({
+          id: img.id,
+          image_url: img.image_url,
+          file: null,
+        })) || [],
   });
 
   const [form, setForm] = useState(getInitialForm());
@@ -61,6 +64,9 @@ export default function ProductWizard({
   const isPCComponent = isProcessor || isMotherboard || isRam;
     
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // --- STATE UNTUK DRAG AND DROP GAMBAR ---
+  const [draggedImgIndex, setDraggedImgIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setForm(getInitialForm());
@@ -78,13 +84,11 @@ export default function ProductWizard({
       ...prev,
       [field]: value,
     }));
-    // Hapus pesan error jika user mulai mengetik/mengubah nilai
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
-  // --- LOGIC VALIDASI MANUAL ---
   const validateStep = (currentStep: number) => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
@@ -126,7 +130,6 @@ export default function ProductWizard({
   };
 
   const handleSimpan = () => {
-    // Validasi semua step sebelum disave
     const newErrors: Record<string, string> = {};
     let firstErrorStep = null;
 
@@ -137,11 +140,20 @@ export default function ProductWizard({
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      if (firstErrorStep) setStep(firstErrorStep); // Pindahkan user ke step yang ada errornya
+      if (firstErrorStep) setStep(firstErrorStep);
       return;
     }
 
-    onSubmit(form);
+    // MAPPING SORT ORDER SEBELUM SUBMIT
+    const finalPayload = {
+      ...form,
+      images: form.images.map((img: any, index: number) => ({
+        ...img,
+        sort_order: index, // Set otomatis berdasarkan urutan array
+      })),
+    };
+
+    onSubmit(finalPayload);
   };
 
   const formatRupiah = (value: number | string) => {
@@ -167,6 +179,49 @@ export default function ProductWizard({
     setCurrentImageIndex(updated.length - 1); 
     
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // --- FUNGSI GESER MANUAL (TOMBOL) ---
+  const moveImage = (direction: "left" | "right") => {
+    if (form.images.length <= 1) return;
+    
+    const newIndex = direction === "left" ? currentImageIndex - 1 : currentImageIndex + 1;
+    if (newIndex < 0 || newIndex >= form.images.length) return;
+
+    const updatedImages = [...form.images];
+    // Tukar posisi
+    const temp = updatedImages[currentImageIndex];
+    updatedImages[currentImageIndex] = updatedImages[newIndex];
+    updatedImages[newIndex] = temp;
+
+    handleChange("images", updatedImages);
+    setCurrentImageIndex(newIndex);
+  };
+
+  // --- FUNGSI DRAG AND DROP ---
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedImgIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault(); 
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedImgIndex === null || draggedImgIndex === targetIndex) return;
+
+    const updatedImages = [...form.images];
+    // Hapus item dari posisi lama
+    const [draggedItem] = updatedImages.splice(draggedImgIndex, 1);
+    // Masukkan ke posisi baru
+    updatedImages.splice(targetIndex, 0, draggedItem);
+
+    handleChange("images", updatedImages);
+    setCurrentImageIndex(targetIndex); // Fokus ke gambar yang baru dipindah
+    setDraggedImgIndex(null);
   };
 
   return (
@@ -444,9 +499,16 @@ export default function ProductWizard({
           {/* BAGIAN GAMBAR (MEDIA) */}
           {/* ===================== */}
           <div>
-            <label className="block mb-3 text-sm font-medium text-gray-700">
-              Galeri Produk
-            </label>
+            <div className="flex justify-between items-end mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Galeri Produk
+              </label>
+              {form.images.length > 1 && (
+                <span className="text-xs text-gray-400 italic">
+                  *Drag thumbnail untuk mengubah urutan
+                </span>
+              )}
+            </div>
 
             {/* Input File Tersembunyi */}
             <input
@@ -460,7 +522,19 @@ export default function ProductWizard({
             {form.images.length > 0 ? (
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 {/* PREVIEW GAMBAR UTAMA */}
-                <div className="relative flex justify-center mb-4 bg-white border border-gray-200 rounded-lg shadow-sm aspect-video">
+                <div className="relative flex justify-center mb-4 bg-white border border-gray-200 rounded-lg shadow-sm aspect-video group overflow-hidden">
+                  
+                  {/* Tombol Geser Kiri */}
+                  {currentImageIndex > 0 && (
+                    <button 
+                      type="button"
+                      onClick={() => moveImage("left")}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition z-10"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                  )}
+
                   <img
                     src={
                       form.images[currentImageIndex]?.file
@@ -472,6 +546,17 @@ export default function ProductWizard({
                     className="object-contain w-full h-full rounded-lg"
                     alt="Preview Produk"
                   />
+
+                  {/* Tombol Geser Kanan */}
+                  {currentImageIndex < form.images.length - 1 && (
+                    <button 
+                      type="button"
+                      onClick={() => moveImage("right")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition z-10"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  )}
                   
                   {/* Tombol Hapus Gambar Aktif */}
                   <button
@@ -503,22 +588,31 @@ export default function ProductWizard({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
+
+                  {/* Indikator Urutan */}
+                  <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-[10px] rounded font-medium tracking-widest">
+                    {currentImageIndex + 1} / {form.images.length}
+                  </div>
                 </div>
 
-                {/* THUMBNAIL NAVIGATOR & TOMBOL TAMBAH */}
+                {/* THUMBNAIL NAVIGATOR & TOMBOL TAMBAH (WITH DRAG & DROP) */}
                 <div className="flex items-center gap-3 overflow-x-auto py-2 px-4">
                   {form.images.map((img: any, idx: number) => (
                     <button
                       key={idx}
                       type="button"
+                      draggable // Menyalakan fungsi drag HTML5
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragOver={(e) => handleDragOver(e, idx)}
+                      onDrop={(e) => handleDrop(e, idx)}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`relative flex-shrink-0 w-16 h-16 rounded-lg transition-all ${
+                      className={`relative flex-shrink-0 w-16 h-16 rounded-lg transition-all cursor-grab active:cursor-grabbing ${
                         currentImageIndex === idx
                           ? "ring-2 ring-blue-500 ring-offset-2 scale-105"
                           : "opacity-70 hover:opacity-100"
-                      }`}
+                      } ${draggedImgIndex === idx ? "opacity-30 border-2 border-dashed border-gray-400" : ""}`}
                     >
-                      <div className="w-full h-full overflow-hidden rounded-lg">
+                      <div className="w-full h-full overflow-hidden rounded-lg pointer-events-none">
                         <img
                           src={
                             img.file
@@ -533,7 +627,7 @@ export default function ProductWizard({
                     </button>
                   ))}
 
-                  {/* Tombol Tambah Gambar (Otomatis buka file manager) */}
+                  {/* Tombol Tambah Gambar */}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}

@@ -60,10 +60,10 @@ export default function FloatingActionButtons() {
     <>
       <div
         className="
-          fixed right-4 md:right-10 bottom-10
+          fixed right-4 md:right-10 bottom-20 md:bottom-10
           z-[100]
           flex flex-col items-end gap-3
-          pointer-events-none /* 👈 KUNCI: Biarkan klik tembus ke belakang */
+          pointer-events-none
         "
       >
 

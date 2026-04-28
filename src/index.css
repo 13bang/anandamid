@@ -166,3 +166,53 @@ body {
   height: 100%;
   transition-delay: 0.6s;
 }
+
+@keyframes backdropIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(4px); }
+}
+
+@keyframes backdropOut {
+  from { opacity: 1; backdrop-filter: blur(4px); }
+  to { opacity: 0; backdrop-filter: blur(0px); }
+}
+
+/* Animasi Modal (Zoom & Slide) */
+@keyframes zoomInSmooth {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}
+
+@keyframes zoomOutSmooth {
+  from { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+  to { 
+    opacity: 0; 
+    transform: scale(0.95) translateY(20px); 
+  }
+}
+
+/* Class Helper */
+.animate-backdrop-in {
+  animation: backdropIn 0.3s ease-out forwards;
+}
+
+.animate-backdrop-out {
+  animation: backdropOut 0.3s ease-in forwards;
+}
+
+.animate-zoom-in-smooth {
+  animation: zoomInSmooth 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-zoom-out-smooth {
+  animation: zoomOutSmooth 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

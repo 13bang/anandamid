@@ -36,16 +36,16 @@ export function OfficialBrandSection() {
       <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-0">
         
         {/* HEADER */}
-        <div className="mb-6">
-          <div className="inline-flex bg-primary6 px-8 py-3 rounded-2xl shadow-lg transform">
-            <h2 className="text-xl md:text-2xl lg:text-2xl font-bold text-white">
+        <div className="mb-8">
+            <div className="inline-block border-l-4 border-primary pl-4 py-1">
+            <h2 className="text-2xl md:text-3xl font-bold text-black">
               Official Brand
             </h2>
           </div>
         </div>
 
         {/* GRID CONTAINER */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
           {brands.map((brand) => {
             const imagePath = brand.image_url;
             const hasError = imageError[brand.id];
@@ -56,7 +56,7 @@ export function OfficialBrandSection() {
                 onClick={() => navigate(`/product-katalog?brand=${brand.id}`)}
                 className="
                   brand-card h-[80px] sm:h-[100px] lg:h-[110px] flex items-center justify-center 
-                  bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-primary/40 transition-all duration-300
+                  bg-white transition-all duration-300
                   cursor-pointer select-none p-2 group
                 "
               >

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProductById, getProductsByCategory, getProducts } from "../../services/productService";
 import { FaWhatsapp, FaSearchPlus, FaBan, FaCheckCircle } from "react-icons/fa";
-import { ChevronLeft, ChevronRight, Truck, ShieldCheck, ShoppingCart, X, Check, ShoppingBag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Truck, ShieldCheck, ShoppingCart, X, Check, ShoppingBag, MessageCircle } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
 import Breadcrumb from "../../components/Breadcrumb";
@@ -32,11 +32,16 @@ export default function ProductDetailPage() {
   
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  
   const [pendingAction, setPendingAction] = useState<"cart" | "wa" | null>(null);
+
+  // --- STATE & REF UNTUK DRAG & ANIMASI SLIDER RELATED PRODUCTS ---
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const dragDistance = useRef(0);
 
   useEffect(() => {
     if (id) fetchProduct();
@@ -75,39 +80,146 @@ export default function ProductDetailPage() {
     }
   };
 
-  const handleScroll = () => {
-    if (!scrollRef.current) return;
-    const container = scrollRef.current;
-    const card = container.querySelector(".product-item");
-    if (!card) return;
-    
-    const gap = window.innerWidth >= 1024 ? 24 : 16;
-    const cardWidth = card.clientWidth + gap;
-    const index = Math.round(container.scrollLeft / cardWidth);
-    setCurrentIndex(index);
+  // --- FUNGSI CUSTOM SCROLL SMOOTH ---
+  const animateScroll = (container: HTMLDivElement, targetPosition: number, duration: number) => {
+    setIsAnimating(true);
+    const startPosition = container.scrollLeft;
+    const distance = targetPosition - startPosition;
+    let startTime: number | null = null;
+
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+    const animation = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime;
+      const timeElapsed = currentTime - startTime;
+      const progress = Math.min(timeElapsed / duration, 1);
+
+      container.scrollLeft = startPosition + distance * ease(progress);
+
+      if (timeElapsed < duration) {
+        requestAnimationFrame(animation);
+      } else {
+        setIsAnimating(false);
+      }
+    };
+
+    requestAnimationFrame(animation);
   };
 
-  const scroll = (direction: "left" | "right") => {
-    if (!scrollRef.current) return;
-    const container = scrollRef.current;
-    const firstCard = container.querySelector(".product-item") as HTMLElement;
-    if (!firstCard) return;
-    
+  const getScrollAmount = () => {
+    if (!scrollRef.current) return 0;
+    const firstCard = scrollRef.current.querySelector(".product-item") as HTMLElement;
     const gap = window.innerWidth >= 1024 ? 24 : 16; 
-    const cardWidth = firstCard.offsetWidth + gap;
-    
-    container.scrollBy({
-      left: direction === "left" ? -cardWidth : cardWidth,
-      behavior: "smooth",
-    });
+    return firstCard ? firstCard.offsetWidth + gap : 0;
   };
+
+  const scrollLeftAction = () => {
+    if (!scrollRef.current || isAnimating) return;
+    const container = scrollRef.current;
+    if (container.scrollLeft <= 5) {
+      animateScroll(container, container.scrollWidth, 800);
+    } else {
+      animateScroll(container, container.scrollLeft - getScrollAmount(), 800);
+    }
+  };
+
+  const scrollRightAction = () => {
+    if (!scrollRef.current || isAnimating) return;
+    const container = scrollRef.current;
+    const isEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
+    if (isEnd) {
+      animateScroll(container, 0, 800);
+    } else {
+      animateScroll(container, container.scrollLeft + getScrollAmount(), 800);
+    }
+  };
+
+  // --- FUNGSI DRAG ---
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if (!scrollRef.current || isAnimating) return;
+    isDragging.current = true;
+    dragDistance.current = 0;
+
+    const pageX = 'touches' in e ? e.touches[0].pageX : e.pageX;
+    startX.current = pageX;
+    scrollLeftStart.current = scrollRef.current.scrollLeft;
+  };
+
+  const handleDragMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if (!isDragging.current || !scrollRef.current) return;
+    
+    const pageX = 'touches' in e ? e.touches[0].pageX : e.pageX;
+    const walk = (pageX - startX.current) * 1.5; 
+    
+    dragDistance.current = Math.abs(walk); 
+
+    if (dragDistance.current > 5 && !isSwiping) {
+      setIsSwiping(true);
+    }
+
+    scrollRef.current.scrollLeft = scrollLeftStart.current - walk;
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+
+    // Logika snap halus saat drag selesai
+    if (isSwiping && scrollRef.current) {
+      const container = scrollRef.current;
+      const scrollAmount = getScrollAmount();
+      const currentScroll = container.scrollLeft;
+
+      const targetIndex = Math.round(currentScroll / scrollAmount);
+      let targetScroll = targetIndex * scrollAmount;
+
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (targetScroll > maxScroll) targetScroll = maxScroll;
+      if (targetScroll < 0) targetScroll = 0;
+
+      animateScroll(container, targetScroll, 400); 
+    }
+
+    setIsSwiping(false);
+  };
+
+  const handleClickCapture = (e: React.MouseEvent) => {
+    if (dragDistance.current > 10) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  };
+
+  // --- AUTO SLIDE (Related Products) ---
+  useEffect(() => {
+    if (isHovered || isSwiping || isAnimating || relatedProducts.length === 0) return;
+
+    const timer = setInterval(() => {
+      scrollRightAction();
+    }, 4000); 
+
+    return () => clearInterval(timer);
+  }, [isHovered, isSwiping, isAnimating, relatedProducts]);
+
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [animateModal, setAnimateModal] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    if (showSuccessModal) {
+      const t = setTimeout(() => setAnimateModal(true), 10);
+      return () => clearTimeout(t);
+    }
+  }, [showSuccessModal]);
 
   const handleCloseSuccessModal = () => {
-    setShowSuccessModal(false);
-    window.location.reload(); 
+    setIsClosing(true); 
+    setTimeout(() => {
+      setShowSuccessModal(false);
+      setIsClosing(false);
+    }, 300);
   };
 
   const handleAddToCart = async () => {
@@ -153,27 +265,67 @@ export default function ProductDetailPage() {
     const userDataString = localStorage.getItem("user_data");
     const userData = userDataString ? JSON.parse(userDataString) : null;
 
-    if (!userData || !userData.phone_number) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Data Belum Lengkap!',
-            text: 'Harap lengkapi nomor WhatsApp Anda di halaman profil sebelum melakukan checkout.',
-            confirmButtonText: 'Lengkapi Sekarang',
-            confirmButtonColor: '#2563eb'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                navigate('/user/account/profile', { state: { requirePhone: true } }); 
-            }
-        });
-        return; 
+    const isPhoneMissing = !userData?.phone_number || userData.phone_number.trim() === "";
+    const isAddressMissing = !userData?.address || userData.address.trim() === "";
+
+    if (isPhoneMissing || isAddressMissing) {
+      let title = "";
+      let text = "";
+      let targetPath = "";
+
+      if (isPhoneMissing && isAddressMissing) {
+        title = "Data Belum Lengkap!";
+        text = "Harap lengkapi nomor WhatsApp dan alamat pengiriman Anda.";
+        targetPath = "/user/account/profile";
+      } else if (isPhoneMissing) {
+        title = "Nomor WA Kosong!";
+        text = "Harap lengkapi nomor WhatsApp Anda di halaman profil.";
+        targetPath = "/user/account/profile";
+      } else {
+        title = "Alamat Belum Diisi!";
+        text = "Harap lengkapi alamat pengiriman Anda untuk keperluan kurir.";
+        targetPath = "/user/account/addresses";
+      }
+
+      Swal.fire({
+        title: title,
+        text: text,
+        icon: 'warning',
+        position: 'center', 
+        showConfirmButton: true,
+        confirmButtonText: 'Lengkapi Sekarang',
+        confirmButtonColor: '#2563eb',
+        showClass: {
+          popup: 'animate__animated animate__slideInCenter'
+        },
+        hideClass: {
+          popup: 'animate__animated animate__fadeOut'
+        },
+        toast: false, 
+        timer: 6000,
+        timerProgressBar: true,
+      }).then((result) => {
+        if (result.isConfirmed || result.dismiss === Swal.DismissReason.timer) {
+          navigate(targetPath);
+        }
+      });
+      return; 
     }
 
     try {
-      await checkoutDirect({
+      const res = await checkoutDirect({
         product_id: product.id,
         quantity,
         variasi: selectedVariasi || undefined,
       });
+
+      const orderData = res.order || res.data?.order;
+      const invoiceNumber = orderData?.invoice_number;
+
+      if (!invoiceNumber) throw new Error("Nomor Invoice tidak ditemukan");
+
+      const whatsappMessage = `Halo Kak,\n\nSaya ingin melanjutkan proses pembayaran untuk pesanan saya:\n🧾 *No. Invoice:* ${invoiceNumber}\n\nMohon dibantu cek untuk total tagihan beserta ongkos kirimnya ya. Terima kasih!`;
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
 
       window.open(whatsappUrl, "_blank", "noopener,noreferrer");
 
@@ -182,26 +334,30 @@ export default function ProductDetailPage() {
       Swal.fire({
         icon: "error",
         title: "Gagal Checkout",
-        text: err?.response?.data?.message || "Gagal memproses pesanan ke server",
+        text: err?.response?.data?.message || err.message || "Gagal memproses pesanan",
       });
     }
   };
 
-  // ==========================================
-  // SKELETON LOADING
-  // ==========================================
+  const handleAskProduct = () => {
+    if (!product) return;
+    const productLink = window.location.href;
+    
+    const message = `${productLink}\n\nHalo Admin, saya mau tanya seputar produk ini:\n *${product.name}*`;
+    
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   if (loading) {
     return (
       <div className="w-full bg-white animate-fadeIn">
-        {/* Breadcrumb Skeleton */}
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4">
           <div className="w-48 h-5 rounded bg-gray-200 shimmer"></div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 lg:py-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-6 lg:gap-10">
-            
-            {/* 1. SECTION GAMBAR SKELETON */}
             <div className="lg:col-span-7 order-1">
               <div className="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6 lg:items-start">
                 <div className="flex lg:flex-col gap-3 overflow-x-hidden w-full lg:w-24 flex-shrink-0 lg:h-[500px]">
@@ -213,33 +369,22 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* 2. SECTION INFO PRODUK SKELETON */}
             <div className="lg:col-span-5 order-2 lg:row-span-2">
               <div className="lg:border lg:border-gray-200 lg:rounded-2xl lg:p-8 lg:shadow-sm bg-white py-2 lg:py-0 space-y-6">
-                
-                {/* Tags */}
                 <div className="flex gap-2 mt-6 lg:mt-0">
                   <div className="w-20 h-6 rounded bg-gray-200 shimmer"></div>
                   <div className="w-24 h-6 rounded bg-gray-200 shimmer"></div>
                 </div>
-
-                {/* Title */}
                 <div className="space-y-2">
                   <div className="w-full h-8 rounded bg-gray-200 shimmer"></div>
                   <div className="w-3/4 h-8 rounded bg-gray-200 shimmer"></div>
                 </div>
-
-                {/* Price */}
                 <div className="w-1/2 h-10 rounded bg-gray-200 shimmer mt-4"></div>
-
-                {/* SKU & Stock */}
                 <div className="space-y-3 pb-6 border-b border-gray-100">
                   <div className="w-40 h-4 rounded bg-gray-200 shimmer"></div>
                   <div className="w-56 h-4 rounded bg-gray-200 shimmer"></div>
                   <div className="w-48 h-4 rounded bg-gray-200 shimmer"></div>
                 </div>
-
-                {/* Variations */}
                 <div className="space-y-3">
                   <div className="w-24 h-4 rounded bg-gray-200 shimmer"></div>
                   <div className="flex gap-2">
@@ -248,23 +393,17 @@ export default function ProductDetailPage() {
                     ))}
                   </div>
                 </div>
-
-                {/* Qty & Button */}
                 <div className="flex gap-3 lg:gap-4 mt-6">
                   <div className="w-28 lg:w-32 h-12 rounded-lg bg-gray-200 shimmer"></div>
                   <div className="flex-1 h-12 rounded-lg bg-gray-200 shimmer"></div>
                 </div>
-
-                {/* Extra Info */}
                 <div className="space-y-4 border-t border-gray-100 mt-6 pt-6">
                   <div className="w-full h-12 rounded bg-gray-200 shimmer"></div>
                   <div className="w-full h-12 rounded bg-gray-200 shimmer"></div>
                 </div>
-
               </div>
             </div>
 
-            {/* 3. SECTION DESKRIPSI SKELETON */}
             <div className="lg:col-span-7 order-3 lg:pt-8 mt-4 lg:mt-0">
               <div className="flex gap-6 border-b mb-6 pb-4">
                 <div className="w-32 h-6 rounded bg-gray-200 shimmer"></div>
@@ -278,7 +417,6 @@ export default function ProductDetailPage() {
                 <div className="w-4/5 h-4 rounded bg-gray-200 shimmer"></div>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -291,17 +429,12 @@ export default function ProductDetailPage() {
   const discountPrice = Number(product.price_discount) || 0;
   const finalPrice = discountPrice > 0 ? normalPrice - discountPrice : normalPrice;
   const isOutOfStock = Number(product.stock) === 0;
-  const productLink = window.location.href;
-  const variasiText = selectedVariasi ? `Variasi: ${selectedVariasi}\n    ` : "";
 
-  const whatsappMessage = `Hai, saya ingin memesan produk berikut:
-    Nama Produk: ${product.name}
-    ${variasiText}Jumlah: ${quantity}
-    Harga Satuan: Rp ${finalPrice.toLocaleString()}
-    Link Produk: ${productLink}
-    Mohon informasi ketersediaan.`;
-
-  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
+  // --- PERHITUNGAN DISKON ---
+  const hasDiscount = discountPrice > 0;
+  const discountPercent = hasDiscount
+    ? ((discountPrice / normalPrice) * 100).toFixed(0)
+    : "0";
 
   return (
     <>
@@ -338,9 +471,8 @@ export default function ProductDetailPage() {
                     key={img.id}
                     src={img.image_url?.startsWith("http") ? img.image_url : `${import.meta.env.VITE_API_BASE}${img.image_url}`}
                     onClick={() => setActiveImage(index)}
-                    className={`w-16 h-16 lg:w-20 lg:h-20 object-cover border-2 rounded-lg cursor-pointer transition-all flex-shrink-0 snap-center ${
-                      activeImage === index ? "border-primary" : "border-gray-200 hover:border-primary/50"
-                    }`}
+                    className={`w-16 h-16 object-cover rounded-md cursor-pointer transition-all duration-200
+                      ${activeImage === index ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
                     alt={`Thumbnail ${index + 1}`}
                   />
                 ))}
@@ -348,7 +480,7 @@ export default function ProductDetailPage() {
 
               {/* MAIN IMAGE */}
               <div
-                className="w-full max-w-lg relative overflow-hidden border border-gray-100 rounded-xl aspect-square mx-auto bg-[#f9f9f9] group lg:cursor-zoom-in"
+                className="w-full max-w-lg relative overflow-hidden rounded-md aspect-square mx-auto bg-[#f9f9f9] group lg:cursor-zoom-in"
                 onMouseEnter={() => window.innerWidth >= 1024 && setIsZooming(true)}
                 onMouseLeave={() => window.innerWidth >= 1024 && setIsZooming(false)}
                 onMouseMove={(e) => {
@@ -360,6 +492,14 @@ export default function ProductDetailPage() {
                   });
                 }}
               >
+                {/* --- TAG % OFF --- */}
+                {hasDiscount && !isOutOfStock && (
+                  <div className="absolute top-4 right-4 z-10 bg-red-500 text-white text-xs lg:text-sm font-bold px-3 py-1.5 rounded-lg shadow-sm tracking-wider uppercase pointer-events-none">
+                    {discountPercent}% OFF
+                  </div>
+                )}
+                {/* ----------------- */}
+
                 <img
                   src={product.images[activeImage]?.image_url?.startsWith("http") 
                     ? product.images[activeImage]?.image_url 
@@ -380,12 +520,12 @@ export default function ProductDetailPage() {
 
           {/* ================= 2. SECTION INFO PRODUK ================= */}
           <div className="lg:col-span-5 order-2 lg:row-span-2">
-            <div className="lg:sticky lg:top-36 bg-white py-2 lg:p-6 lg:border lg:border-gray-200 lg:rounded-2xl lg:shadow-sm">
+            <div className="lg:sticky lg:top-36 bg-white py-2 lg:p-5 lg:border lg:border-gray-200 lg:rounded-md">
               
               {/* BADGES & CATEGORY */}
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 {product.category?.name && (
-                  <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider rounded-full">
+                  <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-medium rounded-md">
                     {product.category.name}
                   </span>
                 )}
@@ -408,7 +548,7 @@ export default function ProductDetailPage() {
 
               {/* TITLE & PRICE SECTION */}
               <div className="space-y-2 mb-6">
-                <h1 className="text-xl lg:text-xl font-bold text-gray-900 leading-tight">
+                <h1 className="text-xl lg:text-xl font-bold text-gray-900">
                   {product.name}
                 </h1>
                 
@@ -453,17 +593,13 @@ export default function ProductDetailPage() {
                   <span className={`font-semibold ${
                     Number(product.stock) < 5 ? "text-orange-500" : "text-gray-900"
                   }`}>
-                    {/* OPSI 1 (Aktif): Menampilkan "20+ Unit" */}
                     {Number(product.stock) > 20 ? "20+" : product.stock} Unit
-                    
-                    {/* OPSI 2: Menampilkan ">20 Unit"                   */}
-                    {/* {Number(product.stock) > 20 ? ">20" : product.stock} Unit */}
                   </span>
                 </div>
               </div>
 
-              {/* VARIATIONS */}
-              {product.variasi && product.variasi.length > 0 && (
+              {/* VARIATIONS (Di-comment sementara) */}
+              {/* {product.variasi && product.variasi.length > 0 && (
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2.5">
                     <p className="text-xs lg:text-[13px] font-bold text-gray-900">Pilih Variasi</p>
@@ -474,84 +610,81 @@ export default function ProductDetailPage() {
                       <button
                         key={idx}
                         onClick={() => setSelectedVariasi(v)}
-                        className={`px-3 py-1.5 lg:px-3 lg:py-2 text-[11px] lg:text-xs font-bold rounded-xl border-2 transition-all duration-200 ${
-                          selectedVariasi === v 
-                          ? "bg-primary/5 border-primary text-primary shadow-sm" 
-                          : "bg-white border-gray-100 text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                        }`}
+                        className={`px-3 py-1.5 text-[11px] font-medium rounded-md border transition-all 
+                          ${selectedVariasi === v 
+                            ? "bg-primary/5 border-primary text-primary" 
+                            : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"}`}
                       >
                         {v}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
+              )} 
+              */}
 
               {/* ACTION AREA */}
               <div className="space-y-3 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between gap-3 lg:gap-3">
+                <div className="flex items-center justify-between gap-2 sm:gap-3">
                   
-                  {/* Counter */}
+                  {/* 1. Counter (Kiri) */}
                   <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden flex-shrink-0">
                     <button 
                       onClick={() => setQuantity(q => q > 1 ? q - 1 : 1)} 
                       disabled={quantity <= 1 || isOutOfStock}
-                      className="w-8 h-9 lg:w-8 lg:h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition"
+                      className="w-8 h-10 lg:w-10 lg:h-11 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition"
                     >
                       -
                     </button>
-
-                    <span className="w-8 lg:w-8 text-center text-xs lg:text-[13px] font-semibold text-gray-900">
+                    <span className="w-7 sm:w-8 lg:w-10 text-center text-xs lg:text-[13px] font-semibold text-gray-900">
                       {isOutOfStock ? 0 : quantity}
                     </span>
-
                     <button 
                       onClick={() => setQuantity(q => q < Number(product.stock) ? q + 1 : q)} 
                       disabled={quantity >= Number(product.stock) || isOutOfStock}
-                      className="w-8 h-9 lg:w-8 lg:h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition"
+                      className="w-8 h-10 lg:w-10 lg:h-11 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition"
                     >
                       +
                     </button>
                   </div>
 
-                  {/* Add To Cart */}
+                  {/* 2. Beli Langsung (Tengah & Melebar) */}
+                  <button
+                    onClick={handleWaCheckout}
+                    disabled={isOutOfStock}
+                    className={`flex-1 h-10 font-semibold rounded-md flex items-center justify-center gap-2
+                      ${isOutOfStock
+                        ? "bg-gray-100 text-gray-400"
+                        : "bg-primary text-white hover:bg-primary/90"}`}
+                  >
+                    <ShoppingBag size={16} />
+                    <span className="text-[11px] sm:text-[12px] lg:text-[13px] whitespace-nowrap">Checkout</span>
+                  </button>
+
+                  {/* 3. Add To Cart (Kanan, Cuma Icon, Tanpa Border) */}
                   <button
                     onClick={handleAddToCart}
                     disabled={isOutOfStock}
-                    className={`flex-1 h-10 lg:h-11 font-bold rounded-xl lg:rounded-xl flex items-center justify-center gap-2 transition-all duration-300 ${
-                      isOutOfStock
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                        : "bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-sm active:scale-95"
-                    }`}
+                    title="Tambah ke Keranjang"
+                    className={`w-10 h-10 rounded-md flex items-center justify-center transition-colors duration-300
+                      ${isOutOfStock
+                        ? "text-gray-200 cursor-not-allowed"
+                        : "bg-transparent text-gray-400 hover:text-primary"
+                      }`}
                   >
-                    <ShoppingCart size={16} />
-                    <span className="text-[12px] lg:text-[13px] whitespace-nowrap">Tambah Keranjang</span>
+                    <ShoppingCart size={22} />
                   </button>
+
                 </div>
 
-                {/* WA BUTTON */}
-                {isOutOfStock ? (
-                  <button className="w-full h-11 lg:h-12 bg-gray-100 text-gray-400 text-xs lg:text-sm font-bold rounded-xl lg:rounded-xl border border-gray-200 cursor-not-allowed uppercase tracking-wider">
-                    Produk Tidak Tersedia
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleWaCheckout}
-                    className="relative block w-full h-11 lg:h-12 group overflow-hidden rounded-xl bg-primary transition-all duration-500 active:scale-[0.98]"
-                  >
-                    {/* Layer 1: Default State (Primary) */}
-                    <div className="absolute inset-0 flex items-center justify-center gap-2 text-white text-xs lg:text-[13px] font-bold uppercase tracking-wider transition-all duration-500 group-hover:-translate-y-full">
-                      Checkout Sekarang
-                      <ChevronRight size={16} />
-                    </div>
-
-                    {/* Layer 2: Hover State (WhatsApp Green) */}
-                    <div className="absolute inset-0 flex items-center justify-center gap-2 bg-green-500 text-white text-xs lg:text-[13px] font-bold uppercase tracking-wider translate-y-full transition-all duration-500 group-hover:translate-y-0">
-                      <FaWhatsapp size={18} className="animate-bounce" />
-                      Checkout via WhatsApp
-                    </div>
-                  </button>
-                )}
+                {/* 4. TOMBOL TANYA WA (HIGHLIGHT UTAMA) */}
+                <button
+                  onClick={handleAskProduct}
+                  className="w-full h-11 bg-[#25D366] hover:bg-green-500 text-white text-sm font-semibold rounded-md flex items-center justify-center gap-2"
+                >
+                  <FaWhatsapp size={20} className="animate-pulse" />
+                  Tanya Produk via WhatsApp
+                </button>
               </div>
 
               {/* TRUST BADGES */}
@@ -619,14 +752,14 @@ export default function ProductDetailPage() {
             onMouseLeave={() => setIsHovered(false)}
           >
             {/* JUDUL DINAMIS BERDASARKAN KATEGORI */}
-            <h2 className="text-xl lg:text-3xl font-bold mb-2 lg:mb-4 text-gray-900">
+            <h2 className="text-xl lg:text-2xl font-bold mb-2 text-gray-900">
               {product.category?.name ? "Produk Serupa" : "Mungkin Anda Tertarik"}
             </h2>
             
             {/* LEFT BUTTON */}
             <button
-              onClick={() => scroll("left")}
-              className={`hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-20 
+              onClick={scrollLeftAction}
+              className={`hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-[100] 
               w-12 h-12 items-center justify-center 
               bg-white/80 backdrop-blur-md border border-gray-200 
               shadow-[0_8px_30px_rgb(0,0,0,0.12)] 
@@ -640,8 +773,8 @@ export default function ProductDetailPage() {
 
             {/* RIGHT BUTTON */}
             <button
-              onClick={() => scroll("right")}
-              className={`hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-20 
+              onClick={scrollRightAction}
+              className={`hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-[100] 
               w-12 h-12 items-center justify-center 
               bg-white/80 backdrop-blur-md border border-gray-200 
               shadow-[0_8px_30px_rgb(0,0,0,0.12)] 
@@ -653,14 +786,31 @@ export default function ProductDetailPage() {
               <ChevronRight size={24} strokeWidth={2.5} />
             </button>
 
-            <div ref={scrollRef} onScroll={handleScroll} className="flex gap-2 sm:gap-3 lg:gap-6 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory py-4">
+            {/* SLIDER CONTAINER */}
+            <div 
+              ref={scrollRef} 
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              onTouchStart={handleDragStart}
+              onTouchMove={handleDragMove}
+              onTouchEnd={handleDragEnd}
+              onClickCapture={handleClickCapture}
+              // Buang scroll-smooth CSS supaya tidak konflik sama JS
+              className={`flex gap-2 sm:gap-3 lg:gap-6 overflow-x-auto scrollbar-hide py-4 cursor-grab active:cursor-grabbing touch-pan-y ${
+                isSwiping || isAnimating ? "snap-none" : "snap-x snap-mandatory"
+              }`}
+            >
               {loadingRelated ? (
                 [...Array(6)].map((_, i) => (
                   <div 
                     key={i} 
                     className="product-item flex-shrink-0 snap-start w-[60%] sm:w-[calc((100%-16px)/2)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-96px)/5)]"
                   >
-                    <ProductCardSkeleton />
+                    <div className={isSwiping ? "pointer-events-none select-none" : ""}>
+                      <ProductCardSkeleton />
+                    </div>
                   </div>
                 ))
               ) : (
@@ -673,7 +823,10 @@ export default function ProductDetailPage() {
                     md:w-[calc((100%-32px)/3)] 
                     lg:w-[calc((100%-96px)/5)]"
                   >
-                    <ProductCard product={item} />
+                    {/* Cegah highlight text/click nyasar saat drag */}
+                    <div className={isSwiping ? "pointer-events-none select-none" : ""}>
+                      <ProductCard product={item} />
+                    </div>
                   </div>
                 ))
               )}
@@ -688,7 +841,6 @@ export default function ProductDetailPage() {
           className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black/95 p-4" 
           onClick={() => setShowModal(false)}
         >
-          {/* Tombol Close */}
           <button 
             onClick={() => setShowModal(false)}
             className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 z-50 transition-colors"
@@ -696,7 +848,6 @@ export default function ProductDetailPage() {
             &times;
           </button>
 
-          {/* Gambar Utama */}
           <div 
             className="w-full max-w-4xl h-[50vh] lg:h-[65vh] flex items-center justify-center mb-6"
             onClick={(e) => e.stopPropagation()}
@@ -712,7 +863,6 @@ export default function ProductDetailPage() {
             />
           </div>
 
-          {/* List Thumbnail */}
           <div 
             className="flex gap-4 overflow-x-auto max-w-4xl w-full px-4 pb-4 scrollbar-hide justify-center"
             onClick={(e) => e.stopPropagation()}
@@ -748,7 +898,6 @@ export default function ProductDetailPage() {
           from { opacity: 0; transform: scale(0.85) translateY(15px); }
           to { opacity: 1; transform: scale(1) translateY(0); }
         }
-        /* Definisikan sebagai class, bukan ditaruh di style inline */
         .animate-fade-in-backdrop {
           animation: fadeInBackdrop 0.2s ease-out forwards;
         }
@@ -759,33 +908,39 @@ export default function ProductDetailPage() {
 
       {showSuccessModal && (
         <div 
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in-backdrop"
+          className={`fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4 
+            ${isClosing ? "animate-backdrop-out" : "animate-backdrop-in"}`}
           onClick={handleCloseSuccessModal} 
         >
           <div 
-            className="bg-white w-full max-w-md rounded-[28px] shadow-2xl overflow-hidden animate-pop-in-modal"
+            className={`bg-white w-full max-w-sm rounded-md shadow-2xl overflow-hidden border border-gray-100
+              ${isClosing ? "animate-zoom-out-smooth" : "animate-zoom-in-smooth"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header / Icon Area */}
-            <div className="p-6 pb-4 flex flex-col items-center text-center relative mt-2">
+            {/* HEADER: Icon Ceklis */}
+            <div className="p-6 text-center relative">
               <button 
                 onClick={handleCloseSuccessModal}
-                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X size={18} />
               </button>
-              
-              <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
+
+              <div className="w-16 h-16 mx-auto bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-4 border border-green-100">
                 <Check size={32} strokeWidth={3} />
               </div>
               
-              <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">Masuk Keranjang!</h3>
-              <p className="text-sm text-gray-500 mt-1.5 px-4">Produk berhasil ditambahkan ke keranjang belanja kamu.</p>
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
+                Berhasil Terpilih
+              </h3>
+              <p className="text-[11px] text-gray-500 mt-1 font-medium uppercase tracking-tight">
+                Produk sudah masuk ke keranjang
+              </p>
             </div>
 
-            {/* Product Snippet Area (Clean UI) */}
-            <div className="px-6 py-4 bg-gray-50/80 border-y border-gray-100 flex gap-4 items-center">
-              <div className="w-16 h-16 bg-white rounded-2xl border border-gray-200 p-1.5 flex-shrink-0 shadow-sm">
+            {/* BODY: Info Produk Mini */}
+            <div className="px-6 py-4 bg-gray-50/50 border-y border-gray-100 flex gap-4 items-center">
+              <div className="w-14 h-14 bg-white rounded-md border border-gray-200 p-1 flex-shrink-0 shadow-sm">
                 <img 
                   src={product.images[0]?.image_url?.startsWith("http") 
                     ? product.images[0]?.image_url 
@@ -795,31 +950,28 @@ export default function ProductDetailPage() {
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-bold text-gray-900 truncate">{product.name}</h4>
-                <p className="text-xs text-gray-500 mt-1 font-medium">
-                  {selectedVariasi && <span className="text-gray-700">{selectedVariasi} &bull; </span>} 
-                  {quantity} Barang
+                <h4 className="text-[11px] font-bold text-gray-900 truncate uppercase">{product.name}</h4>
+                <p className="text-[10px] text-gray-400 mt-0.5 font-bold uppercase">
+                  {/* {selectedVariasi && <span>{selectedVariasi} • </span>} */} 
+                  {quantity} Item
                 </p>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="p-6 flex flex-col sm:flex-row gap-3">
+            {/* FOOTER: Tombol Aksi */}
+            <div className="p-6 grid grid-cols-2 gap-3">
               <button
                 onClick={handleCloseSuccessModal} 
-                className="flex-1 h-12 bg-white text-gray-600 text-sm font-bold rounded-xl border-2 border-gray-100 hover:bg-gray-50 hover:border-gray-300 transition-all order-2 sm:order-1"
+                className="h-11 bg-white border border-gray-200 text-[10px] font-bold text-gray-500 rounded-md hover:bg-gray-50 transition uppercase tracking-widest"
               >
                 Lanjut Belanja
               </button>
               <button
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  window.location.href = "/cart"; 
-                }} 
-                className="flex-1 h-12 bg-primary text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 order-1 sm:order-2 active:scale-95"
+                onClick={() => navigate("/cart")} 
+                className="h-11 bg-primary text-white text-[10px] font-bold rounded-md flex items-center justify-center gap-2 hover:bg-primary/90 transition shadow-lg shadow-primary/20 uppercase tracking-widest"
               >
-                <ShoppingBag size={18} />
-                Lihat Keranjang
+                <ShoppingBag size={14} />
+                Cek Keranjang
               </button>
             </div>
           </div>

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { Loader2, Camera } from "lucide-react";
-// 🔥 Tambahkan uploadAvatar di import
+import { Loader2, Camera, AlertTriangle } from "lucide-react";
 import { getUserProfile, updateUserProfile, uploadAvatar } from "../../../services/userAuthService";
 import Swal from "sweetalert2";
 
@@ -23,17 +22,8 @@ export default function ProfilePage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
-    if (location.state?.requirePhone) {
-      Swal.fire({
-        toast: true, position: 'bottom-end', icon: 'warning',
-        title: 'Lengkapi Data Terlebih Dahulu',
-        text: 'Isi nomor WhatsApp sebelum checkout.',
-        showConfirmButton: false, timer: 4000, timerProgressBar: true
-      });
-      window.history.replaceState({}, document.title);
-    }
     fetchProfile();
-  }, [location]);
+  }, []); 
 
   const fetchProfile = async () => {
     try {
@@ -54,23 +44,19 @@ export default function ProfilePage() {
     }
   };
 
-  // 🔥 FUNGSI UPLOAD & VALIDASI 1MB
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validasi Ukuran (1 MB = 1048576 bytes)
     if (file.size > 1024 * 1024) {
       Swal.fire("Ukuran Terlalu Besar", "Maksimal ukuran gambar adalah 1 MB", "error");
       return;
     }
 
-    // Buat Preview Lokal
     const reader = new FileReader();
     reader.onloadend = () => setImagePreview(reader.result as string);
     reader.readAsDataURL(file);
 
-    // Langsung Upload ke Server
     try {
       setSaving(true);
       const res = await uploadAvatar(file);
@@ -106,12 +92,11 @@ export default function ProfilePage() {
     }
   };
 
-  // Validasi sederhana
   const [errors, setErrors] = useState({ full_name: "", phone_number: "" });
   const validate = () => {
     const newErrors = { full_name: "", phone_number: "" };
     if (!formData.full_name.trim()) newErrors.full_name = "Nama wajib diisi";
-    if (!formData.phone_number.trim()) newErrors.phone_number = "Nomor HP wajib diisi";
+    if (!formData.phone_number.trim()) newErrors.phone_number = "Nomor WhatsApp wajib diisi";
     setErrors(newErrors);
     return !newErrors.full_name && !newErrors.phone_number;
   };
@@ -126,67 +111,105 @@ export default function ProfilePage() {
   if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-blue-600" /></div>;
 
   return (
-    <div className="animate-fadeIn">
-      <div className="border-b pb-4 mb-8">
+    <div className="animate-fadeIn w-full max-w-4xl mx-auto">
+      <div className="border-b pb-4 mb-6">
         <h2 className="text-xl font-bold text-gray-800">Profil Saya</h2>
-        <p className="text-sm text-gray-500">Kelola informasi profil untuk keamanan akun Anda.</p>
+        {/* <p className="text-sm text-gray-500 mt-1">Kelola informasi profil untuk keamanan akun Anda.</p> */}
       </div>
 
-      <div className="flex flex-col-reverse md:flex-row gap-12">
-        <form onSubmit={handleSubmit} className="flex-1 space-y-6">
-          {/* Input Nama */}
-          <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] items-start gap-4">
-            <label className="text-sm text-gray-600 mt-2">Nama <span className="text-red-500">*</span></label>
+      {!formData.phone_number && (
+        <div className="mb-6 p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-md flex items-start gap-3">
+          <AlertTriangle className="text-orange-500 flex-shrink-0 mt-0.5" size={18} />
+          <div>
+            <h4 className="text-sm font-semibold text-orange-800">Lengkapi Nomor WhatsApp</h4>
+            <p className="text-xs text-orange-700 mt-1">
+              Wajib diisi sebelum melakukan pesanan.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* flex-col-reverse membuat foto ada di atas saat versi mobile */}
+      <div className="flex flex-col-reverse md:flex-row gap-8 md:gap-12">
+        <form onSubmit={handleSubmit} className="flex-1 space-y-5">
+          
+          <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
+            <label className="text-sm font-medium text-gray-700">Nama <span className="text-red-500">*</span></label>
             <div>
-              <input type="text" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} className={`w-full px-4 py-2 border rounded-lg outline-none transition ${errors.full_name ? "border-red-500" : "focus:border-blue-500"}`} />
+              <input 
+                type="text" 
+                value={formData.full_name} 
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} 
+                className={`w-full px-3 py-2 border rounded-md outline-none transition-colors text-sm ${errors.full_name ? "border-red-500 focus:border-red-500" : "focus:border-primary border-gray-300"}`} 
+              />
               {errors.full_name && <p className="text-xs text-red-500 mt-1">{errors.full_name}</p>}
             </div>
           </div>
 
-          {/* Email (Read Only) */}
-          <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] items-center gap-4">
-            <label className="text-sm text-gray-600">Email</label>
-            <span className="text-sm font-medium text-gray-400">{formData.email}</span>
+          <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
+            <label className="text-sm font-medium text-gray-700">Email</label>
+            <span className="text-sm text-gray-600 px-3 py-2 bg-gray-50 border border-gray-100 rounded-md block w-full md:w-auto md:inline-block">
+              {formData.email}
+            </span>
           </div>
 
-          {/* Nomor HP */}
-          <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] items-start gap-4">
-            <label className="text-sm text-gray-600 mt-2">Nomor HP <span className="text-red-500">*</span></label>
+          <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
+            <label className="text-sm font-medium text-gray-700">No WhatsApp <span className="text-red-500">*</span></label>
             <div>
-              <input type="tel" value={formData.phone_number} onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })} className={`w-full px-4 py-2 border rounded-lg outline-none transition ${errors.phone_number ? "border-red-500" : "focus:border-blue-500"}`} />
+              <input 
+                type="tel" 
+                value={formData.phone_number} 
+                onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })} 
+                placeholder="Contoh: 081234567890" 
+                className={`w-full px-3 py-2 border rounded-md outline-none transition-colors text-sm ${errors.phone_number || !formData.phone_number ? "border-orange-400 focus:border-orange-500 bg-orange-50/30" : "focus:border-primary border-gray-300"}`} 
+              />
               {errors.phone_number && <p className="text-xs text-red-500 mt-1">{errors.phone_number}</p>}
             </div>
           </div>
 
-          {/* Gender */}
-          <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] items-center gap-4">
-            <label className="text-sm text-gray-600">Jenis Kelamin</label>
-            <div className="flex gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] items-start md:items-center gap-2 md:gap-4">
+            <label className="text-sm font-medium text-gray-700">Jenis Kelamin</label>
+            <div className="flex flex-wrap gap-4 md:gap-6 mt-1 md:mt-0">
               {[{ label: 'Laki-laki', value: 'MALE' }, { label: 'Perempuan', value: 'FEMALE' }, { label: 'Lainnya', value: 'OTHER' }].map(g => (
-                <label key={g.value} className="flex items-center gap-2 cursor-pointer text-sm">
-                  <input type="radio" name="gender" value={g.value} checked={formData.gender === g.value} onChange={(e) => setFormData({...formData, gender: e.target.value})} /> {g.label}
+                <label key={g.value} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <input 
+                    type="radio" 
+                    name="gender" 
+                    value={g.value} 
+                    checked={formData.gender === g.value} 
+                    onChange={(e) => setFormData({...formData, gender: e.target.value})} 
+                    className="accent-primary w-4 h-4" 
+                  /> 
+                  {g.label}
                 </label>
               ))}
             </div>
           </div>
 
-          {/* Tgl Lahir */}
-          <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] items-center gap-4">
-            <label className="text-sm text-gray-600">Tanggal Lahir</label>
-            <input type="date" value={formData.date_of_birth} onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})} className="px-4 py-2 border rounded-lg outline-none focus:border-blue-500" />
+          <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] items-center gap-2 md:gap-4">
+            <label className="text-sm font-medium text-gray-700">Tanggal Lahir</label>
+            <input 
+              type="date" 
+              value={formData.date_of_birth} 
+              onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})} 
+              className="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-md outline-none focus:border-primary text-sm text-gray-700" 
+            />
           </div>
 
-          <div className="md:ml-[136px] pt-4">
-            <button type="submit" disabled={saving} className="bg-primary text-white px-10 py-2.5 rounded-md font-bold hover:bg-primary/90 disabled:bg-blue-300 transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
+          <div className="pt-6 md:ml-[156px]">
+            <button 
+              type="submit" 
+              disabled={saving} 
+              className="w-full md:w-auto bg-primary text-white px-8 py-2.5 rounded-md font-medium hover:bg-primary-dark disabled:opacity-70 transition-colors flex items-center justify-center gap-2"
+            >
               {saving ? <Loader2 size={18} className="animate-spin" /> : "Simpan Profil"}
             </button>
           </div>
         </form>
 
-        {/* FOTO KANAN */}
-        <div className="w-full md:w-64 flex flex-col items-center md:border-l pl-0 md:pl-12">
+        <div className="w-full md:w-48 flex flex-col items-center md:border-l border-gray-200 md:pl-8">
           <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-            <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-md">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border bg-gray-100">
               <img src={getAvatarUrl()} className="w-full h-full object-cover" alt="Avatar" />
             </div>
             <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -194,8 +217,17 @@ export default function ProfilePage() {
             </div>
           </div>
           <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg" onChange={handleFileChange} />
-          <p className="mt-4 text-[11px] text-gray-400 text-center leading-relaxed">
-            Ukuran gambar: maks. 1 MB <br/> Format: JPEG, PNG
+          
+          <button 
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-4 border border-gray-300 text-gray-700 px-4 py-1.5 rounded-md text-xs font-medium hover:bg-gray-50 transition-colors"
+          >
+            Pilih Foto
+          </button>
+          
+          <p className="mt-3 text-[11px] text-gray-400 text-center leading-relaxed">
+            Ukuran maks: 1 MB <br/> Format: JPEG, PNG
           </p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2"; // 🔥 1. Import Swal di sini
 import {
   getAdminProducts,
   updateAdminProduct,
@@ -27,7 +28,8 @@ export default function AdminProductPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [limit, setLimit] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // 🔥 State successMessage dihapus karena udah pakai Swal
+  
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [search, setSearch] = useState("");
@@ -81,8 +83,8 @@ export default function AdminProductPage() {
     searchQuery = search,
     onlyDuplicate = showDuplicateOnly,
     onlyNoCategory = showNoCategoryOnly,
-    catIds = filterCategoryIds, // parameter baru
-    bndIds = filterBrandIds     // parameter baru
+    catIds = filterCategoryIds, 
+    bndIds = filterBrandIds     
   ) => {
     try {
       const result = await getAdminProducts({
@@ -225,14 +227,30 @@ export default function AdminProductPage() {
                     }
                   }
 
-                  setSuccessMessage("Product berhasil ditambahkan");
+                  // 🔥 2. Swal notification untuk Create
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Product berhasil ditambahkan',
+                    confirmButtonColor: '#2563EB', // Warna biru tailwind
+                  });
                 }
 
                 // =========================
                 // EDIT MODE
                 // =========================
                 else {
-                  await updateAdminProduct(selectedProduct.id, productData);
+                  // Masukkan kembali `images` ke dalam payload update
+                  const updatePayload = {
+                    ...productData,
+                    images: images.map((img: any) => ({
+                      id: img.id,
+                      sort_order: img.sort_order,
+                    })),
+                  };
+
+                  // Kirim payload yang sudah lengkap ke backend
+                  await updateAdminProduct(selectedProduct.id, updatePayload);
 
                   for (const img of images || []) {
                     // replace existing image
@@ -253,7 +271,13 @@ export default function AdminProductPage() {
                     }
                   }
 
-                  setSuccessMessage("Product berhasil diperbarui");
+                  // 🔥 3. Swal notification untuk Edit
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Product berhasil diperbarui',
+                    confirmButtonColor: '#2563EB',
+                  });
                 }
 
                 setIsModalOpen(false);
@@ -261,34 +285,15 @@ export default function AdminProductPage() {
 
               } catch (err) {
                 console.error("Gagal simpan product", err);
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Oops...',
+                  text: 'Terjadi kesalahan saat menyimpan produk!',
+                  confirmButtonColor: '#EF4444', 
+                });
               }
             }}
           />
-        )}
-
-        {successMessage && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-            onClick={() => setSuccessMessage(null)}
-          >
-            <div
-              className="w-full max-w-sm p-6 bg-white shadow-lg rounded-xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mb-4 text-lg font-semibold text-center">
-                {successMessage}
-              </div>
-
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setSuccessMessage(null)}
-                  className="px-4 py-2 text-white bg-blue-600 rounded-lg"
-                >
-                  OK
-                </button>
-              </div>
-            </div>
-          </div>
         )}
 
         {products.length === 0 && (

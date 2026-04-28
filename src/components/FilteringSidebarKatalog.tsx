@@ -182,7 +182,7 @@ export default function FilteringSidebarKatalog(props: Props) {
               placeholder="Cari kategori..."
               value={searchCategory}
               onChange={(e) => setSearchCategory(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+              className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-md outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             />
           </div>
 
@@ -292,7 +292,7 @@ export default function FilteringSidebarKatalog(props: Props) {
             placeholder="Cari brand..."
             value={searchBrand}
             onChange={(e) => setSearchBrand(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-md outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
         </div>
 

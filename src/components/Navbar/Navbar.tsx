@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu as MenuIcon, LogOut, User, ShoppingCart, ChevronDown, ShoppingBag } from "lucide-react";
+import { Menu as MenuIcon, LogOut, User, ShoppingCart, ChevronDown, ShoppingBag, Home, Package } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-import { logoutUser } from "../../services/userAuthService";
+import { logoutUser, getMyAddresses } from "../../services/userAuthService";
 import { getProducts } from "../../services/productService";
 import { getCategories } from "../../services/adminCategoryService";
 import { getGroupings } from "../../services/groupingService";
@@ -28,24 +28,34 @@ interface Grouping {
   children: Category[];
 }
 
+const isDataMissing = (data: any) => {
+  if (data === null || data === undefined) return true;
+  if (typeof data === "string") {
+    const trimmed = data.trim().toLowerCase();
+    if (trimmed === "" || trimmed === "null" || trimmed === "undefined" || trimmed === "[]" || trimmed === "{}") return true;
+  }
+  if (Array.isArray(data)) return data.length === 0;
+  if (typeof data === "object" && !Array.isArray(data)) return Object.keys(data).length === 0;
+  return false;
+};
+
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // State Global & Data
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [groupings, setGroupings] = useState<Grouping[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // State UI Controls
+  const [isAddressMissing, setIsAddressMissing] = useState(false);
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
-  // Search Logic States
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -56,7 +66,6 @@ export default function Navbar() {
   const cache = useRef<Record<string, Product[]>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Cart States
   const [cartCount, setCartCount] = useState(0);
   const [showCartPreview, setShowCartPreview] = useState(false);
   const [cartPreviewItems, setCartPreviewItems] = useState<any[]>([]);
@@ -79,22 +88,16 @@ export default function Navbar() {
   };
 
   useEffect(() => {
-    // 1. Fetch saat komponen di-load atau saat user berubah
     fetchCartData();
-
-    // 2. Fungsi listener
     const handleCartUpdate = () => {
       fetchCartData();
     };
 
-    // 3. Pasang telinga untuk event 'cartUpdated'
     window.addEventListener("cartUpdated", handleCartUpdate);
-
-    // 4. Bersihkan listener saat komponen di-unmount
     return () => {
       window.removeEventListener("cartUpdated", handleCartUpdate);
     };
-  }, [currentUser]); // Trigger ulang kalau currentUser (login/logout) berubah
+  }, [currentUser]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -114,14 +117,52 @@ export default function Navbar() {
     if (userDataStr) {
       try { setCurrentUser(JSON.parse(userDataStr)); } 
       catch (e) { console.error("Failed to parse user data"); }
+    } else {
+      setCurrentUser(null);
     }
+
+    const hasAddr = localStorage.getItem("user_has_address");
+    if (hasAddr === "true") setIsAddressMissing(false);
+    else if (hasAddr === "false") setIsAddressMissing(true);
   };
 
   useEffect(() => {
     loadUserData();
     window.addEventListener("storage", loadUserData);
-    return () => window.removeEventListener("storage", loadUserData);
+    window.addEventListener("userDataUpdated", loadUserData);
+    
+    return () => {
+      window.removeEventListener("storage", loadUserData);
+      window.removeEventListener("userDataUpdated", loadUserData);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!currentUser) return; 
+
+    const verifyAddressRightAway = async () => {
+      const hasAddr = localStorage.getItem("user_has_address");
+      if (hasAddr === "true") {
+        setIsAddressMissing(false);
+        return;
+      }
+
+      try {
+        const addresses = await getMyAddresses();
+        if (addresses && addresses.length > 0) {
+          setIsAddressMissing(false);
+          localStorage.setItem("user_has_address", "true");
+        } else {
+          setIsAddressMissing(true);
+          localStorage.setItem("user_has_address", "false");
+        }
+      } catch (err) {
+        setIsAddressMissing(isDataMissing(currentUser?.address));
+      }
+    };
+
+    verifyAddressRightAway();
+  }, [currentUser]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -198,6 +239,11 @@ export default function Navbar() {
       setCartCount(0);
       setCartPreviewItems([]);
       setUserDropdownOpen(false);
+      
+      localStorage.removeItem("user_data");
+      localStorage.removeItem("user_has_address");
+      
+      window.dispatchEvent(new Event("userDataUpdated"));
       navigate("/");
     }
   };
@@ -213,44 +259,30 @@ export default function Navbar() {
     return `${import.meta.env.VITE_API_BASE}${url}`;
   };
 
+  const showProfileAlert = currentUser && (isDataMissing(currentUser.phone_number) || isAddressMissing);
+
   return (
     <>
-      {/* --- CUSTOM ANIMATION STYLES UNTUK RAKITAN PC --- */}
       <style>{`
         @keyframes rakitanImgSequence {
-          /* 1. AWAL: Transisi dari posisi kecil (akhir loop) ke Pop & Shake */
           0% { transform: scale(0.8) translateY(-8px); }
           5% { transform: scale(1.1) translateY(0); }
           7% { transform: scale(1.1) rotate(-8deg); }
           9% { transform: scale(1.1) rotate(8deg); }
           12% { transform: scale(1) rotate(0deg); }
-          
-          /* 2. DIAM: Posisi normal selama ~2 detik */
           35% { transform: scale(1) translateY(0); }
-          
-          /* 3. MENGECIL: Gambar naik ke atas untuk ngasih ruang ke teks */
           40% { transform: scale(0.8) translateY(-8px); }
-          
-          /* 4. TAHAN: Tahan posisi kecil selama teks muncul (~3.5 detik) */
           90% { transform: scale(0.8) translateY(-8px); }
-          
-          /* Akhir loop, siap-siap melompat lagi ke 0% */
           100% { transform: scale(0.8) translateY(-8px); }
         }
 
         @keyframes rakitanTextSequence {
-          /* Sembunyi selama gambar pop dan diam */
           0%, 35% { opacity: 0; transform: translateY(5px); }
-          
-          /* Muncul bersamaan saat gambar mengecil */
           40%, 85% { opacity: 1; transform: translateY(0); }
-          
-          /* Teks hilang perlahan sebelum gambar kembali zoom & shake */
           90%, 100% { opacity: 0; transform: translateY(5px); }
         }
 
         .animate-rakitan-img {
-          /* Durasi 8s pas banget buat bagi waktu 2s diam + 3.5s teks */
           animation: rakitanImgSequence 8s infinite cubic-bezier(0.25, 1, 0.5, 1);
         }
         
@@ -263,69 +295,61 @@ export default function Navbar() {
 
       <div className={`sticky top-0 z-[1000] w-full bg-white border-b border-gray-200 transition-shadow ${isScrolled ? "shadow-md" : ""}`}>
         <div className="w-full">
-          {/* CONTAINER UTAMA NAVBAR (1 BARIS DESKTOP) */}
-          <div className="flex items-center justify-between max-w-7xl mx-auto w-full h-16 lg:h-20 px-4 md:px-6 gap-4">
+          <div className="flex items-center justify-between max-w-7xl mx-auto w-full h-16 lg:h-20 px-4 md:px-6 gap-2 sm:gap-4">
             
-            {/* 1. BAGIAN KIRI: Logo & Desktop Links */}
             <div className="flex items-center gap-4 lg:gap-8 flex-shrink-0">
-              <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden mr-1 text-gray-700">
-                <MenuIcon size={24} />
-              </button>
               <Link to="/" className="flex-shrink-0">
-                <img src="/anandam-logo-blue.svg" alt="Anandam Logo" className="h-8 sm:h-10 lg:h-12 w-auto object-contain" />
+                <img src="/anandam-logo-blue.svg" alt="Anandam Logo" className="h-10 sm:h-10 lg:h-12 w-auto object-contain" />
               </Link>
 
               <DesktopNavLinks groupings={groupings} />
             </div>
 
-            {/* 2. BAGIAN TENGAH: Search Bar */}
             <div className="hidden md:flex flex-1 justify-center min-w-0 px-2 lg:px-4">
               <SearchBar className="w-full max-w-xl" dropdownWidth="w-full max-w-xl" />
             </div>
 
-            {/* 3. BAGIAN KANAN: Rakitan, Cart, User Profile */}
             <div className="flex items-center justify-end flex-shrink-0 gap-1 sm:gap-2 lg:gap-4">
               
-              {/* === RAKITAN ICON === */}
+              {/* RAKIT PC (Mobile & Desktop) */}
               <Link 
                 to="/pc-builder" 
-                className="hidden sm:flex relative w-16 h-16 items-center justify-center rounded-xl transition-all duration-300 group"
+                className="relative flex w-12 h-12 sm:w-16 sm:h-16 items-center justify-center rounded-md transition-all duration-300 group"
                 title="Rakitan PC"
               >
                 <div className="relative flex flex-col items-center justify-center w-full h-full pointer-events-none">
                   <img 
                     src="/pc.svg" 
                     alt="Rakitan" 
-                    className="w-9 h-9 object-contain animate-rakitan-img drop-shadow-md"
+                    className="w-9 h-9 sm:w-9 sm:h-9 object-contain animate-rakitan-img drop-shadow-md"
                   />
-                  <span className="absolute bottom-1.5 text-[9px] font-extrabold text-blue-700 tracking-wider animate-rakitan-text whitespace-nowrap">
-                    RAKIT PC
+                  <span className="absolute bottom-1 sm:bottom-1.5 text-[7px] sm:text-[9px] font-extrabold text-blue-700 tracking-wider animate-rakitan-text whitespace-nowrap uppercase">
+                    Rakit PC
                   </span>
                 </div>
               </Link>
 
-              {/* SHOPPING CART SECTION */}
+              {/* KERANJANG */}
               <div 
                 className="relative flex justify-center group"
                 onMouseEnter={() => {
-                  // Hanya aktifkan preview jika layar di atas breakpoint desktop (lg = 1024px)
                   if (window.innerWidth >= 1024) setShowCartPreview(true);
                 }} 
                 onMouseLeave={() => setShowCartPreview(false)}
               >
                 <button
                   onClick={() => navigate("/cart")}
-                  className="relative p-2.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-primary transition-all duration-300 z-10"
+                  className="relative p-2 sm:p-2.5 rounded-md text-gray-600 hover:text-primary transition-all duration-300 z-10"
                 >
-                  <ShoppingCart size={22} strokeWidth={2} />
+                  <ShoppingCart size={24} strokeWidth={2} />
                   {cartCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full font-bold border-2 border-white shadow-sm animate-in zoom-in">
+                    <span className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 bg-red-500 text-white text-[9px] sm:text-[10px] min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center rounded-full font-bold border-2 border-white shadow-sm animate-in zoom-in">
                       {cartCount > 9 ? '9+' : cartCount}
                     </span>
                   )}
                 </button>
 
-                {/* DROPDOWN CART PREVIEW */}
+                {/* Preview Cart Desktop */}
                 <div
                   className={`hidden lg:block absolute right-0 lg:left-1/2 lg:-translate-x-1/2 top-full pt-3 w-80 z-50
                     transition-all duration-300 ease-out origin-top-right lg:origin-top
@@ -334,43 +358,76 @@ export default function Navbar() {
                       : "opacity-0 -translate-y-2 scale-95 pointer-events-none"}
                   `}
                 >
-                  <div className="relative bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden z-10">
+                  <div className="relative bg-white border border-gray-100 rounded-md shadow-2xl overflow-hidden z-10">
                     <div className="px-5 py-4 border-b bg-gray-50/50 flex justify-between items-center">
                       <h3 className="text-sm font-bold text-gray-900">Keranjang</h3>
-                      <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
-                        {cartCount} Item
-                      </span>
+                      {cartPreviewItems.length > 0 && (
+                        <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-bold">
+                          {cartCount} Item
+                        </span>
+                      )}
+                      <button 
+                        onClick={() => navigate("/cart")}
+                        className="text-[11px] font-bold text-primary hover:underline"
+                      >
+                        Lihat
+                      </button>
                     </div>
 
-                    <div className="max-h-[320px] overflow-y-auto divide-y divide-gray-50 scrollbar-hide">
+                    <div className="max-h-[350px] overflow-y-auto scrollbar-hide">
                       {cartPreviewItems.length > 0 ? (
-                        cartPreviewItems.map((item) => {
-                          const product = item.product;
-                          const priceNormal = Number(product?.price_normal || 0);
-                          const priceDiscount = Number(product?.price_discount || 0);
-                          const finalPrice = priceDiscount > 0 ? priceNormal - priceDiscount : priceNormal;
-                          const imageUrl = product?.thumbnail?.startsWith("http")
-                            ? product.thumbnail
-                            : `${import.meta.env.VITE_API_BASE}${product?.thumbnail}`;
+                        <div className="divide-y divide-gray-50">
+                          {cartPreviewItems.map((item) => {
+                            const product = item.product;
+                            const priceNormal = Number(product?.price_normal || 0);
+                            const priceDiscount = Number(product?.price_discount || 0);
+                            const finalPrice = priceDiscount > 0 ? priceNormal - priceDiscount : priceNormal;
+                            const imageUrl = product?.thumbnail?.startsWith("http")
+                              ? product.thumbnail
+                              : `${import.meta.env.VITE_API_BASE}${product?.thumbnail}`;
 
-                          return (
-                            <div key={item.id} className="flex gap-4 p-4 hover:bg-gray-50 transition group/item">
-                              <div className="w-14 h-14 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 p-1 border border-gray-100">
-                                <img src={imageUrl} className="w-full h-full object-contain" alt={product?.name} />
+                            return (
+                              <div key={item.id} className="flex gap-4 p-4 hover:bg-gray-50 transition group/item">
+                                <div className="w-14 h-14 bg-gray-50 rounded-md overflow-hidden flex-shrink-0 p-1 border border-gray-100">
+                                  <img src={imageUrl} className="w-full h-full object-contain" alt={product?.name} />
+                                </div>
+                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                  <p className="text-sm font-bold text-gray-800 truncate hover:text-primary">{product?.name}</p>
+                                  <p className="text-[11px] text-gray-400 mt-0.5">
+                                    {item.quantity} x <span className="font-medium text-black">Rp {finalPrice.toLocaleString()}</span>
+                                  </p>
+                                </div>
                               </div>
-                              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                <p className="text-sm font-bold text-gray-800 truncate hover:text-primary">{product?.name}</p>
-                                <p className="text-[11px] text-gray-400 mt-0.5">
-                                  {item.quantity} x <span className="font-medium text-black">Rp {finalPrice.toLocaleString()}</span>
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })
+                            );
+                          })}
+                        </div>
                       ) : (
-                        <div className="py-12 flex flex-col items-center justify-center text-center px-6 text-gray-400">
-                          <ShoppingCart size={32} className="opacity-20 mb-2" />
-                          <p className="text-sm font-medium">Keranjang kosong</p>
+                        <div className="py-10 flex flex-col items-center justify-center text-center px-8">
+                          <div className="w-32 h-32 mb-4 flex items-center justify-center">
+                            <img 
+                              src="/cart.svg" 
+                              alt="Keranjang Kosong" 
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/11329/11329060.png";
+                              }}
+                            />
+                          </div>
+                          <h3 className="text-sm font-bold text-gray-900 mb-1">
+                            Wah, keranjang belanjamu kosong
+                          </h3>
+                          <p className="text-[11px] text-gray-500 mb-6 leading-relaxed">
+                            Yuk, isi dengan barang-barang impianmu!
+                          </p>
+                          <button
+                            onClick={() => {
+                              setShowCartPreview(false);
+                              navigate("/product-katalog");
+                            }}
+                            className="w-full py-2.5 border border-primary text-primary rounded-md text-sm font-bold hover:bg-primary/10 transition-all active:scale-95"
+                          >
+                            Mulai Belanja
+                          </button>
                         </div>
                       )}
                     </div>
@@ -379,7 +436,7 @@ export default function Navbar() {
                       <div className="p-4 bg-gray-50/50 border-t">
                         <button
                           onClick={() => navigate("/cart")}
-                          className="w-full bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20"
+                          className="w-full bg-primary text-white py-2.5 rounded-md text-sm font-bold hover:bg-primary-dark transition-all active:scale-95 shadow-lg shadow-primary/20"
                         >
                           Lihat Selengkapnya
                         </button>
@@ -411,7 +468,7 @@ export default function Navbar() {
                         </div>
                       )}
                       
-                      {(!currentUser.phone_number || currentUser.phone_number.trim() === "") && (
+                      {showProfileAlert && (
                         <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-orange-500 border-2 border-white"></span>
@@ -440,7 +497,7 @@ export default function Navbar() {
                     </button>
                     <button 
                       onClick={() => openAuth('register')} 
-                      className="px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-bold bg-primary text-white rounded-xl hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95"
+                      className="px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-bold bg-primary text-white rounded-md hover:bg-primary-dark shadow-sm transition-all active:scale-95"
                     >
                       Daftar
                     </button>
@@ -457,12 +514,12 @@ export default function Navbar() {
                         : "opacity-0 -translate-y-2 scale-95 pointer-events-none"}
                     `}
                   >
-                    <div className="bg-white border border-gray-100 rounded-2xl shadow-2xl py-2 overflow-hidden duration-300 ease-out origin-top-right">
+                    <div className="bg-white border border-gray-100 rounded-md shadow-2xl py-2 overflow-hidden duration-300 ease-out origin-top-right">
                       <div className="px-5 py-4 bg-gray-50/50 border-b border-gray-100 mb-2">
                         <p className="text-sm font-semibold text-gray-900 truncate">{currentUser.full_name}</p>
                         <p className="text-xs text-gray-500 truncate mt-0.5">{currentUser.email}</p>
                       </div>
-                      
+
                       <Link 
                         to="/user/account/profile" 
                         onClick={() => setUserDropdownOpen(false)}
@@ -471,6 +528,13 @@ export default function Navbar() {
                         <div className="flex items-center gap-3 font-semibold">
                           <User size={18} className="text-gray-400" /> Profil Saya
                         </div>
+                        
+                        {showProfileAlert && (
+                          <span className="flex h-2.5 w-2.5 relative">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                          </span>
+                        )}
                       </Link>
 
                       <Link 
@@ -498,18 +562,58 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* SEARCH BAR MOBILE*/}
+        {/* SEARCH BAR MOBILE */}
         <div className="md:hidden px-4 pb-3 max-w-7xl mx-auto w-full">
           <SearchBar className="w-full" dropdownWidth="w-full" />
         </div>
       </div>
 
+      {/* ================= MOBILE BOTTOM NAVIGATION ================= */}
+      <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 z-[999] flex items-center justify-around pb-safe shadow-[0_-10px_20px_rgba(0,0,0,0.03)] h-16">
+        
+        <button 
+          onClick={() => navigate("/")} 
+          className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${location.pathname === "/" ? "text-primary" : "text-gray-400"}`}
+        >
+          <Home size={22} strokeWidth={location.pathname === "/" ? 2.5 : 2} />
+          <span className="text-[10px] font-semibold">Home</span>
+        </button>
+
+        <button 
+          onClick={() => setMobileMenuOpen(true)} 
+          className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${mobileMenuOpen ? "text-primary" : "text-gray-400"}`}
+        >
+          <MenuIcon size={22} strokeWidth={mobileMenuOpen ? 2.5 : 2} />
+          <span className="text-[10px] font-semibold">Kategori</span>
+        </button>
+
+        <button 
+          onClick={() => navigate("/product-katalog")} 
+          className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${location.pathname === "/product-katalog" ? "text-primary" : "text-gray-400"}`}
+        >
+          <Package size={22} strokeWidth={location.pathname === "/product-katalog" ? 2.5 : 2} />
+          <span className="text-[10px] font-semibold">Katalog</span>
+        </button>
+
+        <button 
+          onClick={() => currentUser ? navigate("/user") : openAuth("login")}
+          className={`relative flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${location.pathname.includes("/user") ? "text-primary" : "text-gray-400"}`}
+        >
+          <User size={22} strokeWidth={location.pathname.includes("/user") ? 2.5 : 2} />
+          <span className="text-[10px] font-semibold">{currentUser ? "Akun" : "Masuk"}</span>
+          
+          {showProfileAlert && (
+            <span className="absolute top-2.5 right-6 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+            </span>
+          )}
+        </button>
+      </div>
+
       <MobileSidebar 
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
-        currentUser={currentUser}
-        onLogout={handleLogout}
-        onOpenAuth={openAuth}
         groupings={groupings}
       />
 
@@ -524,6 +628,8 @@ export default function Navbar() {
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={(userData) => {
           setCurrentUser(userData);
+          localStorage.setItem("user_data", JSON.stringify(userData));
+          window.dispatchEvent(new Event("userDataUpdated"));
           setIsAuthModalOpen(false);
         }}
       />

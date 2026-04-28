@@ -1,6 +1,5 @@
 import { useState } from "react";
-// Link dihapus karena kita pakai Button untuk buka Modal
-import { Loader2, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { changePasswordUser } from "../../../services/userAuthService";
 import Swal from "sweetalert2";
 
@@ -57,23 +56,26 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <div className="animate-fadeIn relative">
-      <div className="border-b pb-4 mb-8">
+    <div className="animate-fadeIn w-full max-w-2xl mx-auto">
+      {/* Header Halaman */}
+      <div className="border-b border-gray-100 pb-4 mb-8">
         <h2 className="text-xl font-bold text-gray-800">Ubah Password</h2>
-        <p className="text-sm text-gray-500">Demi keamanan akun, jangan bagikan password Anda ke orang lain.</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Demi keamanan akun, pastikan password Anda kuat dan tidak mudah ditebak.
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-md space-y-6">
+      <form onSubmit={handleSubmit} className="max-w-md space-y-5">
         {/* Password Lama */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Password Saat Ini</label>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-gray-600 ml-1">Password Saat Ini</label>
           <div className="relative">
             <input
               required
               type={showOld ? "text" : "password"}
               value={formData.old_password}
               onChange={(e) => setFormData({ ...formData, old_password: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-md outline-none focus:border-primary transition-colors text-sm"
               placeholder="Masukkan password lama"
             />
             <button
@@ -85,29 +87,28 @@ export default function ChangePasswordPage() {
             </button>
           </div>
           
-          <div className="mt-2 text-right">
-            {/* 🔥 3. Ubah menjadi button untuk memicu modal */}
+          <div className="text-right">
             <button 
               type="button"
               onClick={() => setIsForgotModalOpen(true)} 
-              className="text-xs text-primary font-semibold hover:underline"
+              className="text-[11px] text-primary font-bold hover:underline"
             >
               Lupa password?
             </button>
           </div>
         </div>
 
-        <div className="border-t pt-6 space-y-6">
+        <div className="pt-4 border-t border-gray-100 space-y-5">
           {/* Password Baru */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password Baru</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-600 ml-1">Password Baru</label>
             <div className="relative">
               <input
                 required
                 type={showNew ? "text" : "password"}
                 value={formData.new_password}
                 onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-md outline-none focus:border-primary transition-colors text-sm"
                 placeholder="Minimal 6 karakter"
               />
               <button
@@ -121,33 +122,35 @@ export default function ChangePasswordPage() {
           </div>
 
           {/* Konfirmasi Password Baru */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Konfirmasi Password Baru</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-600 ml-1">Konfirmasi Password Baru</label>
             <input
               required
               type="password"
               value={formData.confirm_password}
               onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-md outline-none focus:border-primary transition-colors text-sm"
               placeholder="Ulangi password baru"
             />
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full sm:w-auto bg-primary text-white px-8 py-3 rounded-md font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-70"
-        >
-          {loading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
-          Simpan Password
-        </button>
+        <div className="pt-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full sm:w-auto bg-primary text-white px-10 py-2.5 rounded-md font-bold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 disabled:opacity-70 text-sm uppercase tracking-wider"
+          >
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
+            Simpan Password
+          </button>
+        </div>
       </form>
 
-        <ForgotPasswordModal 
-            isOpen={isForgotModalOpen} 
-            onClose={() => setIsForgotModalOpen(false)} 
-        />
+      <ForgotPasswordModal 
+        isOpen={isForgotModalOpen} 
+        onClose={() => setIsForgotModalOpen(false)} 
+      />
     </div>
   );
 }

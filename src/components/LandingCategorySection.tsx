@@ -49,11 +49,11 @@ export default function LandingCategorySection({
             >
               <div
                 className="
-                  w-14 h-14           /* Ukuran HP (disesuaikan) */
+                  w-14 h-14    
                   sm:w-20 sm:h-20 
                   md:w-24 md:h-24
                   2xl:w-32 2xl:h-32 
-                  rounded-xl
+                  rounded-md
                   overflow-hidden
                   bg-white
                   transition-all duration-300

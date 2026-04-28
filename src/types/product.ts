@@ -1,6 +1,15 @@
 import type { Category } from "./category";
 import type { ProductImage } from "./product-image";
-
+export interface ProductVariant {
+  id: string;
+  variant_name: string;
+  price_normal: number;
+  price_discount: number;
+  stock: number;
+  sku_seller: string | null;
+  created_at: string;
+  updated_at: string;
+}
 export interface Product {
   id: string;
   product_id: string;
@@ -12,10 +21,9 @@ export interface Product {
   price_normal: number;
   price_discount: number | null;
   final_price: number;
-
   stock: number;
-
   sku_seller: string | null;
+
   warranty: string | null;
   url_tiktok: string | null;
   url_tokped: string | null;
@@ -35,7 +43,9 @@ export interface Product {
   thumbnail_url: string;
 
   specifications: string[];
-  variasi: string[];
+  
+  variants: ProductVariant[]; 
+  
   brand: {
     id: string;
     name: string;

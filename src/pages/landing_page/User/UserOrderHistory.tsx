@@ -59,17 +59,16 @@ export default function UserOrderHistory() {
     return order.status === activeTab;
   });
 
-  // Disesuaikan untuk style text ala Shopee (hanya warna teks, tanpa background pill)
   const getStatusStyle = (status: string) => {
     switch (status) {
       case "LUNAS":
-        return { color: "text-primary", label: "SELESAI" };
+        return { color: "text-green-600", label: "Selesai" };
       case "PENDING":
-        return { color: "text-orange-500", label: "BELUM BAYAR" };
+        return { color: "text-orange-500", label: "Belum Bayar" };
       case "BATAL":
-        return { color: "text-red-500", label: "DIBATALKAN" };
+        return { color: "text-red-500", label: "Dibatalkan" };
       default:
-        return { color: "text-gray-600", label: status.toUpperCase() };
+        return { color: "text-gray-600", label: status };
     }
   };
 
@@ -92,35 +91,35 @@ export default function UserOrderHistory() {
   };
 
   return (
-    <div className="min-h-screen pb-10 bg-white">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 md:bg-transparent -mx-4 md:mx-0 flex flex-col">
+      
+      {/* --- TABS FILTER (Biasa, Tidak Sticky) --- */}
+      <div className="bg-white flex overflow-x-auto border-b border-gray-200 hide-scrollbar shadow-sm mb-4 md:mb-6">
+        {[
+          { id: "SEMUA", label: "Semua" },
+          { id: "PENDING", label: "Belum Bayar" },
+          { id: "LUNAS", label: "Selesai" },
+          { id: "BATAL", label: "Dibatalkan" }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 min-w-[100px] py-3.5 text-[13px] sm:text-sm text-center font-bold transition-all border-b-2 whitespace-nowrap px-4 ${
+              activeTab === tab.id
+                ? "border-primary text-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* --- TABS FILTER (Ala Shopee) --- */}
-        <div className="bg-white flex overflow-x-auto shadow-sm mb-4 rounded-sm hide-scrollbar">
-          {[
-            { id: "SEMUA", label: "Semua" },
-            { id: "PENDING", label: "Belum Bayar" },
-            { id: "LUNAS", label: "Selesai" },
-            { id: "BATAL", label: "Dibatalkan" }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-[120px] py-4 text-sm text-center font-medium transition-colors border-b-2 ${
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-gray-700 hover:text-primary"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* --- ORDER LIST --- */}
+      {/* --- ORDER LIST --- */}
+      <div className="p-4 md:p-0 flex-1">
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <Loader2 className="animate-spin text-primary w-10 h-10" />
+            <Loader2 className="animate-spin text-primary w-8 h-8" />
           </div>
         ) : filteredOrders.length > 0 ? (
           <div className="space-y-4">
@@ -128,98 +127,85 @@ export default function UserOrderHistory() {
               const statusStyle = getStatusStyle(order.status);
               
               return (
-                <div key={order.id} className="bg-white rounded-sm shadow-sm overflow-hidden">
+                <div key={order.id} className="bg-white rounded-md border border-gray-200 shadow-sm overflow-hidden">
                   
-                  {/* Card Header: Store Name / Invoice & Status */}
-                  <div className="border-b border-gray-200 p-4 flex items-center justify-between">
+                  {/* Header: Invoice & Status */}
+                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                     <div className="flex items-center gap-2">
-                      <Store size={16} className="text-gray-600" />
-                      <span className="font-semibold text-sm text-gray-800">
+                      <Store size={15} className="text-gray-500" />
+                      <span className="font-bold text-xs text-gray-700 uppercase tracking-tight">
                         {order.invoice_number}
                       </span>
                     </div>
-                    <div className={`text-sm font-medium ${statusStyle.color}`}>
+                    <div className={`text-xs font-bold uppercase tracking-wider ${statusStyle.color}`}>
                       {statusStyle.label}
                     </div>
                   </div>
 
-                  {/* Card Body: Products */}
-                  <div className="p-4 space-y-4 cursor-pointer hover:bg-gray-50 transition-colors">
+                  {/* Body: Products */}
+                  <div className="divide-y divide-gray-100">
                     {order.items?.map((item: any) => {
                       const imageUrl = getProductImage(item.product);
 
                       return (
-                        <Link to={`/product-katalog/${item.product_id}`} key={item.id} className="flex gap-4 items-start">
-                          {/* Gambar Produk */}
-                          <div className="w-20 h-20 bg-gray-50 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                        <Link to={`/product-katalog/${item.product_id}`} key={item.id} className="flex gap-4 p-4 hover:bg-gray-50 transition-colors">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-md overflow-hidden flex-shrink-0 border border-gray-200">
                             {imageUrl ? (
-                              <img src={imageUrl} alt={item.product_name} className="w-full h-full object-contain" />
+                              <img src={imageUrl} alt={item.product_name} className="w-full h-full object-cover" />
                             ) : (
-                              <Package className="text-gray-300" size={28} />
+                              <div className="w-full h-full flex items-center justify-center"><Package className="text-gray-300" size={24} /></div>
                             )}
                           </div>
                           
-                          {/* Detail Produk */}
                           <div className="flex-1 min-w-0 flex flex-col justify-between">
                             <div>
-                              <h3 className="text-sm text-gray-800 line-clamp-2 leading-snug">
+                              <h3 className="text-sm text-gray-800 font-medium line-clamp-2 leading-snug">
                                 {item.product_name}
                               </h3>
                               {item.variasi && (
-                                <p className="text-xs text-gray-500 mt-1">Variasi: {item.variasi}</p>
+                                <p className="text-[11px] text-gray-500 mt-1">Variasi: {item.variasi}</p>
                               )}
                             </div>
-                            <p className="text-sm text-gray-800 mt-2">x{item.quantity}</p>
-                          </div>
-
-                          {/* Harga Produk (Kanan) */}
-                          <div className="text-right flex-shrink-0 flex items-center h-full">
-                            <p className="text-sm text-primary">
-                              Rp {Number(item.price).toLocaleString('id-ID')}
-                            </p>
+                            <div className="flex items-center justify-between mt-2">
+                              <p className="text-xs text-gray-500 font-medium">x{item.quantity}</p>
+                              <p className="text-sm font-bold text-gray-800">
+                                Rp {Number(item.price).toLocaleString('id-ID')}
+                              </p>
+                            </div>
                           </div>
                         </Link>
                       );
                     })}
                   </div>
 
-                  {/* Card Footer: Total Price */}
-                  <div className="bg-[#fffdfaf5] border-t border-gray-200 p-4 flex justify-end items-center gap-4">
-                    <p className="text-sm text-gray-600">Total Pesanan:</p>
-                    <p className="text-xl font-medium text-primary">
-                      Rp {Number(order.total_price).toLocaleString('id-ID')}
-                    </p>
-                  </div>
+                  {/* Footer: Total & Actions */}
+                  <div className="px-4 py-4 border-t border-gray-100 bg-white">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-xs font-medium text-gray-500">Total Pesanan</span>
+                      <span className="text-base sm:text-lg font-bold text-primary">
+                        Rp {Number(order.total_price).toLocaleString('id-ID')}
+                      </span>
+                    </div>
 
-                  {/* Card Action Buttons */}
-                  <div className="border-t border-gray-200 p-4 flex justify-end gap-3 bg-white">
-                    {order.status === "PENDING" && (
-                      <button 
-                        onClick={() => handleCancelOrder(order.id)}
-                        className="px-6 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                      >
-                        Batalkan Pesanan
-                      </button>
-                    )}
-                    
-                    {order.status === "LUNAS" && (
-                      <Link 
-                        to={`/product-katalog/${order.items?.[0]?.product_id}`}
-                        className="px-6 py-2 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 transition shadow-sm"
-                      >
-                        Beli Lagi
-                      </Link>
-                    )}
-                    
-                    {/* Tombol hubungi penjual / detail dsb bisa ditambah di sini */}
-                    {order.status === "BATAL" && (
-                       <Link 
-                       to={`/product-katalog/${order.items?.[0]?.product_id}`}
-                       className="px-6 py-2 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 transition shadow-sm"
-                     >
-                       Beli Lagi
-                     </Link>
-                    )}
+                    <div className="flex justify-end gap-2">
+                      {order.status === "PENDING" && (
+                        <button 
+                          onClick={() => handleCancelOrder(order.id)}
+                          className="px-5 py-2 text-xs font-bold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors uppercase tracking-wider"
+                        >
+                          Batalkan
+                        </button>
+                      )}
+                      
+                      {(order.status === "LUNAS" || order.status === "BATAL") && (
+                        <Link 
+                          to={`/product-katalog/${order.items?.[0]?.product_id}`}
+                          className="px-6 py-2 text-xs font-bold text-white bg-primary rounded-md hover:bg-primary-dark transition-colors uppercase tracking-wider text-center"
+                        >
+                          Beli Lagi
+                        </Link>
+                      )}
+                    </div>
                   </div>
 
                 </div>
@@ -227,18 +213,19 @@ export default function UserOrderHistory() {
             })}
           </div>
         ) : (
-          <div className="text-center py-24 bg-white rounded-sm shadow-sm border border-gray-200">
-            <div className="bg-gray-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ShoppingBag className="h-10 w-10 text-gray-400" />
+          <div className="text-center py-20 bg-white rounded-md border border-gray-200 mx-4 md:mx-0 shadow-sm">
+            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShoppingBag className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900">Belum ada pesanan</h3>
-            <p className="text-gray-500 mt-1 mb-6 text-sm">Kamu belum pernah melakukan pemesanan apa pun.</p>
-            <Link to="/product-katalog" className="inline-block px-8 py-2.5 bg-primary text-white rounded font-medium hover:bg-primary/90 transition shadow-sm shadow-primary/30">
+            <h3 className="text-base font-bold text-gray-800 uppercase tracking-tight">Belum ada pesanan</h3>
+            <p className="text-xs text-gray-500 mt-1 mb-6 px-10 leading-relaxed">
+              Kamu belum memiliki riwayat transaksi di kategori ini.
+            </p>
+            <Link to="/product-katalog" className="inline-block px-8 py-2.5 bg-primary text-white rounded-md text-xs font-bold hover:bg-primary-dark transition-colors uppercase tracking-widest">
               Mulai Belanja
             </Link>
           </div>
         )}
-
       </div>
     </div>
   );

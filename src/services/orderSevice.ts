@@ -26,3 +26,11 @@ export const getUserOrders = async () => {
   const response = await userApi.get("/orders/my-orders");
   return response.data;
 };
+
+export const checkoutPCBuilder = async (data: {
+  items: { product_id: string; quantity: number }[];
+  notes?: string;
+}) => {
+  const res = await userApi.post(`${ORDER_PATH}/checkout/builder`, data);
+  return res.data;
+};

@@ -169,11 +169,11 @@ export default function Footer() {
                   Rakitan
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link to="/price-list" className="hover:text-white">
                   Pricelist 
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link to="/certificate" className="hover:text-white">
                   Sertifikat PKL

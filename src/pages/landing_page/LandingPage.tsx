@@ -163,10 +163,15 @@ export default function LandingPage() {
   const bannerPromoMobile = banners.find((b) => b.slot === "banner-after-category-mobile")
   const bannerPromoDesktop = banners.find((b) => b.slot === "banner-after-category")
   const bannerAfterPopularCenters = banners.find(
-    (b) => b.slot === "banner-after-popular-center"
+    (b) => b.slot === "banner-promo"
+  );
+  const bannerPromoProductSlider = banners.find(
+    (b) => b.slot === "banner-promo-product" 
   );
 
   const [isHovered, setIsHovered] = useState(false);
+
+  const isDragClickRef = useRef<boolean>(true);
 
   // ==========================================
   // LOGIKA INFINITE CAROUSEL HERO BANNER
@@ -309,17 +314,16 @@ export default function LandingPage() {
   const sliderTrackRef = useRef<HTMLDivElement>(null); 
 
   const handleBannerDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if (e.type === 'mousedown') {
-      e.preventDefault();
-    }
+  if (e.type === 'mousedown') e.preventDefault();
 
-    setIsTransitioning(false);
+  setIsTransitioning(false);
+  isDragClickRef.current = true; // Reset: asumsikan awalnya adalah klik
 
-    if ('touches' in e) {
-      dragStartX.current = e.touches[0].clientX;
-    } else {
-      dragStartX.current = e.pageX;
-    }
+  if ('touches' in e) {
+    dragStartX.current = e.touches[0].clientX;
+  } else {
+    dragStartX.current = e.pageX;
+  }
   };
 
   const handleBannerDragMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -333,10 +337,23 @@ export default function LandingPage() {
     }
     
     const diff = currentX - dragStartX.current;
-    dragOffsetRef.current = diff; 
     
+    // Jika geser lebih dari 5 pixel, tandai sebagai DRAG (bukan klik)
+    if (Math.abs(diff) > 5) {
+      isDragClickRef.current = false;
+    }
+
+    dragOffsetRef.current = diff; 
     if (sliderTrackRef.current) {
       sliderTrackRef.current.style.transform = `translateX(calc(-${currentHero * 100}% + ${diff}px))`;
+    }
+  };
+
+  // Fungsi baru untuk handle navigasi ke Promo Page
+  const handleBannerClick = (banner: any) => {
+    if (isDragClickRef.current) {
+      // Arahkan ke Promo Page berdasarkan ID Banner
+      navigate(`/promo/${banner.id}`);
     }
   };
 
@@ -382,7 +399,7 @@ export default function LandingPage() {
       "Monitor & Display",
       "Laptop",
       "Printer & Scanner",
-      "Dekstop & PC"
+      "Desktop & PC"
     ];
 
     const ids: string[] = [];
@@ -564,13 +581,18 @@ export default function LandingPage() {
                 }}
               >
                 {displayHeroBanners.map((banner, i) => (
-                  <img
+                  <div
                     key={`${banner.id}-${i}`}
-                    src={getImageUrl(banner.image_url)}
-                    className="w-full h-full flex-shrink-0 object-cover object-top select-none pointer-events-none"
-                    alt="Hero Banner"
-                    draggable={false}
-                  />
+                    className="w-full h-full flex-shrink-0 cursor-pointer" // Tambah cursor pointer
+                    onClick={() => handleBannerClick(banner)} // Panggil fungsi navigasi
+                  >
+                    <img
+                      src={getImageUrl(banner.image_url)}
+                      className="w-full h-full object-cover object-top select-none pointer-events-none"
+                      alt={banner.title || "Hero Banner"}
+                      draggable={false}
+                    />
+                  </div>
                 ))}
               </div>
 
@@ -623,8 +645,8 @@ export default function LandingPage() {
             
             {bannerAfterPopularCenters && bannerAfterPopularCenters.image_url && (
               <div 
-                className="w-full h-[180px] sm:h-[240px] md:h-[350px] lg:h-[450px] 2xl:h-[550px]
-                           rounded-xl overflow-hidden mx-auto"
+                onClick={() => navigate(`/promo/${bannerAfterPopularCenters.id || 'special'}`)}
+                className="w-full aspect-[3/1] rounded-xl overflow-hidden mx-auto cursor-pointer hover:opacity-95 transition-opacity"
               >
                 <img
                   src={getImageUrl(bannerAfterPopularCenters.image_url)}
@@ -641,7 +663,11 @@ export default function LandingPage() {
 
       <PromoProductSlider 
         products={promoProducts}
-        promoImageUrl="/promo1.svg"
+        promoImageUrl={
+          bannerPromoProductSlider?.image_url 
+            ? getImageUrl(bannerPromoProductSlider.image_url) 
+            : undefined
+        }
       />
 
       <PopularProduct popularProducts={popularProducts} />
@@ -656,7 +682,7 @@ export default function LandingPage() {
 
           <h2
             className="mb-6 text-2xl md:text-3xl lg:text-4xl 
-                      font-semibold font-cocogoose
+                      font-bold
                       bg-gray-800
                       text-transparent bg-clip-text
                       text-center"

@@ -18,72 +18,85 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
         e.preventDefault();
         setLoading(true);
         try {
-        await forgotPasswordUser(email);
-        Swal.fire({
-            icon: "success",
-            title: "Email Terkirim",
-            text: "Silakan cek kotak masuk email Anda untuk link reset password.",
-        });
-        setEmail("");
-        onClose(); // Tutup modal otomatis jika sukses
+            await forgotPasswordUser(email);
+            Swal.fire({
+                icon: "success",
+                title: "Email Terkirim",
+                text: "Silakan cek kotak masuk email Anda untuk link reset password.",
+                didOpen: (toast) => {
+                    if (toast.parentElement) toast.parentElement.style.zIndex = "10000"; 
+                }
+            });
+            setEmail("");
+            onClose(); 
         } catch (error: any) {
-        Swal.fire("Gagal", error.response?.data?.message || "Email tidak terdaftar", "error");
+            Swal.fire({
+                icon: "error",
+                title: "Gagal",
+                text: error.response?.data?.message || "Email tidak terdaftar",
+                didOpen: (toast) => {
+                    if (toast.parentElement) toast.parentElement.style.zIndex = "10000"; 
+                }
+            });
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-            <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-gray-100 animate-popIn relative">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all duration-300">
+            <div className="max-w-md w-full bg-white rounded-md border border-gray-200 shadow-lg animate-popIn relative overflow-hidden">
                 
+                {/* Close Button */}
                 <button 
-                onClick={onClose} 
-                className="absolute right-6 top-6 text-gray-400 hover:text-gray-600 transition-colors bg-gray-50 p-2 rounded-full"
+                    onClick={onClose} 
+                    className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors p-1.5 hover:bg-gray-100 rounded-md"
                 >
-                <X size={20} />
+                    <X size={18} />
                 </button>
                 
-                <div className="text-center mb-8 mt-2">
-                    <h2 className="text-2xl font-bold text-gray-900">Lupa Password?</h2>
-                    <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-                        Masukkan email Anda untuk menerima link reset password.
-                    </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Alamat Email</label>
-                    <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                    <input
-                        required
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="nama@email.com"
-                        className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    />
+                <div className="p-6 sm:p-8">
+                    <div className="text-center mb-8 mt-2">
+                        <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">Lupa Password</h2>
+                        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                            Masukkan alamat email akun Anda. Kami akan mengirimkan tautan untuk mengatur ulang password.
+                        </p>
                     </div>
-                </div>
 
-                <div className="flex gap-3">
-                    <button
-                    type="button"
-                    onClick={onClose}
-                    className="w-1/3 py-3.5 bg-white text-gray-600 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all"
-                    >
-                    Batal
-                    </button>
-                    <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-2/3 py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
-                    >
-                    {loading ? <Loader2 className="animate-spin" /> : "Kirim Link Reset"}
-                    </button>
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-gray-600 ml-1">Alamat Email</label>
+                            <div className="relative">
+                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                <input
+                                    required
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="nama@email.com"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-md outline-none focus:border-primary transition-colors text-sm"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="flex-1 py-2.5 text-gray-600 text-sm font-bold rounded-md border border-gray-300 hover:bg-gray-50 transition-colors uppercase tracking-wider"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="flex-[2] py-2.5 bg-primary text-white text-sm font-bold rounded-md hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 disabled:opacity-70 uppercase tracking-wider"
+                            >
+                                {loading ? <Loader2 className="animate-spin" size={18} /> : "Kirim Link"}
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                </form>
             </div>
         </div>
     );

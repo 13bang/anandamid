@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { getThumbnailUrl } from "../../imageHelper";
 
@@ -6,7 +6,6 @@ interface ProductRowProps {
   product: any;
   isSelected: boolean;
   onSelect: (id: string) => void;
-  // Tambahkan callback untuk update inline
   onInlineUpdate: (id: string, updates: any) => Promise<void>; 
   onToggle: (id: string, field: "is_active" | "is_popular", currentValue: boolean) => void;
   onEdit: (product: any) => void;
@@ -22,13 +21,11 @@ export default function ProductRow({
   onSelect,
   onInlineUpdate,
 }: ProductRowProps) {
-  // State untuk melacak kolom mana yang sedang diedit
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<any>(null);
 
   const finalPrice = product.price_normal - (product.price_discount ?? 0);
 
-  // Fungsi untuk handle ketika user menekan Enter atau Blur (keluar dari input)
   const handleBlur = async (field: string) => {
     if (tempValue !== product[field]) {
       await onInlineUpdate(product.id, { [field]: tempValue });
@@ -41,33 +38,41 @@ export default function ProductRow({
     setTempValue(value);
   };
 
+  const formatRupiah = (value: number | string) => {
+    if (!value) return "";
+    return Number(value)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const parseRupiah = (value: string) => {
+    return Number(value.replace(/\./g, ""));
+  };
+
   const renderInlineInput = (field: string) => {
-    // 1. Tentukan lebar input berdasarkan nama field agar tidak merusak lebar kolom
-    let inputStyles = "w-full min-w-[150px]"; // Default untuk kolom nama
-    
-    if (field === "stock") {
-      inputStyles = "w-7 text-center"; // Lebar kecil untuk stok
-    } else if (field === "price_normal" || field === "price_discount") {
-      inputStyles = "w-24"; // Lebar sedang untuk harga
-    }
+    // 1. Tentukan format value yang akan di-render di dalam input
+    const displayValue = field === "price_normal" || field === "price_discount"
+      ? formatRupiah(tempValue || "")
+      : tempValue || "";
+
+    // 2. Kalkulasi jumlah karakter untuk menentukan lebar input (satuan 'ch')
+    // Set nilai minimal agar input tidak hilang/terlalu sempit jika valuenya kosong
+    const minChars = field === "name" ? 20 : (field === "stock" ? 3 : 8);
+    const charLength = displayValue.toString().length;
+    const dynamicWidth = Math.max(charLength, minChars);
 
     return (
       <input
         autoFocus
         type="text"
-        // 2. Terapkan style dinamis di sini
-        className={`${inputStyles} px-1 py-0.5 text-sm border border-blue-500 rounded focus:outline-none bg-white`}
-        value={
-          field === "price_normal" || field === "price_discount"
-            ? formatRupiah(tempValue || "")
-            : tempValue
-        }
+        // 3. Gunakan inline style dengan satuan 'ch' (+ 1.5 untuk padding)
+        style={{ width: `${dynamicWidth + 1.5}ch`, maxWidth: "100%" }}
+        className="px-1 py-0.5 text-sm border border-blue-500 rounded focus:outline-none bg-white transition-all"
+        value={displayValue}
         onChange={(e) => {
           const val = e.target.value;
-
           if (field === "price_normal" || field === "price_discount") {
-            const numeric = parseRupiah(val);
-            setTempValue(numeric);
+            setTempValue(parseRupiah(val));
           } else {
             setTempValue(val);
           }
@@ -79,17 +84,6 @@ export default function ProductRow({
         }}
       />
     );
-  };
-
-  const formatRupiah = (value: number | string) => {
-    if (!value) return "";
-    return Number(value)
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  };
-
-  const parseRupiah = (value: string) => {
-    return Number(value.replace(/\./g, ""));
   };
 
   return (
@@ -121,23 +115,19 @@ export default function ProductRow({
               }}
               onError={(e) => {
                 const img = e.target as HTMLImageElement;
-
                 if (img.dataset.fallbackApplied === "true") {
                   img.src = "/icon-anandam.svg"; 
                   return;
                 }
-
                 img.dataset.fallbackApplied = "true";
-
                 const filename = thumbnail.split("/").pop();
                 const fallback = `${import.meta.env.VITE_API_BASE}/uploads/products/original/${filename}`;
-
                 img.src = fallback;
               }}
-              className="object-cover w-8 h-8 rounded cursor-pointer hover:opacity-80"
+              className="object-cover w-8 h-8 rounded cursor-pointer hover:opacity-80 flex-shrink-0"
             />
           ) : (
-            <div className="flex items-center justify-center w-8 h-8 text-xs text-gray-400 bg-gray-100 rounded">
+            <div className="flex items-center justify-center w-8 h-8 text-xs text-gray-400 bg-gray-100 rounded flex-shrink-0">
               —
             </div>
           );
@@ -153,18 +143,16 @@ export default function ProductRow({
           renderInlineInput("name")
         ) : (
           <div className="flex flex-wrap items-center gap-1">
-            {product.name}
+            <span className="line-clamp-2">{product.name}</span>
             
-            {/* Label Duplikat */}
             {product.is_duplicate && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-red-500 text-white rounded font-bold uppercase">
+              <span className="text-[9px] px-1.5 py-0.5 bg-red-500 text-white rounded font-bold uppercase flex-shrink-0">
                 DUP
               </span>
             )}
 
-            {/* Label No Category (BARU) */}
             {!product.category && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-amber-500 text-white rounded font-bold uppercase">
+              <span className="text-[9px] px-1.5 py-0.5 bg-amber-500 text-white rounded font-bold uppercase flex-shrink-0">
                 NO CAT
               </span>
             )}
@@ -177,11 +165,7 @@ export default function ProductRow({
         className="px-3 py-2 text-center cursor-pointer hover:bg-blue-50"
         onClick={() => startEditing("stock", product.stock)}
       >
-        {editingField === "stock" ? (
-          renderInlineInput("stock")
-        ) : (
-          product.stock
-        )}
+        {editingField === "stock" ? renderInlineInput("stock") : product.stock}
       </td>
 
       {/* KOLOM HARGA NORMAL */}
@@ -208,10 +192,11 @@ export default function ProductRow({
         )}
       </td>
 
-      {/* HARGA FINAL (Otomatis, tidak perlu edit) */}
+      {/* HARGA FINAL */}
       <td className="px-2 py-2 whitespace-nowrap bg-gray-50 font-bold">
         Rp {Number(finalPrice).toLocaleString()}
       </td>
+      
       <td className="px-3 py-2 text-center">
         <div className="flex justify-center">
           <button
@@ -229,24 +214,25 @@ export default function ProductRow({
           </button>
         </div>
       </td>
+      
       <td className="px-3 py-2 text-center">
-        
-      <div className="flex justify-center">
-        <button
-          type="button"
-          onClick={() => onToggle(product.id, "is_popular", product.is_popular)}
-          className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${
-            product.is_popular ? "bg-blue-500" : "bg-gray-300"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-            product.is_popular ? "translate-x-5" : ""
-          }`}
-          />
-        </button>
-      </div>
-    </td>
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => onToggle(product.id, "is_popular", product.is_popular)}
+            className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${
+              product.is_popular ? "bg-blue-500" : "bg-gray-300"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+              product.is_popular ? "translate-x-5" : ""
+            }`}
+            />
+          </button>
+        </div>
+      </td>
+      
       <td className="px-3 py-2 text-center">
         <button
           onClick={() => onEdit(product)}

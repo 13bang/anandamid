@@ -43,6 +43,7 @@ import UserProtectedRoute from "./components/UserProtectedRoute";
 import UserAddressPage from "./pages/landing_page/User/UserAddressPage";
 import ChangePasswordPage from "./pages/landing_page/User/ChangePasswordPage";
 import ResetPasswordPage from "./pages/landing_page/User/ResetPasswordPage";
+import PromoBannerPage from "./pages/landing_page/PromoBannerPage";
 
 
 // ================= ROUTES =================
@@ -68,13 +69,13 @@ function AppRoutes() {
         <Route path="/pc-builder" element={<PCBuilderPage />} />
         <Route path="/price-list" element={<PublicPricelistPage />} />
         <Route path="/cart" element={<CartPage />} />
+        <Route path="/promo/:id" element={<PromoBannerPage />} />
 
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* NESTED ROUTING USER */}
         <Route element={<UserProtectedRoute />}>
           <Route path="/user" element={<UserLayout />}>
-            <Route index element={<Navigate to="account/profile" replace />} />
             <Route path="account/profile" element={<ProfilePage />} />
             <Route path="account/addresses" element={<UserAddressPage />} />
             <Route path="account/change-password" element={<ChangePasswordPage />} />

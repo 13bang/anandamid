@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom"; 
 import { getCompatibility, getProducts } from "../../services/productService";
+import { checkoutPCBuilder } from "../../services/orderSevice";
 import type { Product } from "../../types/product";
 import Breadcrumb from "../../components/Breadcrumb";
 import Swal from "sweetalert2";
@@ -27,16 +28,16 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
     ) || [];
 
     return (
-        <div className="flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 items-start md:items-center py-4 border-b border-gray-100 last:border-0">
+        <div className="flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 items-start md:items-center py-4 border-b border-gray-50 last:border-0">
             {/* LABEL */}
-            <div className="md:col-span-3 text-sm font-medium text-gray-700 w-full">
+            <div className="md:col-span-3 text-[13px] font-bold text-gray-500 uppercase tracking-tight w-full">
                 {label}
             </div>
 
-            {/* CUSTOM SEARCHABLE DROPDOWN */}
+            {/* DROPDOWN */}
             <div className={`md:col-span-5 w-full relative ${isOpen ? 'z-50' : 'z-10'}`} ref={dropdownRef}>
                 <div
-                    className="w-full flex items-center justify-between border border-gray-200 p-2.5 md:p-2 rounded-lg text-sm bg-gray-50 hover:bg-white transition-all cursor-pointer outline-none"
+                    className="w-full flex items-center justify-between border border-gray-200 p-2.5 rounded-md text-sm bg-white hover:border-primary transition-all cursor-pointer outline-none"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     <span className="truncate pr-4 text-gray-700 font-medium">
@@ -46,12 +47,12 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
                 </div>
 
                 {isOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden flex flex-col">
+                    <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden flex flex-col animate-fadeIn">
                         <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0">
                             <input
                                 type="text"
                                 autoFocus
-                                className="w-full text-sm p-2 bg-white border border-gray-200 rounded-md outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                className="w-full text-sm p-2 bg-white border border-gray-200 rounded-md outline-none focus:border-primary"
                                 placeholder={`Cari ${label}...`}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
@@ -59,19 +60,19 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
                             />
                         </div>
 
-                        <div className="max-h-60 overflow-y-auto">
+                        <div className="max-h-60 overflow-y-auto scrollbar-hide">
                             <div
-                                className="px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 cursor-pointer border-b border-gray-50"
+                                className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-50 cursor-pointer border-b border-gray-50"
                                 onClick={() => { onChange(null); setIsOpen(false); setSearch(""); }}
                             >
-                                -- Kosongkan Pilihan --
+                                -- Kosongkan --
                             </div>
                             
                             {filteredOptions.length > 0 ? (
                                 filteredOptions.map((p: Product) => (
                                     <div
                                         key={p.id}
-                                        className={`px-3 py-2.5 text-sm cursor-pointer transition-colors ${value?.id === p.id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+                                        className={`px-3 py-2.5 text-sm cursor-pointer transition-colors ${value?.id === p.id ? 'bg-primary/5 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                                         onClick={() => {
                                             onChange(p);
                                             setIsOpen(false);
@@ -82,8 +83,8 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
                                     </div>
                                 ))
                             ) : (
-                                <div className="px-3 py-6 text-sm text-center text-gray-400 font-medium">
-                                    Produk tidak ditemukan
+                                <div className="px-3 py-6 text-xs text-center text-gray-400 font-bold uppercase tracking-widest">
+                                    Tidak Ada Data
                                 </div>
                             )}
                         </div>
@@ -94,11 +95,11 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
             {/* QTY & PRICE */}
             <div className="flex items-center justify-between w-full md:col-span-4 gap-4 relative z-0">
                 <div className="flex items-center gap-3 md:justify-center md:w-full">
-                    <span className="text-xs text-gray-400 font-bold uppercase md:hidden">Qty</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase md:hidden tracking-widest">Qty</span>
                     <input
                         type="number"
                         min={1}
-                        className="w-16 border border-gray-200 p-2 rounded-lg text-sm text-center bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className="w-16 border border-gray-200 p-2 rounded-md text-sm text-center bg-white outline-none focus:border-primary"
                         value={qty[qtyKey]}
                         onChange={(e) =>
                             setQty((prev: any) => ({
@@ -169,10 +170,8 @@ export default function PCBuilderPage() {
 
             setConstraints(res.active_constraints);
         } catch (err) {
-            console.error("Gagal load komponen utama", err);
-        } finally { 
-            setLoading(false); 
-        }
+            console.error(err);
+        } finally { setLoading(false); }
     };
 
     const fetchSupportParts = async () => {
@@ -186,36 +185,16 @@ export default function PCBuilderPage() {
             { key: 'hdds', name: 'HDD' },
             { key: 'oss', name: 'Operating System' }
         ];
-
-        const monitorCategories = ["Monitor LED", "Monitor Gaming", "Monitor Professional"];
-
         try {
-            const results = await Promise.all(
-                categories.map(cat => getProducts({ category: cat.name, limit: 100 }))
-            );
-
+            const results = await Promise.all(categories.map(cat => getProducts({ category: cat.name, limit: 100 })));
             const newList: any = {};
-            categories.forEach((cat, index) => {
-                newList[cat.key] = results[index].data || [];
-            });
-
-            const monitorResults = await Promise.all(
-                monitorCategories.map(name => getProducts({ category: name, limit: 100 }))
-            );
-
-            const mergedMonitors = Array.from(
-                new Map(
-                    monitorResults
-                        .flatMap(res => res.data || [])
-                        .map(item => [item.id, item])
-                ).values()
-            );
-
+            categories.forEach((cat, index) => { newList[cat.key] = results[index].data || []; });
+            const monitorCategories = ["Monitor LED", "Monitor Gaming", "Monitor Professional"];
+            const monitorResults = await Promise.all(monitorCategories.map(name => getProducts({ category: name, limit: 100 })));
+            const mergedMonitors = Array.from(new Map(monitorResults.flatMap(res => res.data || []).map(item => [item.id, item])).values());
             newList["monitors"] = mergedMonitors;
             setList(prev => ({ ...prev, ...newList }));
-        } catch (err) {
-            console.error("Gagal load komponen pendukung", err);
-        }
+        } catch (err) { console.error(err); }
     };
 
     useEffect(() => { fetchSupportParts(); }, []);
@@ -236,9 +215,7 @@ export default function PCBuilderPage() {
         monitor1: 1, monitor2: 1, monitor3: 1, os: 1
     });
 
-    const getPrice = (p: Product | null, key: string) => {
-        return (p?.final_price || 0) * (qty[key] || 1);
-    };
+    const getPrice = (p: Product | null, key: string) => (p?.final_price || 0) * (qty[key] || 1);
 
     const grandTotal = 
         getPrice(selectedCPU, "cpu") + getPrice(selectedMobo, "mobo") + getPrice(selectedRAM, "ram") +
@@ -250,6 +227,7 @@ export default function PCBuilderPage() {
         getPrice(selectedMonitor2, "monitor2") + getPrice(selectedMonitor3, "monitor3") + getPrice(selectedOS, "os");
 
     const isCoreComplete = selectedCPU && selectedMobo && selectedRAM;
+    const WHATSAPP_NUMBER = "6281228134747";
 
     const filterValidProducts = (products: Product[], type: "cpu" | "mobo" | "ram") => {
         return products.filter(p => {
@@ -260,175 +238,152 @@ export default function PCBuilderPage() {
         });
     };
 
-    const WHATSAPP_NUMBER = "6281228134747";
-
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         const token = localStorage.getItem("user_token");
-        if (!token) {
-            setIsAuthModalOpen(true);
-            return;
-        }
+        if (!token) { setIsAuthModalOpen(true); return; }
+        const userData = JSON.parse(localStorage.getItem("user_data") || "null");
 
-        const userDataString = localStorage.getItem("user_data");
-        const userData = userDataString ? JSON.parse(userDataString) : null;
-
-        if (!userData || !userData.phone_number) {
+        if (!userData?.phone_number || !userData?.address) {
             Swal.fire({
+                title: "Data Belum Lengkap!",
+                text: "Lengkapi WA dan Alamat di profil untuk checkout rakitan.",
                 icon: 'warning',
-                title: 'Data Belum Lengkap!',
-                text: 'Harap lengkapi nomor WhatsApp Anda di halaman profil sebelum melakukan checkout rakitan.',
                 confirmButtonText: 'Lengkapi Sekarang',
-                confirmButtonColor: '#2563eb'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    navigate('/user/account/profile', { state: { requirePhone: true } }); 
-                }
-            });
-            return;
+                confirmButtonColor: '#2563eb',
+                showClass: { popup: 'animate__animated animate__zoomIn' },
+            }).then((res) => { if (res.isConfirmed) navigate("/user/account/profile"); });
+            return; 
         }
 
-        const items = [
-            { item: selectedCPU, key: "cpu" }, { item: selectedMobo, key: "mobo" }, { item: selectedRAM, key: "ram" },
-            { item: selectedVGA1, key: "vga1" }, { item: selectedVGA2, key: "vga2" }, { item: selectedPSU, key: "psu" },
-            { item: selectedCoolerCPU, key: "coolerCPU" }, { item: selectedCoolerFan1, key: "fan1" },
-            { item: selectedCoolerFan2, key: "fan2" }, { item: selectedCoolerFan3, key: "fan3" },
-            { item: selectedCasing, key: "casing" }, { item: selectedSSD1, key: "ssd1" },
-            { item: selectedSSD2, key: "ssd2" }, { item: selectedHDD1, key: "hdd1" },
-            { item: selectedHDD2, key: "hdd2" }, { item: selectedMonitor1, key: "monitor1" },
-            { item: selectedMonitor2, key: "monitor2" }, { item: selectedMonitor3, key: "monitor3" },
-            { item: selectedOS, key: "os" },
-        ];
+        try {
+            Swal.fire({ title: 'Proses...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const items = [
+                { item: selectedCPU, key: "cpu" }, { item: selectedMobo, key: "mobo" }, { item: selectedRAM, key: "ram" },
+                { item: selectedVGA1, key: "vga1" }, { item: selectedVGA2, key: "vga2" }, { item: selectedPSU, key: "psu" },
+                { item: selectedCoolerCPU, key: "coolerCPU" }, { item: selectedCoolerFan1, key: "fan1" },
+                { item: selectedCoolerFan2, key: "fan2" }, { item: selectedCoolerFan3, key: "fan3" },
+                { item: selectedCasing, key: "casing" }, { item: selectedSSD1, key: "ssd1" },
+                { item: selectedSSD2, key: "ssd2" }, { item: selectedHDD1, key: "hdd1" },
+                { item: selectedHDD2, key: "hdd2" }, { item: selectedMonitor1, key: "monitor1" },
+                { item: selectedMonitor2, key: "monitor2" }, { item: selectedMonitor3, key: "monitor3" },
+                { item: selectedOS, key: "os" },
+            ].filter(i => i.item).map(i => ({ product_id: i.item!.id, quantity: qty[i.key] || 1 }));
 
-        const selectedItems = items.filter(i => i.item);
-        const detailText = selectedItems.map(i => {
-            const qtyVal = qty[i.key] || 1;
-            const price = i.item?.final_price || 0;
-            return `- |x${qtyVal}| ${i.item?.name} *@ ${price.toLocaleString("id-ID")}*`;
-        }).join("\n");
-
-        const message = `Halo kak, saya mau order rakitan PC:\n\n${detailText}\n\nTOTAL : Rp ${grandTotal.toLocaleString("id-ID")}\n\nMohon info ketersediaan ya, terima kasih!`;
-        const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-        window.open(url, "_blank");
+            const response = await checkoutPCBuilder({ items, notes: "Pesanan Custom Rakitan PC" });
+            const invoice = response?.order?.invoice_number || response?.data?.order?.invoice_number || response?.invoice_number;
+            
+            Swal.close();
+            const message = `Halo Admin Anandam,\n\nSaya ingin bayar rakitan PC:\n🧾 *Invoice:* ${invoice}\n\nMohon dibantu.`;
+            handleReset();
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+        } catch (err: any) {
+            Swal.close();
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Terjadi kesalahan checkout.' });
+        }
     };
 
     return (
-    <div>
-        <div className="w-full bg-white">
-            <div className="max-w-7xl w-full mx-auto h-14 flex items-center px-4 sm:px-6 lg:px-8">
-                <Breadcrumb
-                    items={[
-                        { label: "Home", path: "/" },
-                        { label: "Rakit PC" },
-                    ]}
-                />
+        <div className="bg-white min-h-screen">
+            {/* BREADCRUMB */}
+            <div className="w-full bg-white border-b border-gray-100">
+                <div className="max-w-7xl mx-auto h-12 flex items-center px-4 lg:px-8">
+                    <Breadcrumb items={[{ label: "Home", path: "/" }, { label: "Rakit PC" }]} />
+                </div>
             </div>
+
+            <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+                {/* HEADER */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-900 uppercase tracking-tight">PC Builder</h1>
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Konfigurasi PC Sesuai Kebutuhan</p>
+                    </div>
+                    <button onClick={handleReset} className="text-[11px] font-bold text-red-500 uppercase tracking-widest bg-red-50 px-4 py-2 rounded-md hover:bg-red-100 transition-all">
+                        Reset Konfigurasi
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    {/* BUILDER AREA */}
+                    <div className="lg:col-span-3 space-y-6">
+                        {/* Section 1 */}
+                        <div className="bg-white p-5 rounded-md border border-gray-100 shadow-sm">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Komponen Utama</h2>
+                                <span className="text-[9px] bg-primary text-white px-2 py-0.5 rounded-md font-bold uppercase tracking-widest">Wajib</span>
+                            </div>
+                            <Row label="Processor" value={selectedCPU} onChange={setSelectedCPU} options={filterValidProducts(list.processors, "cpu")} price={getPrice(selectedCPU, "cpu")} qtyKey="cpu" qty={qty} setQty={setQty} />
+                            <Row label="Motherboard" value={selectedMobo} onChange={setSelectedMobo} options={filterValidProducts(list.motherboards, "mobo")} price={getPrice(selectedMobo, "mobo")} qtyKey="mobo" qty={qty} setQty={setQty} />
+                            <Row label="RAM" value={selectedRAM} onChange={setSelectedRAM} options={filterValidProducts(list.rams, "ram")} price={getPrice(selectedRAM, "ram")} qtyKey="ram" qty={qty} setQty={setQty} />
+                        </div>
+
+                        {/* Section 2 */}
+                        <div className="bg-white p-5 rounded-md border border-gray-100 shadow-sm">
+                            <h2 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-6">Graphics & Power</h2>
+                            <Row label="VGA Utama" value={selectedVGA1} onChange={setSelectedVGA1} options={list.vgas} price={getPrice(selectedVGA1, "vga1")} qtyKey="vga1" qty={qty} setQty={setQty} />
+                            <Row label="VGA Tambahan" value={selectedVGA2} onChange={setSelectedVGA2} options={list.vgas} price={getPrice(selectedVGA2, "vga2")} qtyKey="vga2" qty={qty} setQty={setQty} />
+                            <Row label="Power Supply" value={selectedPSU} onChange={setSelectedPSU} options={list.psus} price={getPrice(selectedPSU, "psu")} qtyKey="psu" qty={qty} setQty={setQty} />
+                            <Row label="Casing PC" value={selectedCasing} onChange={setSelectedCasing} options={list.casings} price={getPrice(selectedCasing, "casing")} qtyKey="casing" qty={qty} setQty={setQty} />
+                        </div>
+
+                        {/* Section 3 */}
+                        <div className="bg-white p-5 rounded-md border border-gray-100 shadow-sm">
+                            <h2 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-6">Cooling System</h2>
+                            <Row label="Cooler CPU" value={selectedCoolerCPU} onChange={setSelectedCoolerCPU} options={list.coolerCPU} price={getPrice(selectedCoolerCPU, "coolerCPU")} qtyKey="coolerCPU" qty={qty} setQty={setQty} />
+                            <Row label="Cooler Fan 1" value={selectedCoolerFan1} onChange={setSelectedCoolerFan1} options={list.coolerFan} price={getPrice(selectedCoolerFan1, "fan1")} qtyKey="fan1" qty={qty} setQty={setQty} />
+                            <Row label="Cooler Fan 2" value={selectedCoolerFan2} onChange={setSelectedCoolerFan2} options={list.coolerFan} price={getPrice(selectedCoolerFan2, "fan2")} qtyKey="fan2" qty={qty} setQty={setQty} />
+                            <Row label="Cooler Fan 3" value={selectedCoolerFan3} onChange={setSelectedCoolerFan3} options={list.coolerFan} price={getPrice(selectedCoolerFan3, "fan3")} qtyKey="fan3" qty={qty} setQty={setQty} />
+                        </div>
+
+                        {/* Section 4 */}
+                        <div className="bg-white p-5 rounded-md border border-gray-100 shadow-sm">
+                            <h2 className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-6">Storage & Display</h2>
+                            <Row label="SSD Utama" value={selectedSSD1} onChange={setSelectedSSD1} options={list.ssds} price={getPrice(selectedSSD1, "ssd1")} qtyKey="ssd1" qty={qty} setQty={setQty} />
+                            <Row label="SSD Tambahan" value={selectedSSD2} onChange={setSelectedSSD2} options={list.ssds} price={getPrice(selectedSSD2, "ssd2")} qtyKey="ssd2" qty={qty} setQty={setQty} />
+                            <Row label="HDD Utama" value={selectedHDD1} onChange={setSelectedHDD1} options={list.hdds} price={getPrice(selectedHDD1, "hdd1")} qtyKey="hdd1" qty={qty} setQty={setQty} />
+                            <Row label="Monitor LED" value={selectedMonitor1} onChange={setSelectedMonitor1} options={list.monitors} price={getPrice(selectedMonitor1, "monitor1")} qtyKey="monitor1" qty={qty} setQty={setQty} />
+                            <Row label="Operating System" value={selectedOS} onChange={setSelectedOS} options={list.oss} price={getPrice(selectedOS, "os")} qtyKey="os" qty={qty} setQty={setQty} />
+                        </div>
+                    </div>
+
+                    {/* SUMMARY CARD */}
+                    <div className="space-y-6">
+                        <div className="bg-white p-6 rounded-md border border-gray-100 shadow-md lg:sticky lg:top-28">
+                            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-6 border-b pb-4">Estimasi Biaya</h2>
+                            
+                            <div className="space-y-4 mb-8">
+                                <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-widest">
+                                    <span className="text-gray-400">Socket</span>
+                                    <span className={isCoreComplete ? "text-primary" : "text-gray-400"}>{constraints?.socket?.toUpperCase() || "--"}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-widest">
+                                    <span className="text-gray-400">RAM Type</span>
+                                    <span className={isCoreComplete ? "text-primary" : "text-gray-400"}>{constraints?.ram_type?.toUpperCase() || "--"}</span>
+                                </div>
+                            </div>
+
+                            <div className="pt-6 border-t border-gray-100">
+                                <span className="block text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">Total Harga</span>
+                                <div className="text-2xl font-bold text-primary">
+                                    Rp {grandTotal.toLocaleString("id-ID")}
+                                </div>
+                            </div>
+
+                            <button 
+                                disabled={!isCoreComplete}
+                                onClick={handleCheckout}
+                                className="w-full mt-8 bg-primary text-white py-4 rounded-md font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:bg-gray-100 disabled:text-gray-400 transition-all flex items-center justify-center gap-2 group shadow-lg shadow-primary/20"
+                            >
+                                Checkout Pesanan
+                                <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
+                            </button>
+                            {!isCoreComplete && <p className="text-[9px] text-red-400 font-bold uppercase mt-3 text-center tracking-tighter">* Lengkapi Komponen Utama Dahulu</p>}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={() => { setIsAuthModalOpen(false); handleCheckout(); }} />
         </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 py-8 md:py-2 min-h-screen">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
-                        PC Builder
-                    </h1>
-                    <p className="text-sm md:text-base text-gray-500 mt-1">
-                        Rancang dan sesuaikan PC sesuai kebutuhan Anda
-                    </p>
-                </div>
-                <button onClick={handleReset} className="text-sm font-bold text-red-500 hover:text-red-600 transition-colors py-2 px-4 bg-red-50 hover:bg-red-100 rounded-lg sm:bg-transparent sm:p-0">
-                    Reset Konfigurasi
-                </button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <div className="lg:col-span-3 space-y-6">
-                    <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex justify-between items-center mb-4 md:mb-6">
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400">Komponen Utama</h2>
-                            <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-bold">WAJIB</span>
-                        </div>
-                        <Row label="Processor" value={selectedCPU} onChange={setSelectedCPU} options={filterValidProducts(list.processors, "cpu")} price={getPrice(selectedCPU, "cpu")} qtyKey="cpu" qty={qty} setQty={setQty} />
-                        <Row label="Motherboard" value={selectedMobo} onChange={setSelectedMobo} options={filterValidProducts(list.motherboards, "mobo")} price={getPrice(selectedMobo, "mobo")} qtyKey="mobo" qty={qty} setQty={setQty} />
-                        <Row label="RAM" value={selectedRAM} onChange={setSelectedRAM} options={filterValidProducts(list.rams, "ram")} price={getPrice(selectedRAM, "ram")} qtyKey="ram" qty={qty} setQty={setQty} />
-                    </div>
-
-                    <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 md:mb-6">Hardware Tambahan</h2>
-                        <Row label="VGA 1" value={selectedVGA1} onChange={setSelectedVGA1} options={list.vgas} price={getPrice(selectedVGA1, "vga1")} qtyKey="vga1" qty={qty} setQty={setQty} />
-                        <Row label="VGA 2" value={selectedVGA2} onChange={setSelectedVGA2} options={list.vgas} price={getPrice(selectedVGA2, "vga2")} qtyKey="vga2" qty={qty} setQty={setQty} />
-                        <Row label="Power Supply" value={selectedPSU} onChange={setSelectedPSU} options={list.psus} price={getPrice(selectedPSU, "psu")} qtyKey="psu" qty={qty} setQty={setQty} />
-                        <Row label="Cooler CPU" value={selectedCoolerCPU} onChange={setSelectedCoolerCPU} options={list.coolerCPU} price={getPrice(selectedCoolerCPU, "coolerCPU")} qtyKey="coolerCPU" qty={qty} setQty={setQty} />
-                        <Row label="Cooler Fan 1" value={selectedCoolerFan1} onChange={setSelectedCoolerFan1} options={list.coolerFan} price={getPrice(selectedCoolerFan1, "fan1")} qtyKey="fan1" qty={qty} setQty={setQty} />
-                        <Row label="Cooler Fan 2" value={selectedCoolerFan2} onChange={setSelectedCoolerFan2} options={list.coolerFan} price={getPrice(selectedCoolerFan2, "fan2")} qtyKey="fan2" qty={qty} setQty={setQty} />
-                        <Row label="Cooler Fan 3" value={selectedCoolerFan3} onChange={setSelectedCoolerFan3} options={list.coolerFan} price={getPrice(selectedCoolerFan3, "fan3")} qtyKey="fan3" qty={qty} setQty={setQty} />
-                        <Row label="Casing PC" value={selectedCasing} onChange={setSelectedCasing} options={list.casings} price={getPrice(selectedCasing, "casing")} qtyKey="casing" qty={qty} setQty={setQty} />
-                    </div>
-
-                    <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 md:mb-6">Penyimpanan & Layar</h2>
-                        <Row label="SSD 1" value={selectedSSD1} onChange={setSelectedSSD1} options={list.ssds} price={getPrice(selectedSSD1, "ssd1")} qtyKey="ssd1" qty={qty} setQty={setQty} />
-                        <Row label="SSD 2" value={selectedSSD2} onChange={setSelectedSSD2} options={list.ssds} price={getPrice(selectedSSD2, "ssd2")} qtyKey="ssd2" qty={qty} setQty={setQty} />
-                        <Row label="HDD 1" value={selectedHDD1} onChange={setSelectedHDD1} options={list.hdds} price={getPrice(selectedHDD1, "hdd1")} qtyKey="hdd1" qty={qty} setQty={setQty} />
-                        <Row label="HDD 2" value={selectedHDD2} onChange={setSelectedHDD2} options={list.hdds} price={getPrice(selectedHDD2, "hdd2")} qtyKey="hdd2" qty={qty} setQty={setQty} />
-                        <Row label="Monitor 1" value={selectedMonitor1} onChange={setSelectedMonitor1} options={list.monitors} price={getPrice(selectedMonitor1, "monitor1")} qtyKey="monitor1" qty={qty} setQty={setQty} />
-                        <Row label="Monitor 2" value={selectedMonitor2} onChange={setSelectedMonitor2} options={list.monitors} price={getPrice(selectedMonitor2, "monitor2")} qtyKey="monitor2" qty={qty} setQty={setQty} />
-                        <Row label="Monitor 3" value={selectedMonitor3} onChange={setSelectedMonitor3} options={list.monitors} price={getPrice(selectedMonitor3, "monitor3")} qtyKey="monitor3" qty={qty} setQty={setQty} />
-                        <Row label="Operating System" value={selectedOS} onChange={setSelectedOS} options={list.oss} price={getPrice(selectedOS, "os")} qtyKey="os" qty={qty} setQty={setQty} />
-                    </div>
-                </div>
-
-                <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:sticky lg:top-36">
-                        <h2 className="text-lg font-bold text-gray-900 mb-6">Ringkasan Biaya</h2>
-                        
-                        <div className="space-y-4 mb-8">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-500 font-medium">Socket</span>
-                                <span className={`font-semibold ${isCoreComplete ? "text-green-600" : "text-gray-800"}`}>
-                                    {/*  Uppercase Socket */}
-                                    {constraints?.socket?.toUpperCase() || "-"}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-500 font-medium">Tipe RAM</span>
-                                <span className={`font-semibold ${isCoreComplete ? "text-green-600" : "text-gray-800"}`}>
-                                    {/*  Uppercase RAM Type */}
-                                    {constraints?.ram_type?.toUpperCase() || "-"}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="pt-6 border-t border-gray-100">
-                            <span className="block text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">Total Estimasi</span>
-                            <div className="text-2xl md:text-3xl font-bold text-gray-900">
-                                Rp {grandTotal.toLocaleString("id-ID")}
-                            </div>
-                        </div>
-
-                        <button 
-                            disabled={!isCoreComplete}
-                            onClick={handleCheckout}
-                            className="w-full mt-8 bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary/90 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
-                        >
-                            Checkout Rakitan
-                            <ChevronRight 
-                                size={20} 
-                                className="transition-transform duration-300 group-hover:translate-x-1.5" 
-                            />
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {/*  Modal Auth untuk Login */}
-        <AuthModal 
-            isOpen={isAuthModalOpen}
-            onClose={() => setIsAuthModalOpen(false)}
-            onSuccess={() => {
-                setIsAuthModalOpen(false);
-                handleCheckout(); 
-            }}
-        />
-    </div>
     );
 }

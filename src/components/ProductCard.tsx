@@ -31,7 +31,7 @@ const ProductCard: React.FC<Props> = ({
   const hasDiscount = discountValue > 0;
 
   const discountPercent = hasDiscount
-    ? ((discountValue / normal) * 100).toFixed(0) // Dibulatkan biar rapi
+    ? ((discountValue / normal) * 100).toFixed(0) 
     : "0";
 
   const finalPrice = hasDiscount ? normal - discountValue : normal;
@@ -98,13 +98,21 @@ const ProductCard: React.FC<Props> = ({
         ${layout === "grid" ? "flex flex-col" : "flex flex-row gap-4 p-3 items-start"}
       `}
     >
-      {/* IMAGE */}
+      {/* IMAGE CONTAINER */}
       <div
         className={`
           relative overflow-hidden bg-white
           ${layout === "grid" ? "w-full aspect-square rounded-t-lg" : "w-24 h-24 md:w-28 md:h-28 rounded-lg flex-shrink-0"}
         `}
       >
+        {/* --- TAG % OFF (SIMPEL & ELEGAN) --- */}
+        {hasDiscount && !isOutOfStock && (
+          <div className="absolute top-2 right-2 z-10 bg-red-500 text-white text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded-md shadow-sm tracking-wider uppercase">
+            {discountPercent}% OFF
+          </div>
+        )}
+        {/* ---------------------------------- */}
+
         {!imageLoaded && <div className="absolute inset-0 animate-pulse bg-gray-200" />}
         <img
           src={imageSrc}
@@ -159,7 +167,7 @@ const ProductCard: React.FC<Props> = ({
             })}
           </div>
 
-          {/* TITLE - Ditambah mb-1 dan strict line-clamp-2 */}
+          {/* TITLE */}
           <h3
             className={`font-semibold leading-snug hover:text-primary mb-1 ${
               layout === "grid"
@@ -183,9 +191,7 @@ const ProductCard: React.FC<Props> = ({
                 <span className="text-[11px] md:text-xs text-gray-400 line-through">
                   Rp {normal.toLocaleString()}
                 </span>
-                <span className="text-[10px] sm:text-xs font-semibold text-red-600 bg-red-100 px-[6px] sm:px-2 py-[1px] rounded-full">
-                  {discountPercent}%
-                </span>
+                {/* Red label % nya udah dipindah ke atas, jadi di sini kosong aja sisain harga coret */}
               </div>
             ) : layout === "grid" ? (
               <div className="h-[18px]" />
@@ -201,7 +207,7 @@ const ProductCard: React.FC<Props> = ({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="bg-green-500 hover:bg-green-600 text-white p-[6px] sm:p-2 rounded-full transition flex items-center justify-center"
+            className="bg-green-500 hover:bg-green-600 text-white p-[6px] sm:p-2 rounded-md transition flex items-center justify-center shadow-sm"
           >
             <FaWhatsapp className="w-[14px] h-[14px] sm:w-[16px] sm:h-[16px]" />
           </a>

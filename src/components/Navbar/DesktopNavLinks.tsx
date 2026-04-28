@@ -37,7 +37,7 @@ export default function DesktopNavLinks({ groupings }: { groupings: Grouping[] }
         onMouseLeave={() => setOpen(false)}
       >
         <div 
-          className={`relative flex items-center gap-1.5 cursor-pointer transition px-3 py-2 rounded-xl font-bold ${
+          className={`relative flex items-center gap-1.5 cursor-pointer transition px-3 py-2 rounded-md font-bold ${
             open ? 'text-primary' : 'text-gray-700 hover:text-primary'
           }`}
         >
