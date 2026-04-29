@@ -44,6 +44,7 @@ import UserAddressPage from "./pages/landing_page/User/UserAddressPage";
 import ChangePasswordPage from "./pages/landing_page/User/ChangePasswordPage";
 import ResetPasswordPage from "./pages/landing_page/User/ResetPasswordPage";
 import PromoBannerPage from "./pages/landing_page/PromoBannerPage";
+import AdminUsersPage from "./pages/admin_panel/UserPage";
 
 
 // ================= ROUTES =================
@@ -105,6 +106,7 @@ function AppRoutes() {
           <Route path="brand" element={<BrandSection />} />
           <Route path="tiktok" element={<TiktokPage />} />
           <Route path="orders" element={<OrderListPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
         </Route>
       </Route>
 

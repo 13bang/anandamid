@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { FileDown, Loader2 } from "lucide-react";
+import { FileDown, Loader2, HelpCircle, X } from "lucide-react";
 import { getCategories } from "../../services/adminCategoryService";
 import api from "../../services/api";
 import { useGlobalImport } from "../../components/admin/NotificationUpdateUpload";
@@ -17,12 +17,14 @@ export default function ProductUpdatePage() {
   }>({ available: false, expiresAt: null });
 
   const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [onlyWithSku, setOnlyWithSku] = useState<boolean>(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  
+  // 🔥 State untuk Modal Panduan
+  const [isHintOpen, setIsHintOpen] = useState(false);
 
   const fetchTemplateStatus = async () => {
     try {
@@ -30,7 +32,6 @@ export default function ProductUpdatePage() {
       if (selectedCategories.length > 0) {
         params.append("category_code", selectedCategories.join(","));
       }
-      params.append("only_with_sku", String(onlyWithSku));
 
       const res = await api.get(
         `/product-import/template-update/status?${params.toString()}`
@@ -57,7 +58,6 @@ export default function ProductUpdatePage() {
       if (selectedCategories.length > 0) {
         params.append("category_code", selectedCategories.join(","));
       }
-      params.append("only_with_sku", String(onlyWithSku));
 
       await api.get(
         `/product-import/template-update?${params.toString()}&force=true`
@@ -76,7 +76,6 @@ export default function ProductUpdatePage() {
       if (selectedCategories.length > 0) {
         params.append("category_code", selectedCategories.join(","));
       }
-      params.append("only_with_sku", String(onlyWithSku));
 
       const res = await api.get(
         `/product-import/template-update/download?${params.toString()}`,
@@ -99,7 +98,7 @@ export default function ProductUpdatePage() {
 
   useEffect(() => {
     fetchTemplateStatus();
-  }, [selectedCategories, onlyWithSku]);
+  }, [selectedCategories]);
 
   useEffect(() => {
     if (!templateStatus.expiresAt) return;
@@ -167,10 +166,64 @@ export default function ProductUpdatePage() {
   };
 
   return (
-    <div className="w-full min-h-screen p-10">
-      {/* Note: Error Modal dan Success Notification sekarang dirender 
-          oleh GlobalImportProvider di level layout 
-      */}
+    <div className="w-full min-h-screen p-10 relative">
+      
+      {/* ================= MODAL PANDUAN ================= */}
+      {isHintOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-md w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-5 border-b">
+              <h2 className="font-semibold text-lg flex items-center gap-2">
+                <HelpCircle size={20} className="text-blue-600" />
+                Panduan Update Produk
+              </h2>
+              <button 
+                onClick={() => setIsHintOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition p-1 rounded-md hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-4">
+                {[
+                  "Pilih kategori produk yang ingin diupdate.",
+                  "Download template Excel.",
+                  "Edit data produk pada file Excel (Jangan ubah kolom ID).",
+                  <span key="var-edit"><b>Edit Variasi Lama:</b> Ubah data (harga/stok) pada baris yang sudah ada Variant ID-nya.</span>,
+                  <span key="var-add"><b>Tambah Variasi Baru:</b> Buat baris baru di bawahnya. Copy-paste <b>Product ID</b>-nya, tapi biarkan <b>Variant ID</b> kosong.</span>,
+                  "Upload kembali file Excel.",
+                  "Sistem memproses update di background."
+                ].map((text, i) => (
+                  <div key={i} className="flex gap-4">
+                    <span className="w-6 font-semibold text-blue-600 flex-shrink-0">{i + 1}.</span>
+                    <p className="text-sm text-gray-700 leading-relaxed">{text}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Info Box Tambahan */}
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-md">
+                <p className="text-[12px] text-blue-800 leading-relaxed">
+                  <b>Update Gambar:</b><br/>
+                  • Gambar produk utama ada di baris pertama.<br/>
+                  • Untuk mengubah/menambah <b>Gambar Variasi</b>, isi link gambar di kolom <code className="bg-blue-100 px-1 rounded">image_1</code> pada baris variasi yang bersangkutan.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setIsHintOpen(false)}
+                className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition"
+              >
+                Mengerti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Update Massal Produk</h1>
@@ -196,6 +249,24 @@ export default function ProductUpdatePage() {
             </button>
             {dropdownOpen && (
               <div className="absolute z-20 w-full mt-2 bg-white border rounded-lg shadow max-h-60 overflow-y-auto">
+                <div className="sticky top-0 bg-white border-b px-3 py-2">
+                  <input
+                    type="text"
+                    placeholder="Cari kategori..."
+                    autoFocus
+                    onChange={(e) => {
+                      const q = e.target.value.toLowerCase();
+                      // filter handled inline below
+                      (e.target as any)._searchVal = q;
+                      e.target.closest('.absolute')?.querySelectorAll('label').forEach((label) => {
+                        const text = label.textContent?.toLowerCase() || '';
+                        (label as HTMLElement).style.display = text.includes(q) ? '' : 'none';
+                      });
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full text-sm px-2 py-1 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-green-500"
+                  />
+                </div>
                 {categories.map((cat) => (
                   <label key={cat.id} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer">
                     <input
@@ -214,63 +285,6 @@ export default function ProductUpdatePage() {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* OPTIONS */}
-          <div className="max-w-md p-5 bg-white border border-gray-200 rounded-2xl shadow-sm">
-            <p className="mb-4 text-sm font-semibold text-gray-800">
-              Opsi Download Template
-            </p>
-
-            <div className="space-y-3">
-
-              {/* OPTION 1 */}
-              <label className="flex items-center gap-4 p-3 rounded-xl border cursor-pointer transition-all
-                hover:border-green-500 hover:bg-green-50
-                has-[:checked]:border-green-600 has-[:checked]:bg-green-50"
-              >
-                <input
-                  type="radio"
-                  name="skuOption"
-                  checked={onlyWithSku === true}
-                  onChange={() => setOnlyWithSku(true)}
-                  className="w-4 h-4 accent-green-600 cursor-pointer"
-                />
-
-                <div>
-                  <p className="text-sm font-medium text-gray-800">
-                    Hanya Produk dengan SKU Seller
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Untuk update produk yang memiliki SKU
-                  </p>
-                </div>
-              </label>
-
-              {/* OPTION 2 */}
-              <label className="flex items-center gap-4 p-3 rounded-xl border cursor-pointer transition-all
-                hover:border-green-500 hover:bg-green-50
-                has-[:checked]:border-green-600 has-[:checked]:bg-green-50"
-              >
-                <input
-                  type="radio"
-                  name="skuOption"
-                  checked={onlyWithSku === false}
-                  onChange={() => setOnlyWithSku(false)}
-                  className="w-4 h-4 accent-green-600 cursor-pointer"
-                />
-
-                <div>
-                  <p className="text-sm font-medium text-gray-800">
-                    Semua Produk
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Download seluruh data produk tanpa filter SKU
-                  </p>
-                </div>
-              </label>
-
-            </div>
           </div>
 
           {/* GENERATE BUTTON */}
@@ -294,7 +308,7 @@ export default function ProductUpdatePage() {
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
             className={`
-              border-2 border-dashed rounded-xl flex flex-col items-center justify-center p-20 text-center transition
+              border-2 border-dashed rounded-md flex flex-col items-center justify-center p-20 text-center transition
               ${dragging ? "border-green-600 bg-green-50" : "border-gray-300 bg-white"}
               ${isUpdating ? "opacity-50 cursor-not-allowed" : ""}
             `}
@@ -323,7 +337,7 @@ export default function ProductUpdatePage() {
 
           {/* STATUS IN PAGE (Mirroring Global State) */}
           {(file || isUpdating) && (
-            <div className="p-5 border rounded-xl bg-white shadow-sm">
+            <div className="p-5 border rounded-md bg-white shadow-sm">
               <div className="text-sm">
                 <span className="font-medium text-gray-700">
                   {isUpdating
@@ -338,7 +352,7 @@ export default function ProductUpdatePage() {
           {file && !isUpdating && (
             <button
               onClick={handleUpdate}
-              className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 shadow-md transition-all"
+              className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 shadow-md transition-all"
             >
               Mulai Update Produk
             </button>
@@ -346,42 +360,35 @@ export default function ProductUpdatePage() {
 
         </div>
 
-        {/* HINT PANEL */}
+        {/* ================= PANEL MENU (Kanan) ================= */}
         <div className="sticky top-10 h-fit">
-          <div className="bg-white border rounded-2xl p-6 shadow-sm">
-            <h2 className="font-semibold text-lg mb-6">Panduan Update Produk</h2>
-            <div className="space-y-5">
-              {[
-                "Pilih kategori produk yang ingin diupdate.",
-                "Pilih Opsi Download All atau SKU Seller Only.",
-                "Download template Excel.",
-                "Edit data produk pada file Excel.",
-                "Upload kembali file Excel.",
-                "Sistem akan memproses update produk di background."
-              ].map((text, i) => (
-                <div key={i} className="flex gap-4">
-                  <span className="w-6 font-semibold text-green-700">{i + 1}.</span>
-                  <p className="text-sm text-gray-600 leading-relaxed">{text}</p>
-                </div>
-              ))}
+          <div className="bg-white border rounded-md p-6 shadow-sm">
+            <h2 className="font-semibold text-lg mb-4">Aksi Template</h2>
+            
+            {/* Tombol Buka Modal Panduan */}
+            <button
+              onClick={() => setIsHintOpen(true)}
+              className="w-full mb-6 flex items-center justify-center gap-2 px-4 py-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg transition font-medium"
+            >
+              <HelpCircle size={16} /> Cara Update Produk
+            </button>
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">Template Siap Download</p>
+              {templateStatus.available ? (
+                <>
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                  >
+                    <FileDown size={16} /> Download Template
+                  </button>
+                  <p className="text-xs text-gray-500 mt-2 text-center">Expired dalam {formatTime(timeLeft)}</p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-400 text-center">Belum ada template. Klik "Generate Template" dulu.</p>
+              )}
             </div>
-          </div>
-          
-          <div className="mt-6 border-t pt-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">Template Siap Download</p>
-            {templateStatus.available ? (
-              <>
-                <button
-                  onClick={handleDownloadTemplate}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  <FileDown size={16} /> Download Template
-                </button>
-                <p className="text-xs text-gray-500 mt-2 text-center">Expired dalam {formatTime(timeLeft)}</p>
-              </>
-            ) : (
-              <p className="text-sm text-gray-400 text-center">Belum ada template. Klik "Generate Template".</p>
-            )}
           </div>
         </div>
       </div>

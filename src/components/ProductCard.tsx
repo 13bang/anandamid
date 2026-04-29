@@ -19,16 +19,23 @@ const ProductCard: React.FC<Props> = ({
   category
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const isOutOfStock = Number(product.stock) === 0;
   const navigate = useNavigate();
+
+  // 🔥 LOGIC BARU: Ambil data dari variant pertama (index 0)
+  const variant = product.variants?.[0] || {};
+  
+  // Gunakan data dari variant, jika tidak ada baru fallback ke data root (untuk compatibility data lama)
+  const stock = Number(variant.stock ?? product.stock ?? 0);
+  const normal = Number(variant.price_normal ?? product.price_normal ?? 0);
+  const discountValue = Number(variant.price_discount ?? product.price_discount ?? 0);
+  const skuSeller = variant.sku_seller ?? product.sku_seller;
+
+  const isOutOfStock = stock === 0;
+  const hasDiscount = discountValue > 0;
 
   const productLink = `${window.location.origin}/product-katalog/${product.id}`;
   const message = `Hai, saya ingin bertanya mengenai produk berikut:\n\nNama Produk: ${product.name}\nLink Produk: ${productLink}\n\nTerima kasih.`;
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-
-  const normal = Number(product.price_normal);
-  const discountValue = Number(product.price_discount);
-  const hasDiscount = discountValue > 0;
 
   const discountPercent = hasDiscount
     ? ((discountValue / normal) * 100).toFixed(0) 
@@ -105,13 +112,11 @@ const ProductCard: React.FC<Props> = ({
           ${layout === "grid" ? "w-full aspect-square rounded-t-lg" : "w-24 h-24 md:w-28 md:h-28 rounded-lg flex-shrink-0"}
         `}
       >
-        {/* --- TAG % OFF (SIMPEL & ELEGAN) --- */}
         {hasDiscount && !isOutOfStock && (
           <div className="absolute top-2 right-2 z-10 bg-red-500 text-white text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded-md shadow-sm tracking-wider uppercase">
             {discountPercent}% OFF
           </div>
         )}
-        {/* ---------------------------------- */}
 
         {!imageLoaded && <div className="absolute inset-0 animate-pulse bg-gray-200" />}
         <img
@@ -127,7 +132,7 @@ const ProductCard: React.FC<Props> = ({
             ${isOutOfStock ? "opacity-40 grayscale" : ""}
           `}
           onError={(e) => {
-            const filename = product.thumbnail_url?.split("/").pop();
+            const filename = product.images?.[0]?.thumbnail_url?.split("/").pop();
             if (filename && !e.currentTarget.src.includes("original")) {
               e.currentTarget.src = `${import.meta.env.VITE_API_BASE}/uploads/products/original/${filename}`;
               return;
@@ -136,7 +141,11 @@ const ProductCard: React.FC<Props> = ({
             setImageLoaded(true);
           }}
         />
-        {isOutOfStock && <div className="absolute inset-0 bg-gray-500/40"></div>}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-gray-500/40 flex items-center justify-center">
+             <span className="bg-black/60 text-white text-[10px] px-2 py-1 rounded">Habis</span>
+          </div>
+        )}
       </div>
 
       {/* CONTENT */}
@@ -148,26 +157,22 @@ const ProductCard: React.FC<Props> = ({
       >
         <div className="flex flex-col gap-1 flex-1">
           <div className="text-[11px] text-gray-500 leading-tight flex items-center overflow-hidden whitespace-nowrap">
-            {metaItems.map((item, index) => {
-              const isLast = index === metaItems.length - 1;
-              return (
-                <React.Fragment key={index}>
-                  {index > 0 && <span className="mx-1 text-gray-400 flex-shrink-0">|</span>}
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      item.onClick();
-                    }}
-                    className={`hover:text-primary cursor-pointer transition ${isLast ? "truncate min-w-0 flex-1" : "flex-shrink-0"}`}
-                  >
-                    {item.label}
-                  </span>
-                </React.Fragment>
-              );
-            })}
+            {metaItems.map((item, index) => (
+              <React.Fragment key={index}>
+                {index > 0 && <span className="mx-1 text-gray-400 flex-shrink-0">|</span>}
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    item.onClick();
+                  }}
+                  className={`hover:text-primary cursor-pointer transition ${index === metaItems.length - 1 ? "truncate min-w-0 flex-1" : "flex-shrink-0"}`}
+                >
+                  {item.label}
+                </span>
+              </React.Fragment>
+            ))}
           </div>
 
-          {/* TITLE */}
           <h3
             className={`font-semibold leading-snug hover:text-primary mb-1 ${
               layout === "grid"
@@ -178,8 +183,8 @@ const ProductCard: React.FC<Props> = ({
             {product.name}
           </h3>
 
-          {layout === "list" && product.sku_seller && (
-            <span className="text-sm text-gray-500">{product.sku_seller}</span>
+          {layout === "list" && skuSeller && (
+            <span className="text-sm text-gray-500">{skuSeller}</span>
           )}
         </div>
 
@@ -191,7 +196,6 @@ const ProductCard: React.FC<Props> = ({
                 <span className="text-[11px] md:text-xs text-gray-400 line-through">
                   Rp {normal.toLocaleString()}
                 </span>
-                {/* Red label % nya udah dipindah ke atas, jadi di sini kosong aja sisain harga coret */}
               </div>
             ) : layout === "grid" ? (
               <div className="h-[18px]" />

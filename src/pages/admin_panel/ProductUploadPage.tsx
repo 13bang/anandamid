@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { downloadTemplate } from "../../services/productImportService";
-import { FileDown } from "lucide-react";
+import { FileDown, HelpCircle, X } from "lucide-react";
 import { useGlobalImport } from "../../components/admin/NotificationUpdateUpload";
 import { getCategories } from "../../services/adminCategoryService";
 
@@ -11,6 +11,9 @@ export default function ProductUploadPage() {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
+
+  // 🔥 State untuk Modal Panduan
+  const [isHintOpen, setIsHintOpen] = useState(false);
 
   // Fetch kategori untuk mapping pesan error dari backend
   useEffect(() => {
@@ -51,10 +54,66 @@ export default function ProductUploadPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 p-10">
+    <div className="w-full min-h-screen bg-gray-50 p-10 relative">
       {/* Note: Error Modal dan Success Notification sekarang dirender 
           oleh GlobalImportProvider di level layout 
       */}
+
+      {/* ================= MODAL PANDUAN ================= */}
+      {isHintOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-md w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-5 border-b">
+              <h2 className="font-semibold text-lg flex items-center gap-2">
+                <HelpCircle size={20} className="text-blue-600" />
+                Panduan Upload Produk
+              </h2>
+              <button 
+                onClick={() => setIsHintOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition p-1 rounded-md hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-4">
+                {[
+                  "Download template Excel terlebih dahulu.",
+                  "Isi data produk utama dan variasi pertama di satu baris penuh.",
+                  <span key="var-add"><b>Variasi Tambahan:</b> Tambahkan di baris bawahnya. Kosongkan kolom Nama Produk dll, cukup isi detail variasinya (Harga, Stok, SKU).</span>,
+                  "Upload kembali file Excel.",
+                  "Sistem akan memproses upload produk di background.",
+                ].map((text, i) => (
+                  <div key={i} className="flex gap-4">
+                    <span className="w-6 font-semibold text-blue-600 flex-shrink-0">{i + 1}.</span>
+                    <p className="text-sm text-gray-700 leading-relaxed">{text}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Info Box Tambahan biar makin jelas */}
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-md">
+                <p className="text-[12px] text-blue-800 leading-relaxed">
+                  <b>Note:</b><br/>
+                  • <b>SKU Seller</b> wajib diisi untuk setiap baris produk maupun variasi.<br/>
+                  • <b>Gambar Utama:</b> Isi link gambar di kolom <code className="bg-blue-100 px-1 rounded-md">image_1</code> s/d <code className="bg-blue-100 px-1 rounded-md">image_10</code> pada baris produk utama.<br/>
+                  • <b>Gambar Variasi:</b> Jika variasi punya gambar khusus, isi link gambarnya di kolom <code className="bg-blue-100 px-1 rounded-md">image_1</code> pada baris variasi tersebut.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setIsHintOpen(false)}
+                className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition"
+              >
+                Mengerti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ================= HEADER ================= */}
       <div className="mb-8">
@@ -63,17 +122,10 @@ export default function ProductUploadPage() {
 
       {/* ================= MAIN GRID ================= */}
       <div className="grid grid-cols-[1fr_340px] gap-10">
+        
         {/* ================= LEFT UPLOAD ================= */}
         <div className="space-y-6">
-          {/* DOWNLOAD TEMPLATE */}
-          <button
-            onClick={downloadTemplate}
-            className="flex items-center gap-2 text-green-700 hover:text-green-900"
-          >
-            <FileDown size={18} />
-            <span className="font-medium">Download Template</span>
-          </button>
-
+          
           {/* ================= DROPZONE ================= */}
           <div
             onDragOver={(e) => e.preventDefault()}
@@ -81,7 +133,7 @@ export default function ProductUploadPage() {
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
             className={`
-              border-2 border-dashed rounded-xl
+              border-2 border-dashed rounded-md
               flex flex-col items-center justify-center
               p-32 text-center transition
               ${
@@ -98,7 +150,7 @@ export default function ProductUploadPage() {
             <p className="text-gray-400 my-2">atau</p>
             <button
               onClick={() => inputRef.current?.click()}
-              className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+              className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
               disabled={isUploading}
             >
               Browse Files
@@ -129,7 +181,7 @@ export default function ProductUploadPage() {
 
           {/* ================= STATUS IN PAGE (Mirroring Global State) ================= */}
           {(file || isUploading) && (
-            <div className="p-5 border rounded-xl bg-white shadow-sm transition-all">
+            <div className="p-5 border rounded-md bg-white shadow-sm transition-all">
               <div className="text-sm">
                 <span className="font-medium text-gray-700">
                   {isUploading
@@ -144,38 +196,38 @@ export default function ProductUploadPage() {
           {file && !isUploading && (
             <button
               onClick={handleUpload}
-              className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 shadow-sm transition-all"
+              className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 shadow-sm transition-all"
             >
               Upload Produk
             </button>
           )}
         </div>
 
-        {/* ================= HINT PANEL ================= */}
+        {/* ================= PANEL MENU (Kanan) ================= */}
         <div className="sticky top-10 h-fit">
-          <div className="bg-white border rounded-2xl p-6 shadow-sm">
-            <h2 className="font-semibold text-lg mb-6">
-              Panduan Upload Produk
-            </h2>
-            <div className="space-y-5">
-              {[
-                "Download template Excel terlebih dahulu.",
-                "Isi data produk sesuai format pada template.",
-                "Upload kembali file Excel.",
-                "Sistem akan memproses upload produk di background.",
-              ].map((text, i) => (
-                <div key={i} className="flex gap-4">
-                  <span className="w-6 font-semibold text-green-700">
-                    {i + 1}.
-                  </span>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {text}
-                  </p>
-                </div>
-              ))}
+          <div className="bg-white border rounded-md p-6 shadow-sm">
+            <h2 className="font-semibold text-lg mb-4">Aksi Template</h2>
+            
+            {/* Tombol Buka Modal Panduan */}
+            <button
+              onClick={() => setIsHintOpen(true)}
+              className="w-full mb-6 flex items-center justify-center gap-2 px-4 py-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-md transition font-medium"
+            >
+              <HelpCircle size={16} /> Cara Upload Produk
+            </button>
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">Template Excel</p>
+              <button
+                onClick={downloadTemplate}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+              >
+                <FileDown size={16} /> Download Template
+              </button>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

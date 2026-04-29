@@ -13,6 +13,7 @@ import {
   Award,
   Tag,
   ClipboardList,
+  User2,
 } from "lucide-react";
 import { FaTiktok } from "react-icons/fa6";
 import { useState } from "react";
@@ -25,6 +26,7 @@ export default function Sidebar() {
 
   const menu = [
     { name: "Dashboard", path: "/ayamgoreng/dashboard", icon: House },
+    { name: "User", path: "/ayamgoreng/users", icon: User2 },
     { name: "Orders", path: "/ayamgoreng/orders", icon: ClipboardList },
     { name: "Kategori", path: "/ayamgoreng/category", icon: Layers },
     { name: "Brand", path: "/ayamgoreng/brand", icon: Tag },

@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProductById, getProductsByCategory, getProducts } from "../../services/productService";
 import { FaWhatsapp, FaSearchPlus, FaBan, FaCheckCircle } from "react-icons/fa";
-import { ChevronLeft, ChevronRight, Truck, ShieldCheck, ShoppingCart, X, Check, ShoppingBag, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Truck, ShieldCheck, ShoppingCart, X, Check, ShoppingBag } from "lucide-react";
 import ProductCard from "../../components/ProductCard";
 import type { Product } from "../../types/product";
 import Breadcrumb from "../../components/Breadcrumb";
@@ -43,9 +43,9 @@ export default function ProductDetailPage() {
   const scrollLeftStart = useRef(0);
   const dragDistance = useRef(0);
 
-  useEffect(() => {
-    if (id) fetchProduct();
-  }, [id]);
+  // useEffect(() => {
+  //   if (id) fetchProduct();
+  // }, [id]);
 
   const fetchProduct = async () => {
     setLoading(true);
@@ -53,8 +53,9 @@ export default function ProductDetailPage() {
     try {
       const data = await getProductById(id!);
       setProduct(data);
-      if (data.variasi && data.variasi.length > 0) {
-        setSelectedVariasi(data.variasi[0]);
+
+      if (data.variants && data.variants.length > 0) {
+        setSelectedVariasi(data.variants[0].variant_name); 
       }
       
       let related = [];
@@ -79,6 +80,37 @@ export default function ProductDetailPage() {
       setLoadingRelated(false);
     }
   };
+
+  // 🔥 TAMBAHAN LOGIC SORTING: Mengelompokkan gambar variasi agar rapi
+  const sortedImages = useMemo(() => {
+    if (!product?.images) return [];
+
+    // Bikin mapping urutan variasi (misal: Hitam = 0, Merah = 1)
+    const variantOrderMap = new Map();
+    if (product.variants) {
+      product.variants.forEach((v: any, index: number) => {
+        variantOrderMap.set(v.id, index);
+      });
+    }
+
+    return [...product.images].sort((a: any, b: any) => {
+      const isAGeneral = !a.variant_id;
+      const isBGeneral = !b.variant_id;
+
+      // 1. Gambar utama (tanpa variasi) prioritas paling atas
+      if (isAGeneral && !isBGeneral) return -1;
+      if (!isAGeneral && isBGeneral) return 1;
+      
+      // Jika keduanya gambar utama, pertahankan urutan aslinya
+      if (isAGeneral && isBGeneral) return 0;
+
+      // 2. Gambar dengan variasi diurutkan sesuai urutan variasi produk
+      const indexA = variantOrderMap.has(a.variant_id) ? variantOrderMap.get(a.variant_id) : 999;
+      const indexB = variantOrderMap.has(b.variant_id) ? variantOrderMap.get(b.variant_id) : 999;
+
+      return indexA - indexB;
+    });
+  }, [product]);
 
   // --- FUNGSI CUSTOM SCROLL SMOOTH ---
   const animateScroll = (container: HTMLDivElement, targetPosition: number, duration: number) => {
@@ -164,7 +196,6 @@ export default function ProductDetailPage() {
     if (!isDragging.current) return;
     isDragging.current = false;
 
-    // Logika snap halus saat drag selesai
     if (isSwiping && scrollRef.current) {
       const container = scrollRef.current;
       const scrollAmount = getScrollAmount();
@@ -190,14 +221,9 @@ export default function ProductDetailPage() {
     }
   };
 
-  // --- AUTO SLIDE (Related Products) ---
   useEffect(() => {
     if (isHovered || isSwiping || isAnimating || relatedProducts.length === 0) return;
-
-    const timer = setInterval(() => {
-      scrollRightAction();
-    }, 4000); 
-
+    const timer = setInterval(() => scrollRightAction(), 4000); 
     return () => clearInterval(timer);
   }, [isHovered, isSwiping, isAnimating, relatedProducts]);
 
@@ -206,6 +232,16 @@ export default function ProductDetailPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [animateModal, setAnimateModal] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+
+  const lastFetchedId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (id && lastFetchedId.current !== id) {
+      fetchProduct();
+      lastFetchedId.current = id; 
+    }
+
+  }, [id]);
 
   useEffect(() => {
     if (showSuccessModal) {
@@ -236,12 +272,10 @@ export default function ProductDetailPage() {
       await addToCart({
         product_id: product.id,
         quantity,
-        variasi: selectedVariasi || undefined,
+        variasi: selectedVariasi || "Default",
       });
       setShowSuccessModal(true); 
-      
       window.dispatchEvent(new Event('cartUpdated'));
-      
     } catch (err: any) {
       console.error(err);
       Swal.fire({
@@ -295,12 +329,8 @@ export default function ProductDetailPage() {
         showConfirmButton: true,
         confirmButtonText: 'Lengkapi Sekarang',
         confirmButtonColor: '#2563eb',
-        showClass: {
-          popup: 'animate__animated animate__slideInCenter'
-        },
-        hideClass: {
-          popup: 'animate__animated animate__fadeOut'
-        },
+        showClass: { popup: 'animate__animated animate__slideInCenter' },
+        hideClass: { popup: 'animate__animated animate__fadeOut' },
         toast: false, 
         timer: 6000,
         timerProgressBar: true,
@@ -316,7 +346,7 @@ export default function ProductDetailPage() {
       const res = await checkoutDirect({
         product_id: product.id,
         quantity,
-        variasi: selectedVariasi || undefined,
+        variasi: activeVariant?.id || selectedVariasi || "Default",
       });
 
       const orderData = res.order || res.data?.order;
@@ -342,11 +372,26 @@ export default function ProductDetailPage() {
   const handleAskProduct = () => {
     if (!product) return;
     const productLink = window.location.href;
-    
     const message = `${productLink}\n\nHalo Admin, saya mau tanya seputar produk ini:\n *${product.name}*`;
-    
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  // --- LOGIC VARIASI ---
+  const handleSelectVariant = (variant: any) => {
+    setSelectedVariasi(variant.variant_name);
+    setQuantity(1); // Reset qty supaya ga out of stock bug
+    
+    // Auto geser gambar ke gambar variasi yang bersangkutan (jika ada)
+    if (sortedImages.length > 0) {
+      const imgIdx = sortedImages.findIndex((img: any) => img.variant_id === variant.id);
+      if (imgIdx !== -1) {
+        setActiveImage(imgIdx);
+      } else if (variant.images && variant.images.length > 0) {
+        const fallbackIdx = sortedImages.findIndex((img: any) => img.image_url === variant.images[0].image_url);
+        if (fallbackIdx !== -1) setActiveImage(fallbackIdx);
+      }
+    }
   };
 
   if (loading) {
@@ -425,12 +470,20 @@ export default function ProductDetailPage() {
 
   if (!product) return <div className="p-10 text-center font-semibold text-gray-500">Product not found</div>;
 
-  const normalPrice = Number(product.price_normal) || 0;
-  const discountPrice = Number(product.price_discount) || 0;
-  const finalPrice = discountPrice > 0 ? normalPrice - discountPrice : normalPrice;
-  const isOutOfStock = Number(product.stock) === 0;
+  // --- CEK VARIASI AKTIF UNTUK CHECKOUT ---
+  const activeVariant = product.variants?.find((v: any) => v.variant_name === selectedVariasi) || product.variants?.[0] || null;
+  const showVariants = product.variants && product.variants.length > 0 && !(product.variants.length === 1 && product.variants[0].variant_name === "Default");
 
-  // --- PERHITUNGAN DISKON ---
+  // --- CEK VARIASI KHUSUS UNTUK GAMBAR YANG SEDANG AKTIF DI MODAL ---
+  const currentImageVariant = product.variants?.find((v: any) => v.id === sortedImages[activeImage]?.variant_id);
+
+  const normalPrice = Number(activeVariant?.price_normal ?? product.price_normal) || 0;
+  const discountPrice = Number(activeVariant?.price_discount ?? product.price_discount) || 0;
+  const stockValue = Number(activeVariant?.stock ?? product.stock) || 0;
+
+  const finalPrice = discountPrice > 0 ? normalPrice - discountPrice : normalPrice;
+  const isOutOfStock = stockValue === 0;
+
   const hasDiscount = discountPrice > 0;
   const discountPercent = hasDiscount
     ? ((discountPrice / normalPrice) * 100).toFixed(0)
@@ -466,13 +519,14 @@ export default function ProductDetailPage() {
                 lg:h-[500px]   
                 snap-x snap-mandatory
               ">
-                {product.images.map((img, index) => (
+                {/* PAKAI sortedImages */}
+                {sortedImages.map((img, index) => (
                   <img
                     key={img.id}
                     src={img.image_url?.startsWith("http") ? img.image_url : `${import.meta.env.VITE_API_BASE}${img.image_url}`}
                     onClick={() => setActiveImage(index)}
                     className={`w-16 h-16 object-cover rounded-md cursor-pointer transition-all duration-200
-                      ${activeImage === index ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
+                      ${activeImage === index ? "opacity-100" : "opacity-50 hover:opacity-100"}`} // <-- Revisi border aktif dihapus
                     alt={`Thumbnail ${index + 1}`}
                   />
                 ))}
@@ -501,9 +555,9 @@ export default function ProductDetailPage() {
                 {/* ----------------- */}
 
                 <img
-                  src={product.images[activeImage]?.image_url?.startsWith("http") 
-                    ? product.images[activeImage]?.image_url 
-                    : `${import.meta.env.VITE_API_BASE}${product.images[activeImage]?.image_url}`}
+                  src={sortedImages[activeImage]?.image_url?.startsWith("http") 
+                    ? sortedImages[activeImage]?.image_url 
+                    : `${import.meta.env.VITE_API_BASE}${sortedImages[activeImage]?.image_url}`}
                   alt={product.name}
                   className="w-full h-full object-contain transition-transform duration-200"
                   style={{
@@ -577,7 +631,7 @@ export default function ProductDetailPage() {
                 <div className="flex justify-between border-b border-gray-100 pb-2">
                   <span className="text-gray-500">SKU</span>
                   <span className="font-medium text-gray-900">
-                    {product.sku_seller || "-"}
+                    {activeVariant?.sku_seller || product.sku_seller || "-"}
                   </span>
                 </div>
 
@@ -591,37 +645,38 @@ export default function ProductDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Stok</span>
                   <span className={`font-semibold ${
-                    Number(product.stock) < 5 ? "text-orange-500" : "text-gray-900"
+                    stockValue < 5 ? "text-gray-900" : "text-gray-900"
                   }`}>
-                    {Number(product.stock) > 20 ? "20+" : product.stock} Unit
+                    {stockValue > 20 ? "20+" : stockValue} Unit
                   </span>
                 </div>
               </div>
 
-              {/* VARIATIONS (Di-comment sementara) */}
-              {/* {product.variasi && product.variasi.length > 0 && (
+              {/* VARIATIONS */}
+              {showVariants && (
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2.5">
-                    <p className="text-xs lg:text-[13px] font-bold text-gray-900">Pilih Variasi</p>
-                    <p className="text-[10px] text-gray-400 italic">*Wajib dipilih</p>
+                    <p className="text-xs lg:text-[13px] font-bold text-gray-900">
+                      Pilih {product.variant_type_name || "Variasi"}
+                    </p>
+                    {/* <p className="text-[10px] text-gray-400 italic">*Wajib dipilih</p> */}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {product.variasi.map((v, idx) => (
+                    {product.variants.map((v: any) => (
                       <button
-                        key={idx}
-                        onClick={() => setSelectedVariasi(v)}
+                        key={v.id}
+                        onClick={() => handleSelectVariant(v)}
                         className={`px-3 py-1.5 text-[11px] font-medium rounded-md border transition-all 
-                          ${selectedVariasi === v 
+                          ${selectedVariasi === v.variant_name 
                             ? "bg-primary/5 border-primary text-primary" 
                             : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"}`}
                       >
-                        {v}
+                        {v.variant_name}
                       </button>
                     ))}
                   </div>
                 </div>
               )} 
-              */}
 
               {/* ACTION AREA */}
               <div className="space-y-3 pt-4 border-t border-gray-100">
@@ -640,8 +695,8 @@ export default function ProductDetailPage() {
                       {isOutOfStock ? 0 : quantity}
                     </span>
                     <button 
-                      onClick={() => setQuantity(q => q < Number(product.stock) ? q + 1 : q)} 
-                      disabled={quantity >= Number(product.stock) || isOutOfStock}
+                      onClick={() => setQuantity(q => q < stockValue ? q + 1 : q)} 
+                      disabled={quantity >= stockValue || isOutOfStock}
                       className="w-8 h-10 lg:w-10 lg:h-11 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition"
                     >
                       +
@@ -797,7 +852,6 @@ export default function ProductDetailPage() {
               onTouchMove={handleDragMove}
               onTouchEnd={handleDragEnd}
               onClickCapture={handleClickCapture}
-              // Buang scroll-smooth CSS supaya tidak konflik sama JS
               className={`flex gap-2 sm:gap-3 lg:gap-6 overflow-x-auto scrollbar-hide py-4 cursor-grab active:cursor-grabbing touch-pan-y ${
                 isSwiping || isAnimating ? "snap-none" : "snap-x snap-mandatory"
               }`}
@@ -823,7 +877,6 @@ export default function ProductDetailPage() {
                     md:w-[calc((100%-32px)/3)] 
                     lg:w-[calc((100%-96px)/5)]"
                   >
-                    {/* Cegah highlight text/click nyasar saat drag */}
                     <div className={isSwiping ? "pointer-events-none select-none" : ""}>
                       <ProductCard product={item} />
                     </div>
@@ -843,20 +896,32 @@ export default function ProductDetailPage() {
         >
           <button 
             onClick={() => setShowModal(false)}
-            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 z-50 transition-colors"
+            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 z-[100] transition-colors"
           >
             &times;
           </button>
 
+          {/* TAMBAHAN: INFO VARIASI DI MODAL ZOOM BERDASARKAN GAMBAR AKTIF */}
+          <div className="absolute top-4 left-4 lg:top-6 lg:left-8 z-50 text-white pointer-events-none text-left">
+            <h3 className="text-base lg:text-xl font-bold uppercase tracking-wide drop-shadow-md">
+              {product.name}
+            </h3>
+            {showVariants && currentImageVariant && (
+              <p className="text-xs lg:text-sm text-gray-300 mt-1 font-medium drop-shadow-md">
+                {product.variant_type_name || "Variasi"}: <span className="text-white">{currentImageVariant.variant_name}</span>
+              </p>
+            )}
+          </div>
+
           <div 
-            className="w-full max-w-4xl h-[50vh] lg:h-[65vh] flex items-center justify-center mb-6"
+            className="w-full max-w-4xl h-[50vh] lg:h-[65vh] flex items-center justify-center mb-6 mt-12 lg:mt-0"
             onClick={(e) => e.stopPropagation()}
           >
             <img
               src={
-                product.images[activeImage]?.image_url?.startsWith("http") 
-                  ? product.images[activeImage]?.image_url 
-                  : `${import.meta.env.VITE_API_BASE}${product.images[activeImage]?.image_url}`
+                sortedImages[activeImage]?.image_url?.startsWith("http") 
+                  ? sortedImages[activeImage]?.image_url 
+                  : `${import.meta.env.VITE_API_BASE}${sortedImages[activeImage]?.image_url}`
               }
               className="max-w-full max-h-full object-contain shadow-2xl transition-all"
               alt="Zoomed Product"
@@ -867,7 +932,8 @@ export default function ProductDetailPage() {
             className="flex gap-4 overflow-x-auto max-w-4xl w-full px-4 pb-4 scrollbar-hide justify-center"
             onClick={(e) => e.stopPropagation()}
           >
-            {product.images.map((img, index) => (
+            {/* PAKAI sortedImages */}
+            {sortedImages.map((img, index) => (
               <img
                 key={img.id}
                 src={
@@ -942,9 +1008,9 @@ export default function ProductDetailPage() {
             <div className="px-6 py-4 bg-gray-50/50 border-y border-gray-100 flex gap-4 items-center">
               <div className="w-14 h-14 bg-white rounded-md border border-gray-200 p-1 flex-shrink-0 shadow-sm">
                 <img 
-                  src={product.images[0]?.image_url?.startsWith("http") 
-                    ? product.images[0]?.image_url 
-                    : `${import.meta.env.VITE_API_BASE}${product.images[0]?.image_url}`} 
+                  src={sortedImages[0]?.image_url?.startsWith("http") 
+                    ? sortedImages[0]?.image_url 
+                    : `${import.meta.env.VITE_API_BASE}${sortedImages[0]?.image_url}`} 
                   alt={product.name}
                   className="w-full h-full object-contain"
                 />
@@ -952,7 +1018,7 @@ export default function ProductDetailPage() {
               <div className="flex-1 min-w-0">
                 <h4 className="text-[11px] font-bold text-gray-900 truncate uppercase">{product.name}</h4>
                 <p className="text-[10px] text-gray-400 mt-0.5 font-bold uppercase">
-                  {/* {selectedVariasi && <span>{selectedVariasi} • </span>} */} 
+                  {showVariants && activeVariant && <span>{activeVariant.variant_name} • </span>} 
                   {quantity} Item
                 </p>
               </div>
@@ -981,7 +1047,7 @@ export default function ProductDetailPage() {
       <AuthModal 
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={(userData) => {
+        onSuccess={() => {
           setIsAuthModalOpen(false);
           if (pendingAction === "wa") {
             handleWaCheckout();

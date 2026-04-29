@@ -1,5 +1,5 @@
 import type { Category } from "./category";
-import type { ProductImage } from "./product-image";
+
 export interface ProductVariant {
   id: string;
   variant_name: string;
@@ -10,6 +10,14 @@ export interface ProductVariant {
   created_at: string;
   updated_at: string;
 }
+
+export interface ProductImage {
+  id: string;
+  image_url: string;
+  thumbnail_url: string;
+  variant_id?: string | null; 
+}
+
 export interface Product {
   id: string;
   product_id: string;
@@ -44,6 +52,7 @@ export interface Product {
 
   specifications: string[];
   
+  variant_type_name?: string | null; 
   variants: ProductVariant[]; 
   
   brand: {

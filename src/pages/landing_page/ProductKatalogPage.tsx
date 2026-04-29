@@ -25,8 +25,10 @@ export default function ProductKatalogPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const searchQuery = searchParams.get("search");
     
-    // 1. Tangkap parameter brand dari URL
+    // 1. Tangkap parameter dari URL
     const brandParam = searchParams.get("brand");
+    const socketParam = searchParams.get("socket");
+    const ramTypeParam = searchParams.get("ram_type");
 
     const [brands, setBrands] = useState<Brand[]>([]);
     const fetchBrands = async () => {
@@ -36,21 +38,35 @@ export default function ProductKatalogPage() {
 
     const [totalProducts, setTotalProducts] = useState(0);
     const [layout, setLayout] = useState<"grid" | "list">("grid");
-    const resetProducts = () => {
-        setProducts([]);
-        setPage(1);
-        setHasMore(true);
-    };
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [searchCategory, setSearchCategory] = useState("");
     
-    // 2. Ubah inisialisasi state selectedBrand, jika ada brandParam jadikan nilai awal
+    // 2. Inisialisasi state filter dari URL (jika ada)
     const [selectedBrand, setSelectedBrand] = useState<string[]>(
         brandParam ? brandParam.split(",") : []
     );
+    const [selectedSockets, setSelectedSockets] = useState<string[]>(
+        socketParam ? socketParam.split(",") : []
+    );
+    const [selectedRamTypes, setSelectedRamTypes] = useState<string[]>(
+        ramTypeParam ? ramTypeParam.split(",") : []
+    );
+
+    // State untuk opsi yang tersedia (diambil dari backend nanti)
+    const [availableSockets, setAvailableSockets] = useState<string[]>([]);
+    const [availableRamTypes, setAvailableRamTypes] = useState<string[]>([]);
+
+    const resetProducts = () => {
+        setProducts([]);
+        setPage(1);
+        setHasMore(true);
+        // Reset filter hardware tambahan
+        // setSelectedSockets([]);
+        // setSelectedRamTypes([]);
+    };
     
     const [searchBrand, setSearchBrand] = useState("");
     const [page, setPage] = useState(1);
@@ -71,23 +87,52 @@ export default function ProductKatalogPage() {
 
     const location = useLocation();
 
-    // 3. Tambahkan useEffect ini agar state tersinkronisasi 
-    //    jika user menekan tombol 'Back' atau URL berubah dari tempat lain.
+    // 3. Sinkronisasi state saat URL berubah (misal tombol Back ditekan)
     useEffect(() => {
         const currentBrandParam = searchParams.get("brand");
         if (currentBrandParam) {
             setSelectedBrand(currentBrandParam.split(","));
         } else if (!currentBrandParam && selectedBrand.length > 0) {
-            // Reset jika parameter hilang dari URL tapi state masih ada
              setSelectedBrand([]);
+        }
+
+        const currentSocketParam = searchParams.get("socket");
+        if (currentSocketParam) {
+            setSelectedSockets(currentSocketParam.split(","));
+        } else if (!currentSocketParam && selectedSockets.length > 0) {
+            setSelectedSockets([]);
+        }
+
+        const currentRamParam = searchParams.get("ram_type");
+        if (currentRamParam) {
+            setSelectedRamTypes(currentRamParam.split(","));
+        } else if (!currentRamParam && selectedRamTypes.length > 0) {
+            setSelectedRamTypes([]);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams]);
+
+    // Fetch opsi hardware (Ganti dengan endpoint API aslimu nanti)
+    const fetchHardwareTypes = async () => {
+        try {
+            // Nanti ganti dengan API aslimu:
+            // const res = await getHardwareTypes();
+            // setAvailableSockets(res.sockets);
+            // setAvailableRamTypes(res.rams);
+
+            // Mock Data Sementara
+            setAvailableSockets(["LGA 1700", "LGA 1200", "AM4", "AM5"]);
+            setAvailableRamTypes(["DDR3", "DDR4", "DDR5"]);
+        } catch (error) {
+            console.error("Gagal memuat tipe hardware:", error);
+        }
+    };
 
     useEffect(() => {
         fetchCategories();
         fetchGroupings();
         fetchBrands();
+        fetchHardwareTypes(); // Panggil fetch hardware
     }, []);
 
     const parentParam = searchParams.get("parent");
@@ -117,6 +162,8 @@ export default function ProductKatalogPage() {
         groupingParam,
         categoryIdsParam,
         selectedBrand,
+        selectedSockets,   // Masukkan dependency
+        selectedRamTypes,  // Masukkan dependency
         activeSearch,
         sort,
         minPrice,
@@ -137,7 +184,7 @@ export default function ProductKatalogPage() {
         setProducts([]);
         setPage(1);
         setHasMore(true);
-    }, [groupingParam, categoryIdsParam, selectedBrand, minPrice, maxPrice, sort]);
+    }, [groupingParam, categoryIdsParam, selectedBrand, selectedSockets, selectedRamTypes, minPrice, maxPrice, sort]); // Update reset trigger
 
     const fetchCategories = async () => {
         const data = await getCategories();
@@ -162,7 +209,6 @@ export default function ProductKatalogPage() {
                 setLoading(false);
                 return;
             }
-
             params.category_ids = categoryIdsFromGrouping.join(",");
         }
 
@@ -172,6 +218,11 @@ export default function ProductKatalogPage() {
 
         if (parentParam) params.parent = parentParam;
         if (selectedBrand.length > 0) params.brand = selectedBrand.join(",");
+        
+        // Tambahkan payload filter hardware
+        if (selectedSockets.length > 0) params.socket_type = selectedSockets.join(",");
+        if (selectedRamTypes.length > 0) params.ram_type = selectedRamTypes.join(",");
+
         if (activeSearch) params.search = activeSearch;
         if (sort) params.sort = sort;
         if (minPrice !== MIN) params.min_price = minPrice;
@@ -180,7 +231,6 @@ export default function ProductKatalogPage() {
         if (categoryIdsParam) {
             params.category_ids = categoryIdsParam;
         }
-
         else if (groupingParam) {
             const categoryIdsFromGrouping = getCategoryIdsFromGrouping();
 
@@ -194,7 +244,6 @@ export default function ProductKatalogPage() {
 
             params.category_ids = categoryIdsFromGrouping.join(",");
         }
-
         else if (categoryParam) {
             params.category = categoryParam;
         }
@@ -214,11 +263,8 @@ export default function ProductKatalogPage() {
     };
 
     const handleLoadMore = () => {
-
         if (!loading && hasMore) {
-            setPage((prev) => {
-                return prev + 1;
-            });
+            setPage((prev) => prev + 1);
         }
     };
 
@@ -248,8 +294,15 @@ export default function ProductKatalogPage() {
         setSelectedBrand,
         searchBrand,
         setSearchBrand,
-
         brands,
+
+        // Hardware Filters Props
+        availableSockets,
+        availableRamTypes,
+        selectedSockets,
+        setSelectedSockets,
+        selectedRamTypes,
+        setSelectedRamTypes,
 
         minPrice,
         maxPrice,
@@ -261,14 +314,11 @@ export default function ProductKatalogPage() {
         STEP,
 
         isPriceFiltered,
-
         resetProducts,
-
         setSearchParams,
     };
 
     return (
-    
     <div>
         {/* ================= BREADCRUMB BAR ================= */}
         <div className="w-full bg-white">
@@ -292,40 +342,11 @@ export default function ProductKatalogPage() {
 
         {/* ================= MAIN CONTENT ================= */}
         <div className="px-8 pt-4 pb-8 mx-auto max-w-7xl 2xl:max-w-screen-2xl">
-            {/* <GlassParticlesBackground /> */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
                 {/* ================= SIDEBAR ================= */}
                 <div className="hidden lg:block col-span-3">
-                    <FilteringSidebarKatalog
-                        groupings={groupings}
-                        groupingParam={groupingParam}
-                        categoryParam={categoryParam}
-                        searchCategory={searchCategory}
-                        setSearchCategory={setSearchCategory}
-
-                        selectedBrand={selectedBrand}
-                        setSelectedBrand={setSelectedBrand}
-                        searchBrand={searchBrand}
-                        setSearchBrand={setSearchBrand}
-
-                        brands={brands}
-
-                        minPrice={minPrice}
-                        maxPrice={maxPrice}
-                        setMinPrice={setMinPrice}
-                        setMaxPrice={setMaxPrice}
-
-                        MIN={MIN}
-                        MAX={MAX}
-                        STEP={STEP}
-
-                        isPriceFiltered={isPriceFiltered}
-
-                        resetProducts={resetProducts}
-
-                        setSearchParams={setSearchParams}
-                    />
+                    <FilteringSidebarKatalog {...filterProps} />
                 </div>
                 {/* ================= PRODUCT GRID ================= */}
                 <div className="flex flex-col col-span-9">
@@ -341,7 +362,7 @@ export default function ProductKatalogPage() {
                     />
 
                         {/* ACTIVE FILTER TAGS */}
-                            <div className="flex flex-wrap gap-2 mb-4">
+                        <div className="flex flex-wrap gap-2 mb-4">
 
                             {/* BRAND TAGS */}
                             {selectedBrand.map((brandId) => {
@@ -368,6 +389,34 @@ export default function ProductKatalogPage() {
                                     </div>
                                 );
                             })}
+
+                            {/* SOCKET TAGS */}
+                            {selectedSockets.map((sock) => (
+                                <div key={`sock-${sock}`} className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-blue-50 border border-blue-200 shadow-sm text-blue-700">
+                                    <span>{sock}</span>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedSockets((prev) => prev.filter((s) => s !== sock));
+                                            resetProducts();
+                                        }}
+                                        className="text-blue-500 hover:text-red-500"
+                                    >✕</button>
+                                </div>
+                            ))}
+
+                            {/* RAM TYPE TAGS */}
+                            {selectedRamTypes.map((ram) => (
+                                <div key={`ram-${ram}`} className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-blue-50 border border-blue-200 shadow-sm text-blue-700">
+                                    <span>{ram}</span>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedRamTypes((prev) => prev.filter((r) => r !== ram));
+                                            resetProducts();
+                                        }}
+                                        className="text-blue-500 hover:text-red-500"
+                                    >✕</button>
+                                </div>
+                            ))}
 
                             {/* PRICE TAG */}
                             {(isPriceFiltered) && (

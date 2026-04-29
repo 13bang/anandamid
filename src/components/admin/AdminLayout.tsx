@@ -3,15 +3,13 @@ import { Outlet } from "react-router-dom";
 
 export default function AdminLayout() {
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-white overflow-hidden">
 
-      {/* Sidebar wrapper */}
-      <div className="p-4">
+      <div className="p-4 flex-shrink-0">
         <Sidebar />
       </div>
 
-      {/* Main wrapper */}
-      <div className="flex-1">
+      <div className="flex-1 min-w-0 overflow-hidden">
         <main className="h-full overflow-y-auto bg-white">
           <Outlet />
         </main>

@@ -23,8 +23,18 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const getItemStock = (p: any) => {
+        if (!p) return 0;
+        
+        if (p.variants && Array.isArray(p.variants)) {
+            return p.variants.reduce((total: number, v: any) => total + Number(v.stock || 0), 0);
+        }
+        
+        return Number(p.stock ?? p.stok ?? 0);
+    };
+
     const filteredOptions = options?.filter((p: Product) =>
-        p.name.toLowerCase().includes(search.toLowerCase())
+        p.name.toLowerCase().includes(search.toLowerCase()) && (getItemStock(p) > 0)
     ) || [];
 
     return (
@@ -41,7 +51,7 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     <span className="truncate pr-4 text-gray-700 font-medium">
-                        {value ? value.name : `Pilih ${label}`}
+                        {value ? `${value.name} (stok ${getItemStock(value)})` : `Pilih ${label}`}
                     </span>
                     <svg className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
@@ -69,22 +79,29 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
                             </div>
                             
                             {filteredOptions.length > 0 ? (
-                                filteredOptions.map((p: Product) => (
-                                    <div
-                                        key={p.id}
-                                        className={`px-3 py-2.5 text-sm cursor-pointer transition-colors ${value?.id === p.id ? 'bg-primary/5 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
-                                        onClick={() => {
-                                            onChange(p);
-                                            setIsOpen(false);
-                                            setSearch("");
-                                        }}
-                                    >
-                                        {p.name}
-                                    </div>
-                                ))
+                                filteredOptions.map((p: Product) => {
+                                    const totalStock = getItemStock(p);
+                                    return (
+                                        <div
+                                            key={p.id}
+                                            className={`px-3 py-2.5 text-sm cursor-pointer transition-colors flex justify-between items-center ${value?.id === p.id ? 'bg-primary/5 text-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                                            onClick={() => {
+                                                onChange(p);
+                                                setIsOpen(false);
+                                                setSearch("");
+                                                setQty((prev: any) => ({ ...prev, [qtyKey]: 1 }));
+                                            }}
+                                        >
+                                            <span className="truncate mr-2">{p.name}</span>
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap ${totalStock < 5 ? 'bg-gray-100 text-gray-500' : 'bg-gray-100 text-gray-500'}`}>
+                                                STOK {totalStock}
+                                            </span>
+                                        </div>
+                                    );
+                                })
                             ) : (
                                 <div className="px-3 py-6 text-xs text-center text-gray-400 font-bold uppercase tracking-widest">
-                                    Tidak Ada Data
+                                    {search ? "Hasil tidak ditemukan" : "Stok Kosong"}
                                 </div>
                             )}
                         </div>
@@ -99,14 +116,22 @@ const Row = ({ label, value, onChange, options, price, qtyKey, qty, setQty }: an
                     <input
                         type="number"
                         min={1}
-                        className="w-16 border border-gray-200 p-2 rounded-md text-sm text-center bg-white outline-none focus:border-primary"
-                        value={qty[qtyKey]}
-                        onChange={(e) =>
+                        max={value ? getItemStock(value) : 99} 
+                        className="w-16 border border-gray-200 p-2 rounded-md text-sm text-center bg-white outline-none focus:border-primary disabled:bg-gray-100"
+                        value={qty[qtyKey] === "" ? "" : qty[qtyKey]}
+                        disabled={!value}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            let numVal = val === "" ? "" : Number(val);
+                            const maxStock = value ? getItemStock(value) : 99;
+
+                            if (typeof numVal === 'number' && numVal > maxStock) numVal = maxStock;
+
                             setQty((prev: any) => ({
                                 ...prev,
-                                [qtyKey]: Math.max(1, Number(e.target.value))
-                            }))
-                        }
+                                [qtyKey]: numVal === "" ? "" : Math.max(1, numVal as number)
+                            }));
+                        }}
                     />
                 </div>
                 <div className="text-right text-sm font-bold text-gray-800 md:w-full whitespace-nowrap">
@@ -152,53 +177,69 @@ export default function PCBuilderPage() {
     const [constraints, setConstraints] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
-    const fetchCoreParts = async () => {
-        setLoading(true);
-        try {
-            const res = await getCompatibility({
-                processor_id: selectedCPU?.id,
-                motherboard_id: selectedMobo?.id,
-                ram_id: selectedRAM?.id,
-            });
+    useEffect(() => {
+        const fetchCoreParts = async () => {
+            setLoading(true);
+            try {
+                const res = await getCompatibility({
+                    processor_id: selectedCPU?.id,
+                    motherboard_id: selectedMobo?.id,
+                    ram_id: selectedRAM?.id,
+                });
 
-            setList(prev => ({
-                ...prev,
-                processors: res.available_processors || [],
-                motherboards: res.available_motherboards || [],
-                rams: res.available_rams || []
-            }));
+                setList(prev => ({
+                    ...prev,
+                    processors: res.available_processors || [],
+                    motherboards: res.available_motherboards || [],
+                    rams: res.available_rams || []
+                }));
 
-            setConstraints(res.active_constraints);
-        } catch (err) {
-            console.error(err);
-        } finally { setLoading(false); }
+                setConstraints(res.active_constraints);
+            } catch (err) {
+                console.error(err);
+            } finally { 
+                setLoading(false); 
+            }
+        };
+
+        fetchCoreParts();
+    }, [selectedCPU?.id, selectedMobo?.id, selectedRAM?.id]);
+
+    useEffect(() => { 
+        const fetchSupportParts = async () => {
+            const categories = [
+                { key: 'vgas', name: 'VGA' },
+                { key: 'psus', name: 'Power Supply' },
+                { key: 'coolerCPU', name: 'Cooler CPU' },
+                { key: 'coolerFan', name: 'Cooler Fan' },
+                { key: 'casings', name: 'Casing PC' },
+                { key: 'ssds', name: 'SSD' },
+                { key: 'hdds', name: 'HDD' },
+                { key: 'oss', name: 'Operating System' }
+            ];
+            try {
+                const results = await Promise.all(categories.map(cat => getProducts({ category: cat.name, limit: 100 })));
+                const newList: any = {};
+                categories.forEach((cat, index) => { newList[cat.key] = results[index].data || []; });
+                const monitorCategories = ["Monitor LED", "Monitor Gaming", "Monitor Professional"];
+                const monitorResults = await Promise.all(monitorCategories.map(name => getProducts({ category: name, limit: 100 })));
+                const mergedMonitors = Array.from(new Map(monitorResults.flatMap(res => res.data || []).map(item => [item.id, item])).values());
+                newList["monitors"] = mergedMonitors;
+                setList(prev => ({ ...prev, ...newList }));
+            } catch (err) { console.error(err); }
+        };
+
+        fetchSupportParts(); 
+    }, []);
+
+    const initialQty = {
+        cpu: 1, mobo: 1, ram: 1, vga1: 1, vga2: 1, psu: 1,
+        coolerCPU: 1, fan1: 1, fan2: 1, fan3: 1,
+        casing: 1, ssd1: 1, ssd2: 1, hdd1: 1, hdd2: 1,
+        monitor1: 1, monitor2: 1, monitor3: 1, os: 1
     };
 
-    const fetchSupportParts = async () => {
-        const categories = [
-            { key: 'vgas', name: 'VGA' },
-            { key: 'psus', name: 'Power Supply' },
-            { key: 'coolerCPU', name: 'Cooler CPU' },
-            { key: 'coolerFan', name: 'Cooler Fan' },
-            { key: 'casings', name: 'Casing PC' },
-            { key: 'ssds', name: 'SSD' },
-            { key: 'hdds', name: 'HDD' },
-            { key: 'oss', name: 'Operating System' }
-        ];
-        try {
-            const results = await Promise.all(categories.map(cat => getProducts({ category: cat.name, limit: 100 })));
-            const newList: any = {};
-            categories.forEach((cat, index) => { newList[cat.key] = results[index].data || []; });
-            const monitorCategories = ["Monitor LED", "Monitor Gaming", "Monitor Professional"];
-            const monitorResults = await Promise.all(monitorCategories.map(name => getProducts({ category: name, limit: 100 })));
-            const mergedMonitors = Array.from(new Map(monitorResults.flatMap(res => res.data || []).map(item => [item.id, item])).values());
-            newList["monitors"] = mergedMonitors;
-            setList(prev => ({ ...prev, ...newList }));
-        } catch (err) { console.error(err); }
-    };
-
-    useEffect(() => { fetchSupportParts(); }, []);
-    useEffect(() => { fetchCoreParts(); }, [selectedCPU, selectedMobo, selectedRAM]);
+    const [qty, setQty] = useState<{ [key: string]: number | string }>(initialQty);
 
     const handleReset = () => {
         setSelectedCPU(null); setSelectedMobo(null); setSelectedRAM(null);
@@ -206,16 +247,53 @@ export default function PCBuilderPage() {
         setSelectedCoolerCPU(null); setSelectedCoolerFan1(null); setSelectedCoolerFan2(null); setSelectedCoolerFan3(null);
         setSelectedCasing(null); setSelectedSSD1(null); setSelectedSSD2(null); setSelectedHDD1(null); setSelectedHDD2(null);
         setSelectedMonitor1(null); setSelectedMonitor2(null); setSelectedMonitor3(null); setSelectedOS(null);
+        setQty(initialQty);
     };
 
-    const [qty, setQty] = useState<{ [key: string]: number }>({
-        cpu: 1, mobo: 1, ram: 1, vga1: 1, vga2: 1, psu: 1,
-        coolerCPU: 1, fan1: 1, fan2: 1, fan3: 1,
-        casing: 1, ssd1: 1, ssd2: 1, hdd1: 1, hdd2: 1,
-        monitor1: 1, monitor2: 1, monitor3: 1, os: 1
-    });
+    const handleConsult = () => {
+        const parts = [
+            { label: "Processor", item: selectedCPU, key: "cpu" },
+            { label: "Motherboard", item: selectedMobo, key: "mobo" },
+            { label: "RAM", item: selectedRAM, key: "ram" },
+            { label: "VGA Utama", item: selectedVGA1, key: "vga1" },
+            { label: "VGA Tambahan", item: selectedVGA2, key: "vga2" },
+            { label: "Power Supply", item: selectedPSU, key: "psu" },
+            { label: "Casing", item: selectedCasing, key: "casing" },
+            { label: "Cooler CPU", item: selectedCoolerCPU, key: "coolerCPU" },
+            { label: "Cooler Fan 1", item: selectedCoolerFan1, key: "fan1" },
+            { label: "Cooler Fan 2", item: selectedCoolerFan2, key: "fan2" },
+            { label: "Cooler Fan 3", item: selectedCoolerFan3, key: "fan3" },
+            { label: "SSD Utama", item: selectedSSD1, key: "ssd1" },
+            { label: "SSD Tambahan", item: selectedSSD2, key: "ssd2" },
+            { label: "HDD", item: selectedHDD1, key: "hdd1" },
+            { label: "Monitor", item: selectedMonitor1, key: "monitor1" },
+            { label: "OS", item: selectedOS, key: "os" },
+        ].filter(p => p.item);
 
-    const getPrice = (p: Product | null, key: string) => (p?.final_price || 0) * (qty[key] || 1);
+        if (parts.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Belum Ada Komponen', text: 'Pilih minimal satu komponen dulu.' });
+            return;
+        }
+
+        const lines = parts.map(p =>
+            `• ${p.label}: ${p.item!.name} (x${qty[p.key]}) - Rp ${getPrice(p.item, p.key).toLocaleString("id-ID")}`
+        ).join("\n");
+
+        const message = 
+    `Halo Admin Anandam,
+
+    Saya ingin konsultasi rakitan PC berikut:
+
+    ${lines}
+
+    💰 *Estimasi Total:* Rp ${grandTotal.toLocaleString("id-ID")}
+
+    Mohon bantuannya 🙏`;
+
+        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+    };
+
+    const getPrice = (p: Product | null, key: string) => (p?.final_price || 0) * (Number(qty[key]) || 1);
 
     const grandTotal = 
         getPrice(selectedCPU, "cpu") + getPrice(selectedMobo, "mobo") + getPrice(selectedRAM, "ram") +
@@ -267,7 +345,7 @@ export default function PCBuilderPage() {
                 { item: selectedHDD2, key: "hdd2" }, { item: selectedMonitor1, key: "monitor1" },
                 { item: selectedMonitor2, key: "monitor2" }, { item: selectedMonitor3, key: "monitor3" },
                 { item: selectedOS, key: "os" },
-            ].filter(i => i.item).map(i => ({ product_id: i.item!.id, quantity: qty[i.key] || 1 }));
+            ].filter(i => i.item).map(i => ({ product_id: i.item!.id, quantity: Number(qty[i.key]) || 1 }));
 
             const response = await checkoutPCBuilder({ items, notes: "Pesanan Custom Rakitan PC" });
             const invoice = response?.order?.invoice_number || response?.data?.order?.invoice_number || response?.invoice_number;
@@ -369,10 +447,20 @@ export default function PCBuilderPage() {
                                 </div>
                             </div>
 
+                            <button
+                                onClick={handleConsult}
+                                className="w-full mt-8 border border-green-400 text-green-400 py-4 rounded-md font-bold text-xs uppercase tracking-widest hover:bg-green-400/10 transition-all flex items-center justify-center gap-2"
+                            >
+                                Tanya Dulu
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326z"/>
+                                </svg>
+                            </button>
+
                             <button 
                                 disabled={!isCoreComplete}
                                 onClick={handleCheckout}
-                                className="w-full mt-8 bg-primary text-white py-4 rounded-md font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:bg-gray-100 disabled:text-gray-400 transition-all flex items-center justify-center gap-2 group shadow-lg shadow-primary/20"
+                                className="w-full mt-3 bg-primary text-white py-4 rounded-md font-bold text-xs uppercase tracking-widest hover:brightness-110 disabled:bg-gray-100 disabled:text-gray-400 transition-all flex items-center justify-center gap-2 group shadow-lg shadow-primary/20"
                             >
                                 Checkout Pesanan
                                 <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />

@@ -31,7 +31,6 @@ export default function GroupingPage() {
   const [loading, setLoading] = useState(true);
 
   const [searchCategory, setSearchCategory] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState<string[]>([]);
   const [searchBrand, setSearchBrand] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -39,7 +38,26 @@ export default function GroupingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get("search");
   const groupingParam = searchParams.get("grouping");
-  const categoryIdsParam = searchParams.get("category_ids"); // Nangkep filter kategori dari sidebar
+  const categoryIdsParam = searchParams.get("category_ids");
+
+  // 1. Tangkap parameter filter tambahan
+  const brandParam = searchParams.get("brand");
+  const socketParam = searchParams.get("socket");
+  const ramTypeParam = searchParams.get("ram_type");
+
+  // 2. Inisialisasi State
+  const [selectedBrand, setSelectedBrand] = useState<string[]>(
+    brandParam ? brandParam.split(",") : []
+  );
+  const [selectedSockets, setSelectedSockets] = useState<string[]>(
+    socketParam ? socketParam.split(",") : []
+  );
+  const [selectedRamTypes, setSelectedRamTypes] = useState<string[]>(
+    ramTypeParam ? ramTypeParam.split(",") : []
+  );
+
+  const [availableSockets, setAvailableSockets] = useState<string[]>([]);
+  const [availableRamTypes, setAvailableRamTypes] = useState<string[]>([]);
 
   const [activeSearch, setActiveSearch] = useState<string | null>(null);
   const [sort, setSort] = useState<string>("newest");
@@ -54,6 +72,42 @@ export default function GroupingPage() {
 
   const location = useLocation();
 
+  // 3. Sinkronisasi state saat URL berubah (misal tombol Back)
+  useEffect(() => {
+    const currentBrandParam = searchParams.get("brand");
+    if (currentBrandParam) {
+      setSelectedBrand(currentBrandParam.split(","));
+    } else if (!currentBrandParam && selectedBrand.length > 0) {
+      setSelectedBrand([]);
+    }
+
+    const currentSocketParam = searchParams.get("socket");
+    if (currentSocketParam) {
+      setSelectedSockets(currentSocketParam.split(","));
+    } else if (!currentSocketParam && selectedSockets.length > 0) {
+      setSelectedSockets([]);
+    }
+
+    const currentRamParam = searchParams.get("ram_type");
+    if (currentRamParam) {
+      setSelectedRamTypes(currentRamParam.split(","));
+    } else if (!currentRamParam && selectedRamTypes.length > 0) {
+      setSelectedRamTypes([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Fetch opsi hardware (Ganti dengan endpoint API aslimu nanti)
+  const fetchHardwareTypes = async () => {
+    try {
+      // Mock Data Sementara
+      setAvailableSockets(["LGA 1700", "LGA 1200", "AM4", "AM5"]);
+      setAvailableRamTypes(["DDR3", "DDR4", "DDR5"]);
+    } catch (error) {
+      console.error("Gagal memuat tipe hardware:", error);
+    }
+  };
+
   // === LOGIC PENGGABUNGAN KATEGORI & CUSTOM GROUPING ===
   const { categories, categoryIds } = useMemo(() => {
     if (!isGroupingsLoaded || groupings.length === 0) return { categories: [], categoryIds: [] };
@@ -63,11 +117,9 @@ export default function GroupingPage() {
     const paramStr = groupingParam ? groupingParam.trim().toLowerCase() : "";
 
     if (paramStr === "komponen & peripheral") {
-      // 1. Ambil dari Grouping Komponen & Peripheral
       const kompGroup = groupings.find((g) => g.name.trim().toLowerCase() === "komponen komputer");
       const periGroup = groupings.find((g) => g.name.trim().toLowerCase() === "peripheral & i/o");
       
-      // 2. Cari SSD dan HDD dari seluruh data grouping
       const allCategories = groupings.flatMap((g) => g.children || []);
       const ssdCat = allCategories.find((c) => c.name.trim().toLowerCase() === "ssd");
       const hddCat = allCategories.find((c) => c.name.trim().toLowerCase() === "hdd");
@@ -79,7 +131,6 @@ export default function GroupingPage() {
         hddCat,
       ].filter(Boolean) as Category[];
 
-      // Hilangkan duplikat barangkali SSD/HDD udah ada di dalamnya
       cats = Array.from(new Map(cats.map((c) => [c.id, c])).values());
 
     } else if (groupingParam) {
@@ -114,6 +165,7 @@ export default function GroupingPage() {
   useEffect(() => {
     fetchGroupings();
     fetchBrands();
+    fetchHardwareTypes(); // 🔥 Fetch hardware on mount
   }, []);
 
   useEffect(() => {
@@ -127,7 +179,7 @@ export default function GroupingPage() {
   useEffect(() => {
     if (!isGroupingsLoaded) return;
     fetchProducts();
-  }, [page, groupingParam, categoryIdsParam, selectedBrand, activeSearch, sort, minPrice, maxPrice, isGroupingsLoaded]);
+  }, [page, groupingParam, categoryIdsParam, selectedBrand, selectedSockets, selectedRamTypes, activeSearch, sort, minPrice, maxPrice, isGroupingsLoaded]);
 
   useEffect(() => {
     if (searchQuery !== null) {
@@ -140,7 +192,7 @@ export default function GroupingPage() {
   // Reset page ke 1 kalau filter berubah
   useEffect(() => {
     resetProducts();
-  }, [groupingParam, categoryIdsParam, selectedBrand, activeSearch, sort, minPrice, maxPrice]);
+  }, [groupingParam, categoryIdsParam, selectedBrand, selectedSockets, selectedRamTypes, activeSearch, sort, minPrice, maxPrice]);
 
   const fetchProducts = async () => {
     if (groupingParam && categoryIds.length === 0) {
@@ -165,6 +217,11 @@ export default function GroupingPage() {
     }
 
     if (selectedBrand.length > 0) params.brand = selectedBrand.join(",");
+    
+    // 🔥 Tambahkan payload filter hardware
+    if (selectedSockets.length > 0) params.socket_type = selectedSockets.join(",");
+    if (selectedRamTypes.length > 0) params.ram_type = selectedRamTypes.join(",");
+
     if (activeSearch) params.search = activeSearch;
     if (sort) params.sort = sort;
     if (minPrice !== MIN) params.min_price = minPrice;
@@ -212,6 +269,14 @@ export default function GroupingPage() {
     setSearchBrand,
 
     brands,
+
+    // 🔥 Hardware Filters Props
+    availableSockets,
+    availableRamTypes,
+    selectedSockets,
+    setSelectedSockets,
+    selectedRamTypes,
+    setSelectedRamTypes,
 
     minPrice,
     maxPrice,
@@ -266,11 +331,12 @@ export default function GroupingPage() {
             />
 
             <div className="flex flex-wrap gap-2 mb-4">
+              {/* BRAND TAGS */}
               {selectedBrand.map((brandId) => {
                 const brandObj = brands.find(b => b.id === brandId);
                 return (
                   <div
-                    key={brandId}
+                    key={`brand-${brandId}`}
                     className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-primary5 border border-gray-300 shadow-sm text-gray-700"
                   >
                     <span>{brandObj?.name || brandId}</span>
@@ -287,6 +353,35 @@ export default function GroupingPage() {
                 );
               })}
 
+              {/* SOCKET TAGS */}
+              {selectedSockets.map((sock) => (
+                  <div key={`sock-${sock}`} className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-blue-50 border border-blue-200 shadow-sm text-blue-700">
+                      <span>{sock}</span>
+                      <button
+                          onClick={() => {
+                              setSelectedSockets((prev) => prev.filter((s) => s !== sock));
+                              resetProducts();
+                          }}
+                          className="text-blue-500 hover:text-red-500"
+                      >✕</button>
+                  </div>
+              ))}
+
+              {/* RAM TYPE TAGS */}
+              {selectedRamTypes.map((ram) => (
+                  <div key={`ram-${ram}`} className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-blue-50 border border-blue-200 shadow-sm text-blue-700">
+                      <span>{ram}</span>
+                      <button
+                          onClick={() => {
+                              setSelectedRamTypes((prev) => prev.filter((r) => r !== ram));
+                              resetProducts();
+                          }}
+                          className="text-blue-500 hover:text-red-500"
+                      >✕</button>
+                  </div>
+              ))}
+
+              {/* PRICE TAG */}
               {isPriceFiltered && (
                 <div className="flex items-center gap-2 px-3 py-1 text-sm text-gray-700 border border-gray-300 shadow-sm rounded-full bg-primary5">
                   <span>

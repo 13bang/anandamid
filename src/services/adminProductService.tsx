@@ -42,3 +42,21 @@ export const getAdminProductById = async (id: string) => {
   const res = await api.get(`/admin/products/${id}`);
   return res.data;
 };
+
+export const getTopViewedProducts = async (
+  period: 'today' | 'week' | 'month' | 'custom' = 'week',
+  options?: { from?: string; to?: string; limit?: number }
+) => {
+  const params = new URLSearchParams({ period });
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (period === 'custom' && options?.from) params.set('from', options.from);
+  if (period === 'custom' && options?.to) params.set('to', options.to);
+
+  const res = await api.get(`/admin/products/analytics/top-viewed?${params}`);
+  return res.data;
+};
+
+export const getProductStats = async (id: string) => {
+  const res = await api.get(`/admin/products/analytics/${id}/stats`);
+  return res.data;
+};

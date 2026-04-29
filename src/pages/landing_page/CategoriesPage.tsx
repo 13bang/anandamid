@@ -81,9 +81,10 @@ export default function CategoriesDetailPage() {
             : filteredCategories.map((cat) => (
                 <div
                   key={cat.id}
-                  onClick={() =>
-                    navigate(`/product-categories?category=${cat.name}`)
-                  }
+                  onClick={() => {
+                    const groupingName = cat.parent?.name || "Komponen Komputer"; 
+                    navigate(`/product-categories?grouping=${groupingName}&category_ids=${cat.id}`);
+                  }}
                   className="
                   flex flex-col items-center
                   p-3 md:p-5

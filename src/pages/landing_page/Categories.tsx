@@ -24,6 +24,12 @@ export default function CategoriesPage() {
   const { parent } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get("category");
+  
+  // 1. Tangkap parameter hardware dari URL
+  const brandParam = searchParams.get("brand");
+  const socketParam = searchParams.get("socket");
+  const ramTypeParam = searchParams.get("ram_type");
+  
   const location = useLocation();
 
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -34,7 +40,21 @@ export default function CategoriesPage() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [layout, setLayout] = useState<"grid" | "list">("grid");
 
-  const [selectedBrand, setSelectedBrand] = useState<string[]>([]);
+  // 2. Inisialisasi state filter dari URL
+  const [selectedBrand, setSelectedBrand] = useState<string[]>(
+    brandParam ? brandParam.split(",") : []
+  );
+  const [selectedSockets, setSelectedSockets] = useState<string[]>(
+    socketParam ? socketParam.split(",") : []
+  );
+  const [selectedRamTypes, setSelectedRamTypes] = useState<string[]>(
+    ramTypeParam ? ramTypeParam.split(",") : []
+  );
+
+  // State untuk opsi yang tersedia (diambil dari backend)
+  const [availableSockets, setAvailableSockets] = useState<string[]>([]);
+  const [availableRamTypes, setAvailableRamTypes] = useState<string[]>([]);
+
   const [searchBrand, setSearchBrand] = useState("");
   const [sort, setSort] = useState<string>("newest");
 
@@ -52,9 +72,51 @@ export default function CategoriesPage() {
 
   const [searchCategory, setSearchCategory] = useState("");
 
+  // 3. Sinkronisasi state saat URL berubah (misal tombol Back ditekan)
+  useEffect(() => {
+    const currentBrandParam = searchParams.get("brand");
+    if (currentBrandParam) {
+      setSelectedBrand(currentBrandParam.split(","));
+    } else if (!currentBrandParam && selectedBrand.length > 0) {
+      setSelectedBrand([]);
+    }
+
+    const currentSocketParam = searchParams.get("socket");
+    if (currentSocketParam) {
+      setSelectedSockets(currentSocketParam.split(","));
+    } else if (!currentSocketParam && selectedSockets.length > 0) {
+      setSelectedSockets([]);
+    }
+
+    const currentRamParam = searchParams.get("ram_type");
+    if (currentRamParam) {
+      setSelectedRamTypes(currentRamParam.split(","));
+    } else if (!currentRamParam && selectedRamTypes.length > 0) {
+      setSelectedRamTypes([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Fetch opsi hardware (Ganti dengan endpoint API aslimu nanti)
+  const fetchHardwareTypes = async () => {
+    try {
+      // Nanti ganti dengan API aslimu:
+      // const res = await getHardwareTypes();
+      // setAvailableSockets(res.sockets);
+      // setAvailableRamTypes(res.rams);
+
+      // Mock Data Sementara
+      setAvailableSockets(["LGA 1700", "LGA 1200", "AM4", "AM5"]);
+      setAvailableRamTypes(["DDR3", "DDR4", "DDR5"]);
+    } catch (error) {
+      console.error("Gagal memuat tipe hardware:", error);
+    }
+  };
+
   useEffect(() => {
     fetchCategories();
     fetchBrands();
+    fetchHardwareTypes(); // 🔥 Panggil saat mount
   }, []);
 
   useEffect(() => {
@@ -64,9 +126,10 @@ export default function CategoriesPage() {
     }
   }, []);
 
+  // Tambahkan dependency filter hardware
   useEffect(() => {
     fetchProducts();
-  }, [page, parent, categoryParam, selectedBrand, sort, minPrice, maxPrice]);
+  }, [page, parent, categoryParam, selectedBrand, selectedSockets, selectedRamTypes, sort, minPrice, maxPrice]);
 
   useEffect(() => {
     setProducts([]);
@@ -77,7 +140,7 @@ export default function CategoriesPage() {
       top: 0,
       behavior: "smooth",
     });
-  }, [parent, categoryParam, selectedBrand, sort, minPrice, maxPrice]);
+  }, [parent, categoryParam, selectedBrand, selectedSockets, selectedRamTypes, sort, minPrice, maxPrice]);
 
   const resetProducts = () => {
     setProducts([]);
@@ -106,6 +169,11 @@ export default function CategoriesPage() {
 
     if (categoryParam) params.category = categoryParam;
     if (selectedBrand.length > 0) params.brand = selectedBrand.join(",");
+    
+    // 🔥 Tambahkan payload filter hardware
+    if (selectedSockets.length > 0) params.socket_type = selectedSockets.join(",");
+    if (selectedRamTypes.length > 0) params.ram_type = selectedRamTypes.join(",");
+
     if (sort) params.sort = sort;
     if (minPrice !== MIN) params.min_price = minPrice;
     if (maxPrice !== MAX) params.max_price = maxPrice;
@@ -136,6 +204,7 @@ export default function CategoriesPage() {
 
   const filterProps = {
     showCategory: false, 
+    categoryIdsParam: categoryParam,
     showGrouping: false, 
     categoryParam,
     
@@ -147,6 +216,14 @@ export default function CategoriesPage() {
     searchBrand,
     setSearchBrand,
     brands, 
+
+    // 🔥 Hardware Filters Props
+    availableSockets,
+    availableRamTypes,
+    selectedSockets,
+    setSelectedSockets,
+    selectedRamTypes,
+    setSelectedRamTypes,
 
     minPrice,
     maxPrice,
@@ -214,7 +291,7 @@ export default function CategoriesPage() {
 
                 return (
                   <div
-                    key={brandId}
+                    key={`brand-${brandId}`}
                     className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-primary5 border border-gray-300 shadow-sm text-gray-700"
                   >
                     <span>{brandObj?.name || brandId}</span>
@@ -233,6 +310,34 @@ export default function CategoriesPage() {
                   </div>
                 );
               })}
+
+              {/* SOCKET TAGS */}
+              {selectedSockets.map((sock) => (
+                  <div key={`sock-${sock}`} className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-blue-50 border border-blue-200 shadow-sm text-blue-700">
+                      <span>{sock}</span>
+                      <button
+                          onClick={() => {
+                              setSelectedSockets((prev) => prev.filter((s) => s !== sock));
+                              resetProducts();
+                          }}
+                          className="text-blue-500 hover:text-red-500"
+                      >✕</button>
+                  </div>
+              ))}
+
+              {/* RAM TYPE TAGS */}
+              {selectedRamTypes.map((ram) => (
+                  <div key={`ram-${ram}`} className="flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-blue-50 border border-blue-200 shadow-sm text-blue-700">
+                      <span>{ram}</span>
+                      <button
+                          onClick={() => {
+                              setSelectedRamTypes((prev) => prev.filter((r) => r !== ram));
+                              resetProducts();
+                          }}
+                          className="text-blue-500 hover:text-red-500"
+                      >✕</button>
+                  </div>
+              ))}
 
               {/* PRICE TAG */}
               {isPriceFiltered && (

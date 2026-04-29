@@ -1,4 +1,5 @@
 import userApi from "./userApi";
+import api from "./api"; // Admin API (pakai token admin)
 
 export interface RegisterDto {
   full_name: string;
@@ -50,10 +51,52 @@ export interface AddressDto {
   longitude?: number;
 }
 
+export interface UserAdminDto {
+  id: string;
+  full_name: string;
+  email: string;
+  phone_number?: string;
+  avatar_url?: string;
+  gender?: string;
+  birth_date?: string;
+  is_active: boolean;
+  created_at: string;
+  addresses?: AddressDto[];
+}
+
+export interface UsersResponse {
+  data: UserAdminDto[];
+  total: number;
+  page: number;
+  last_page: number;
+}
+
+// ================= ADMIN: USER MANAGEMENT =================
+// Pakai `api` (admin token) bukan `userApi`
+
+export const adminGetAllUsers = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}): Promise<UsersResponse> => {
+  const res = await api.get("/user/auth/admin/all", { params });
+  return res.data;
+};
+
+export const adminGetUserById = async (id: string): Promise<UserAdminDto> => {
+  const res = await api.get(`/user/auth/admin/${id}`);
+  return res.data;
+};
+
+export const adminToggleUserActive = async (id: string) => {
+  const res = await api.patch(`/user/auth/admin/${id}/toggle-active`);
+  return res.data;
+};
+
 // ================= ADDRESS MANAGEMENT =================
 
 export const getMyAddresses = async (): Promise<AddressDto[]> => {
-  const res = await userApi.get("/user/auth/addresses"); // Sesuaikan endpoint backend
+  const res = await userApi.get("/user/auth/addresses");
   return res.data;
 };
 

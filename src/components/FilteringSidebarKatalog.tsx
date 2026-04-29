@@ -11,6 +11,7 @@ export interface Grouping {
 
 interface Props {
   groupings?: Grouping[];
+  categories?: Category[]; // 🔥 Tambahan untuk ngecek nama kategori
   groupingParam?: string | null;
   categoryParam?: string | null;
   categoryIdsParam?: string | null; 
@@ -23,6 +24,14 @@ interface Props {
   searchBrand: string;
   setSearchBrand: (v: string) => void;
   brands: Brand[];
+
+  // 🔥 Tambahan Props Filter Hardware
+  availableSockets?: string[];
+  availableRamTypes?: string[];
+  selectedSockets?: string[];
+  setSelectedSockets?: React.Dispatch<React.SetStateAction<string[]>>;
+  selectedRamTypes?: string[];
+  setSelectedRamTypes?: React.Dispatch<React.SetStateAction<string[]>>;
 
   minPrice: number;
   maxPrice: number;
@@ -51,6 +60,7 @@ interface Brand {
 export default function FilteringSidebarKatalog(props: Props) {
   const {
     groupings = [],
+    categories = [],
     groupingParam,
     categoryParam,
     categoryIdsParam,
@@ -61,6 +71,15 @@ export default function FilteringSidebarKatalog(props: Props) {
     searchBrand,
     setSearchBrand,
     brands,
+    
+    // Hardware Props
+    availableSockets = [],
+    availableRamTypes = [],
+    selectedSockets = [],
+    setSelectedSockets,
+    selectedRamTypes = [],
+    setSelectedRamTypes,
+
     minPrice,
     maxPrice,
     setMinPrice,
@@ -166,6 +185,13 @@ export default function FilteringSidebarKatalog(props: Props) {
   const parseRupiah = (value: string) => {
     return Number(value.replace(/\./g, ""));
   };
+
+  // 🔥 LOGIC DETEKSI KATEGORI HARDWARE UNTUK MENAMPILKAN FILTER
+  const currentCategoryName = categories.find(c => c.id === categoryIdsParam)?.name || categoryParam || "";
+  const currentContext = `${groupingParam || ""} ${currentCategoryName}`.toLowerCase();
+  
+  const showSocketFilter = /motherboard|mobo|cpu|processor/i.test(currentContext);
+  const showRamFilter = /motherboard|mobo|ram|memory/i.test(currentContext);
 
   return (
     <div className="col-span-3 px-6 py-6 border border-gray-200 h-fit space-y-8 rounded-2xl bg-white shadow-sm">
@@ -340,6 +366,68 @@ export default function FilteringSidebarKatalog(props: Props) {
           })}
         </ul>
       </div>
+
+      {/* ================= FILTER SOCKET (DYNAMIC) ================= */}
+      {showSocketFilter && availableSockets.length > 0 && setSelectedSockets && (
+        <div className="animate-fadeIn">
+          <h2 className="mb-4 text-lg font-bold text-gray-800">Tipe Socket</h2>
+          <ul className="overflow-y-auto max-h-[240px] pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-200">
+            {availableSockets.map((sock) => {
+              const checked = selectedSockets.includes(sock);
+              return (
+                <li
+                  key={sock}
+                  onClick={() => {
+                    setSelectedSockets((prev) =>
+                      prev.includes(sock) ? prev.filter((s) => s !== sock) : [...prev, sock]
+                    );
+                    resetProducts();
+                  }}
+                  className="flex items-center gap-3 px-2 py-1 cursor-pointer group"
+                >
+                  <div className={`flex items-center justify-center w-4 h-4 border rounded ${checked ? "bg-primary border-primary" : "border-gray-300 group-hover:border-primary"}`}>
+                    {checked && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <span className={`text-sm ${checked ? "text-primary font-semibold" : "text-gray-600"}`}>
+                    {sock}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* ================= FILTER RAM TYPE (DYNAMIC) ================= */}
+      {showRamFilter && availableRamTypes.length > 0 && setSelectedRamTypes && (
+        <div className="animate-fadeIn">
+          <h2 className="mb-4 text-lg font-bold text-gray-800">Tipe RAM</h2>
+          <ul className="overflow-y-auto max-h-[240px] pr-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-200">
+            {availableRamTypes.map((ram) => {
+              const checked = selectedRamTypes.includes(ram);
+              return (
+                <li
+                  key={ram}
+                  onClick={() => {
+                    setSelectedRamTypes((prev) =>
+                      prev.includes(ram) ? prev.filter((r) => r !== ram) : [...prev, ram]
+                    );
+                    resetProducts();
+                  }}
+                  className="flex items-center gap-3 px-2 py-1 cursor-pointer group"
+                >
+                  <div className={`flex items-center justify-center w-4 h-4 border rounded ${checked ? "bg-primary border-primary" : "border-gray-300 group-hover:border-primary"}`}>
+                    {checked && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <span className={`text-sm ${checked ? "text-primary font-semibold" : "text-gray-600"}`}>
+                    {ram}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* ================= PRICE RANGE ================= */}
       <div>

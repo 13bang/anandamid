@@ -277,10 +277,11 @@ export default function SearchBar({
 
           {/* PRODUCT */}
           {featuredProducts.map((item) => {
-
-            const finalPrice = item.price_discount
-              ? Number(item.price_normal) - Number(item.price_discount)
-              : Number(item.price_normal);
+            const variant = item.variants?.[0] || {};
+            
+            const priceNormal = Number(variant.price_normal ?? item.price_normal ?? 0);
+            const priceDiscount = Number(variant.price_discount ?? item.price_discount ?? 0);
+            const finalPrice = priceNormal - priceDiscount;
 
             return (
               <div
@@ -291,24 +292,30 @@ export default function SearchBar({
                 }}
                 className="flex items-center gap-3 px-3 py-3 hover:bg-gray-50 cursor-pointer"
               >
-
                 <img
                   src={getProductImage(item)}
                   className="w-14 h-14 object-contain bg-white border rounded"
+                  alt={item.name}
                 />
 
                 <div className="flex flex-col flex-1 text-sm">
-
                   <span className="font-medium text-gray-800 line-clamp-1">
                     {item.name}
                   </span>
 
-                  <span className="text-primary font-semibold text-sm mt-1">
-                    Rp {finalPrice.toLocaleString("id-ID")}
-                  </span>
-
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-primary font-bold text-sm">
+                      Rp {finalPrice.toLocaleString("id-ID")}
+                    </span>
+                    
+                    {/* OPSI: Tambah harga coret biar makin keren dropdown-nya */}
+                    {priceDiscount > 0 && (
+                      <span className="text-[10px] text-gray-400 line-through">
+                        Rp {priceNormal.toLocaleString("id-ID")}
+                      </span>
+                    )}
+                  </div>
                 </div>
-
               </div>
             );
           })}
